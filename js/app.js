@@ -1,0 +1,2205 @@
+/* ===== KEY2READ DASHBOARD SPA ===== */
+
+// ---- SVG Icons (stroke-based, no emoji) ----
+const IC = {
+  key: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="4"/><path d="M10.5 10.5L21 21"/><path d="M16 16l5 0"/><path d="M19 13l0 6"/></svg>',
+  clip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>',
+  users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  trend: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
+  grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+  bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>',
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+  bulb: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>',
+  fire: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4.97 0 8-3.03 8-8 0-4.42-4-7.03-4-12a7.77 7.77 0 0 0-4 4c-1-1-2-4-2-4-2 4-6 6.58-6 12 0 4.97 3.03 8 8 8z"/></svg>',
+  target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+  bookOpen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+  warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+  gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  arrowUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>',
+  arrowDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
+  arrowLeft: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  printer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+  barChart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>',
+  activity: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+  hash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  layers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
+  eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+  user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+  sparkle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 4-6"/></svg>',
+};
+
+// ---- Interest Categories ----
+const interestCategories = [
+  { id: 'sports',      label: 'Sports',         icon: IC.target,   color: 'blue'   },
+  { id: 'animals',     label: 'Animals',         icon: IC.eye,      color: 'green'  },
+  { id: 'science',     label: 'Science',         icon: IC.bulb,     color: 'purple' },
+  { id: 'adventure',   label: 'Adventure',       icon: IC.fire,     color: 'orange' },
+  { id: 'fantasy',     label: 'Fantasy',         icon: IC.star,     color: 'gold'   },
+  { id: 'mystery',     label: 'Mystery',         icon: IC.search,   color: 'red'    },
+  { id: 'technology',  label: 'Technology',       icon: IC.layers,   color: 'blue'   },
+  { id: 'art',         label: 'Art & Music',     icon: IC.activity, color: 'purple' },
+  { id: 'history',     label: 'History',          icon: IC.clock,    color: 'orange' },
+  { id: 'humor',       label: 'Funny Stories',   icon: IC.star,     color: 'gold'   },
+  { id: 'friendship',  label: 'Friendship',      icon: IC.users,    color: 'green'  },
+  { id: 'cooking',     label: 'Food & Cooking',  icon: IC.bag,      color: 'red'    },
+];
+
+// ---- Sample Data ----
+const students = [
+  { id: 0, name: 'Aaliyah Johnson',  initials: 'AJ', color: '#2E86C1', level: 4.2, score: 742, keys: 485, streak: '4 wks', accuracy: 89, struggling: false, quizzes: 18, grade: '4th', joined: 'Sep 2025',
+    interests: { tags: ['animals', 'adventure', 'friendship'], readingStyle: 'detailed', favoriteGenre: 'Realistic Fiction', onboarded: true }},
+  { id: 1, name: 'Ben Carter',       initials: 'BC', color: '#1E8449', level: 3.8, score: 698, keys: 410, streak: '3 wks', accuracy: 84, struggling: false, quizzes: 15, grade: '4th', joined: 'Sep 2025',
+    interests: { tags: ['sports', 'technology', 'humor'], readingStyle: 'fast', favoriteGenre: 'Sports Fiction', onboarded: true }},
+  { id: 2, name: 'Camila Reyes',     initials: 'CR', color: '#7C3AED', level: 5.1, score: 812, keys: 580, streak: '6 wks', accuracy: 96, struggling: false, quizzes: 22, grade: '5th', joined: 'Aug 2025',
+    interests: { tags: ['fantasy', 'art', 'mystery'], readingStyle: 'detailed', favoriteGenre: 'Fantasy', onboarded: true }},
+  { id: 3, name: 'David Kim',        initials: 'DK', color: '#D93B3B', level: 3.2, score: 485, keys: 175, streak: '\u2014',  accuracy: 58, struggling: true,  quizzes: 9,  grade: '3rd', joined: 'Oct 2025',
+    interests: { tags: [], readingStyle: null, favoriteGenre: null, onboarded: false }},
+  { id: 4, name: 'Elena Vasquez',    initials: 'EV', color: '#E5A100', level: 4.5, score: 721, keys: 445, streak: '3 wks', accuracy: 85, struggling: false, quizzes: 17, grade: '4th', joined: 'Sep 2025',
+    interests: { tags: ['science', 'animals', 'history'], readingStyle: 'visual', favoriteGenre: 'Non-Fiction', onboarded: true }},
+  { id: 5, name: 'Finn O\'Brien',    initials: 'FO', color: '#2E86C1', level: 4.0, score: 688, keys: 380, streak: '2 wks', accuracy: 80, struggling: false, quizzes: 14, grade: '4th', joined: 'Sep 2025',
+    interests: { tags: ['adventure', 'sports', 'humor'], readingStyle: 'fast', favoriteGenre: 'Adventure', onboarded: true }},
+  { id: 6, name: 'Grace Liu',        initials: 'GL', color: '#1E8449', level: 5.3, score: 835, keys: 610, streak: '7 wks', accuracy: 97, struggling: false, quizzes: 24, grade: '5th', joined: 'Aug 2025',
+    interests: { tags: ['fantasy', 'mystery', 'art'], readingStyle: 'detailed', favoriteGenre: 'Mystery', onboarded: true }},
+  { id: 7, name: 'Hassan Ali',       initials: 'HA', color: '#7C3AED', level: 3.5, score: 552, keys: 260, streak: '1 wk',  accuracy: 72, struggling: false, quizzes: 11, grade: '3rd', joined: 'Oct 2025',
+    interests: { tags: ['technology', 'science', 'adventure'], readingStyle: 'visual', favoriteGenre: 'Sci-Fi', onboarded: true }},
+  { id: 8, name: 'Isabella Martin',  initials: 'IM', color: '#E67E22', level: 4.8, score: 765, keys: 510, streak: '5 wks', accuracy: 91, struggling: false, quizzes: 20, grade: '5th', joined: 'Sep 2025',
+    interests: { tags: ['friendship', 'animals', 'art'], readingStyle: 'detailed', favoriteGenre: 'Realistic Fiction', onboarded: true }},
+  { id: 9, name: 'James Thompson',   initials: 'JT', color: '#D93B3B', level: 3.0, score: 445, keys: 145, streak: '\u2014',  accuracy: 55, struggling: true,  quizzes: 7,  grade: '3rd', joined: 'Oct 2025',
+    interests: { tags: [], readingStyle: null, favoriteGenre: null, onboarded: false }},
+];
+
+const assignments = [
+  { id: 'a1', date: '02/20/26', due: '02/21/26', type: 'quiz',       label: 'Book Quiz',            name: 'Charlotte\'s Web \u2014 Comprehension',  done: 0,  total: 23, status: 'pending',  keys: '\u2014',  dist: null },
+  { id: 'a2', date: '02/14/26', due: '\u2014',       type: 'assessment', label: 'Formative Assessment', name: 'Winter Reading Benchmark',           done: 23, total: 23, status: 'complete', keys: 1840, dist: { ex: 30, gd: 35, fr: 22, pr: 13, pn: 0 }},
+  { id: 'a3', date: '02/17/26', due: '02/19/26', type: 'quiz',       label: 'Book Quiz',            name: 'The One and Only Ivan \u2014 Quiz',     done: 18, total: 23, status: 'partial',  keys: 612,  dist: { ex: 25, gd: 30, fr: 20, pr: 5,  pn: 20 }},
+  { id: 'a4', date: '02/10/26', due: '02/14/26', type: 'challenge',  label: 'Reading Challenge',    name: 'February Mystery Genre Challenge',   done: 23, total: 23, status: 'complete', keys: 2300, dist: { ex: 40, gd: 35, fr: 15, pr: 10, pn: 0 }},
+  { id: 'a5', date: '02/05/26', due: '\u2014',       type: 'quiz',       label: 'Book Quiz',            name: 'Hatchet \u2014 Comprehension Quiz',     done: 21, total: 23, status: 'partial',  keys: 945,  dist: { ex: 20, gd: 40, fr: 25, pr: 5,  pn: 10 }},
+];
+
+const templates = [
+  { id: 't1', type: 'quiz',       name: 'Comprehension Quick Check', desc: 'A fast 10-question comprehension check for any book.', questions: 10, time: '15 min', level: 'Any' },
+  { id: 't2', type: 'assessment', name: 'Reading Level Benchmark',   desc: 'Full benchmark assessment for determining reading level.', questions: 20, time: '30 min', level: 'Auto' },
+  { id: 't3', type: 'quiz',       name: 'Deep Comprehension Quiz',   desc: 'In-depth quiz covering inference, theme, and vocabulary.', questions: 15, time: '25 min', level: '3.0\u20138.0' },
+  { id: 't4', type: 'assessment', name: 'Fluency & Comprehension',   desc: 'Measures both fluency and reading comprehension together.', questions: 12, time: '20 min', level: '1.0\u20133.5' },
+  { id: 't5', type: 'challenge',  name: 'Genre Explorer Challenge',  desc: 'Challenge students to explore a new genre with guided questions.', questions: 10, time: '15 min', level: 'Any' },
+  { id: 't6', type: 'assessment', name: 'Vocabulary in Context',     desc: 'Assess vocabulary understanding within reading passages.', questions: 15, time: '20 min', level: '2.0\u20136.0' },
+];
+
+const goals = [
+  { id: 'g1', title: 'Class reads 100 books by March',     current: 48,   target: 100,  due: '03/15/26', color: 'blue',   unit: 'books' },
+  { id: 'g2', title: 'Average comprehension above 85%',    current: 82,   target: 85,   due: '03/01/26', color: 'green',  unit: '%' },
+  { id: 'g3', title: 'Every student passes 3+ quizzes',    current: 19,   target: 23,   due: '02/28/26', color: 'purple', unit: 'students' },
+  { id: 'g4', title: 'Class earns 5,000 Keys',             current: 3247, target: 5000, due: '03/31/26', color: 'gold',   unit: 'Keys' },
+];
+
+const storeItems = [
+  { name: 'Homework Pass',  stock: 12, price: 50 },
+  { name: 'Extra Recess',   stock: 8,  price: 75 },
+  { name: 'Class DJ',       stock: 5,  price: 30 },
+  { name: 'Sit With Friend', stock: 15, price: 20 },
+  { name: 'Candy Jar',      stock: 20, price: 15 },
+];
+
+// Books loaded from API (populated on init)
+let books = [];
+
+const quizHistory = [
+  { date: '02/18/26', name: 'Charlotte\'s Web \u2014 Ch. 1-5',   origin: 'student', score: 92, keys: 45 },
+  { date: '02/14/26', name: 'Winter Reading Benchmark',      origin: 'teacher', score: 88, keys: 80 },
+  { date: '02/10/26', name: 'The One and Only Ivan',         origin: 'student', score: 95, keys: 55 },
+  { date: '02/07/26', name: 'February Mystery Challenge',    origin: 'teacher', score: 78, keys: 35 },
+  { date: '02/03/26', name: 'Hatchet \u2014 Comprehension',       origin: 'student', score: 85, keys: 40 },
+];
+
+// ---- Personalized Questions Demo ----
+const personalizedQuestions = {
+  original: "Why does Charlotte decide to help Wilbur? What does this tell us about friendship?",
+  personalized: {
+    sports:      "Think of Charlotte as a teammate who goes all-in to help Wilbur win. Why does she decide to help him? What does this tell us about being a great teammate?",
+    animals:     "Charlotte and Wilbur are very different animals. Why does Charlotte, a spider, decide to help Wilbur, a pig? What does their friendship teach us about caring for animals?",
+    science:     "Charlotte uses her web-spinning abilities in a creative way to save Wilbur. Why does she decide to help him? What does this tell us about using your unique skills for others?",
+    adventure:   "Wilbur faces a life-threatening danger and Charlotte embarks on a mission to save him. Why does she take on this challenge? What does this tell us about bravery in friendship?",
+    technology:  "Charlotte\u2019s web works like a message board that changes everyone\u2019s mind. Why does she use this \u2018technology\u2019 to help Wilbur? What does this show about creative problem-solving?",
+    humor:       "Charlotte has to come up with clever, catchy words for her web. Why does she go through all this effort for Wilbur? What makes their friendship so funny and special?",
+    fantasy:     "Charlotte\u2019s ability to write words in her web seems almost magical. Why does she use this talent to help Wilbur? What does their bond remind you of in fantasy stories?",
+    mystery:     "Charlotte hatches a secret plan that nobody sees coming. Why does she go to such lengths to help Wilbur? What clues does the author give us about her motives?",
+    friendship:  "Charlotte and Wilbur have one of the most famous friendships in literature. Why does Charlotte sacrifice so much? What does this teach us about true friendship?",
+    art:         "Charlotte\u2019s webs are described as beautiful works of art. Why does she use her creativity to help Wilbur? How does the author use Charlotte\u2019s art to tell the story?",
+    history:     "In the world of this farm, Charlotte changes history for Wilbur. Why does she decide to help? What does this story show about one individual making a difference?",
+    cooking:     "Charlotte helps save Wilbur from becoming someone\u2019s dinner! Why does she go to such lengths? What does this friendship teach us about protecting those we care about?",
+  }
+};
+
+// ---- Growth Data (6 months: Sep-Feb) ----
+const months = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb'];
+const growthData = {
+  0:  { scores: [650, 672, 695, 710, 728, 742], accuracy: [78, 81, 83, 85, 87, 89], keys: [40, 55, 72, 85, 95, 485], quizzes: [2, 5, 8, 11, 15, 18] },
+  1:  { scores: [610, 635, 655, 670, 685, 698], accuracy: [72, 75, 78, 80, 82, 84], keys: [30, 48, 65, 78, 90, 410], quizzes: [2, 4, 7, 10, 12, 15] },
+  2:  { scores: [720, 740, 758, 775, 795, 812], accuracy: [88, 90, 92, 93, 95, 96], keys: [55, 80, 110, 140, 165, 580], quizzes: [3, 6, 10, 14, 18, 22] },
+  3:  { scores: [420, 435, 448, 460, 472, 485], accuracy: [48, 50, 52, 54, 56, 58], keys: [15, 25, 38, 50, 62, 175], quizzes: [1, 2, 4, 5, 7, 9] },
+  4:  { scores: [635, 655, 672, 690, 705, 721], accuracy: [74, 76, 79, 81, 83, 85], keys: [38, 55, 75, 90, 105, 445], quizzes: [2, 5, 8, 11, 14, 17] },
+  5:  { scores: [600, 620, 640, 655, 672, 688], accuracy: [70, 72, 74, 76, 78, 80], keys: [28, 45, 60, 75, 88, 380], quizzes: [2, 4, 6, 9, 11, 14] },
+  6:  { scores: [740, 760, 778, 798, 818, 835], accuracy: [90, 92, 93, 95, 96, 97], keys: [60, 88, 120, 155, 185, 610], quizzes: [3, 7, 11, 15, 20, 24] },
+  7:  { scores: [470, 490, 508, 522, 538, 552], accuracy: [60, 63, 65, 67, 70, 72], keys: [20, 35, 50, 65, 78, 260], quizzes: [1, 3, 5, 7, 9, 11] },
+  8:  { scores: [670, 690, 712, 730, 748, 765], accuracy: [80, 83, 85, 87, 89, 91], keys: [45, 68, 92, 115, 138, 510], quizzes: [3, 6, 9, 13, 16, 20] },
+  9:  { scores: [390, 405, 415, 425, 435, 445], accuracy: [45, 47, 49, 51, 53, 55], keys: [10, 20, 32, 45, 58, 145], quizzes: [1, 2, 3, 4, 5, 7] },
+};
+
+// ---- State ----
+let page = 'quizzes';
+let detailId = null;
+let studentId = null;
+let templateFilter = 'all';
+let onboardingStep = 0;
+let onboardingStudent = null;
+let selectedInterests = [];
+let selectedReadingStyle = 'detailed';
+let reportStudentId = null;
+let currentUser = null; // { role: 'teacher'|'student'|'principal', name, ... }
+let userRole = 'teacher'; // Default role
+
+// ---- Helpers ----
+function scoreBadge(acc) {
+  if (acc >= 90) return { label: 'Excellent', cls: 'excellent', barColor: 'var(--green)' };
+  if (acc >= 80) return { label: 'Good',      cls: 'good',      barColor: '#5BBF8E' };
+  if (acc >= 70) return { label: 'Fair',      cls: 'fair',      barColor: 'var(--gold)' };
+  return { label: 'Poor', cls: 'poor', barColor: 'var(--red)' };
+}
+
+function statusPill(status) {
+  const map = { complete: 'Complete', partial: 'In Progress', pending: 'Pending' };
+  const cls = status === 'complete' ? 'complete' : status === 'partial' ? 'in-progress' : 'pending';
+  return `<span class="status-pill ${cls}"><span class="status-dot"></span>${map[status]}</span>`;
+}
+
+function distBar(dist) {
+  if (!dist) return '<span style="color:var(--g400);font-size:0.8125rem">\u2014</span>';
+  return `<div class="score-dist">
+    <div class="score-dist-seg excellent" style="width:${dist.ex}%"></div>
+    <div class="score-dist-seg good" style="width:${dist.gd}%"></div>
+    <div class="score-dist-seg fair" style="width:${dist.fr}%"></div>
+    <div class="score-dist-seg poor" style="width:${dist.pr}%"></div>
+    ${dist.pn ? `<div class="score-dist-seg pending" style="width:${dist.pn}%"></div>` : ''}
+  </div>`;
+}
+
+function avatar(s, size) {
+  const cls = size === 'lg' ? 'avatar lg' : 'avatar';
+  return `<div class="${cls}" style="background:${s.color}">${s.initials}</div>`;
+}
+
+function warnTag(s) {
+  return s.struggling ? `<span class="warn-tag">${IC.warn}Needs support</span>` : '';
+}
+
+function keysDisp(k) {
+  if (k === '\u2014' || k === null || k === undefined) return '<span style="color:var(--g400)">\u2014</span>';
+  return `<span class="keys-display">${IC.key}${typeof k === 'number' ? k.toLocaleString() : k}</span>`;
+}
+
+function streakDisp(s) {
+  if (!s || s === '\u2014') return '<span style="color:var(--g400)">\u2014</span>';
+  return `<span class="streak-display">${IC.fire}${s}</span>`;
+}
+
+function pct(current, target) {
+  return Math.min(Math.round((current / target) * 100), 100);
+}
+
+// ---- Personalization Helpers ----
+function interestTags(s) {
+  if (!s.interests || !s.interests.tags.length) {
+    return '<span class="interest-empty">No interests set</span>';
+  }
+  return s.interests.tags.map(tagId => {
+    const cat = interestCategories.find(c => c.id === tagId);
+    if (!cat) return '';
+    return `<span class="interest-tag ${cat.color}">${cat.label}</span>`;
+  }).join('');
+}
+
+function interestTagsCompact(s, max) {
+  if (!s.interests || !s.interests.onboarded || !s.interests.tags.length) return '';
+  const shown = s.interests.tags.slice(0, max || 2);
+  const extra = s.interests.tags.length - shown.length;
+  let html = shown.map(tagId => {
+    const cat = interestCategories.find(c => c.id === tagId);
+    if (!cat) return '';
+    return `<span class="interest-tag-sm ${cat.color}">${cat.label}</span>`;
+  }).join('');
+  if (extra > 0) html += `<span class="interest-tag-more">+${extra}</span>`;
+  return html;
+}
+
+function personalizationBadge() {
+  return `<span class="personalization-badge">${IC.sparkle} AI Personalized</span>`;
+}
+
+function growthArrow(start, end) {
+  if (start === 0) return '';
+  const change = Math.round(((end - start) / start) * 100);
+  if (change > 0) return `<span class="growth-arrow up">${IC.arrowUp}+${change}%</span>`;
+  if (change < 0) return `<span class="growth-arrow down">${IC.arrowDown}${change}%</span>`;
+  return `<span class="growth-arrow steady">\u2014 0%</span>`;
+}
+
+function miniChart(data, color, w, h) {
+  w = w || 80; h = h || 28;
+  const min = Math.min(...data); const max = Math.max(...data);
+  const range = max - min || 1;
+  const pts = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * w;
+    const y = h - ((v - min) / range) * (h - 4) - 2;
+    return `${x},${y}`;
+  }).join(' ');
+  return `<svg class="mini-chart" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function svgAreaChart(data, labels, color, w, h) {
+  w = w || 600; h = h || 200;
+  const pad = { top: 20, right: 20, bottom: 30, left: 50 };
+  const cw = w - pad.left - pad.right;
+  const ch = h - pad.top - pad.bottom;
+  const min = Math.min(...data) - 20;
+  const max = Math.max(...data) + 20;
+  const range = max - min || 1;
+
+  const pts = data.map((v, i) => {
+    const x = pad.left + (i / (data.length - 1)) * cw;
+    const y = pad.top + ch - ((v - min) / range) * ch;
+    return { x, y, v };
+  });
+
+  const linePoints = pts.map(p => `${p.x},${p.y}`).join(' ');
+  const areaPoints = `${pts[0].x},${pad.top + ch} ${linePoints} ${pts[pts.length-1].x},${pad.top + ch}`;
+
+  // Gridlines
+  const gridCount = 4;
+  let gridLines = '';
+  for (let i = 0; i <= gridCount; i++) {
+    const y = pad.top + (i / gridCount) * ch;
+    const val = Math.round(max - (i / gridCount) * range);
+    gridLines += `<line x1="${pad.left}" y1="${y}" x2="${w - pad.right}" y2="${y}" stroke="var(--g200)" stroke-width="1"/>`;
+    gridLines += `<text x="${pad.left - 8}" y="${y + 4}" text-anchor="end" fill="var(--g400)" font-size="11">${val}</text>`;
+  }
+
+  // X labels
+  let xLabels = labels.map((l, i) => {
+    const x = pad.left + (i / (labels.length - 1)) * cw;
+    return `<text x="${x}" y="${h - 6}" text-anchor="middle" fill="var(--g400)" font-size="11">${l}</text>`;
+  }).join('');
+
+  // Dots
+  let dots = pts.map(p => `<circle cx="${p.x}" cy="${p.y}" r="4" fill="${color}" stroke="#fff" stroke-width="2"/>`).join('');
+  let dotLabels = pts.map(p => `<text x="${p.x}" y="${p.y - 10}" text-anchor="middle" fill="var(--g700)" font-size="11" font-weight="600">${p.v}</text>`).join('');
+
+  return `<svg class="svg-chart" viewBox="0 0 ${w} ${h}" width="100%" preserveAspectRatio="xMidYMid meet">
+    ${gridLines}
+    <polygon points="${areaPoints}" fill="${color}" opacity="0.08"/>
+    <polyline points="${linePoints}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${dots}
+    ${dotLabels}
+    ${xLabels}
+  </svg>`;
+}
+
+// ---- Render Sidebar ----
+function renderSidebar() {
+  let items;
+  if (userRole === 'student') {
+    items = [
+      { section: 'My Learning' },
+      { id: 'student-dashboard', icon: IC.target, label: 'My Dashboard' },
+      { id: 'student-quizzes',   icon: IC.clip,   label: 'My Quizzes', badge: '2', badgeCls: 'red' },
+      { id: 'library',           icon: IC.book,   label: 'Book Library' },
+      { id: 'student-progress',  icon: IC.chart,  label: 'My Progress' },
+      { section: 'Fun' },
+      { id: 'store',             icon: IC.bag,    label: 'Class Store', badge: '5', badgeCls: 'gold' },
+      { id: 'student-badges',    icon: IC.star,   label: 'My Badges' },
+    ];
+  } else if (userRole === 'principal') {
+    items = [
+      { section: 'School Overview' },
+      { id: 'principal-dashboard', icon: IC.target, label: 'Dashboard' },
+      { id: 'principal-classes',   icon: IC.users,  label: 'All Classes', badge: '4', badgeCls: 'blue' },
+      { id: 'reports',             icon: IC.chart,  label: 'Growth Reports' },
+      { section: 'Management' },
+      { id: 'principal-teachers',  icon: IC.user,   label: 'Teachers' },
+      { id: 'library',             icon: IC.book,   label: 'Book Library' },
+      { section: 'Tools' },
+      { id: 'principal-settings',  icon: IC.gear,   label: 'School Settings' },
+    ];
+  } else {
+    items = [
+      { section: 'Dashboard' },
+      { id: 'quizzes',    icon: IC.clip,  label: 'Quizzes & Assessments', badge: '3', badgeCls: 'red' },
+      { id: 'students',   icon: IC.users, label: 'Students',             badge: '10', badgeCls: 'blue' },
+      { id: 'goals',      icon: IC.trend, label: 'Class Goals' },
+      { id: 'reports',    icon: IC.chart, label: 'Growth Reports' },
+      { id: 'templates',  icon: IC.grid,  label: 'Quiz Templates' },
+      { section: 'Management' },
+      { id: 'store',      icon: IC.bag,   label: 'Class Store',          badge: '5', badgeCls: 'gold' },
+      { id: 'library',    icon: IC.book,  label: 'Book Library' },
+      { section: 'Tools' },
+      { id: 'celebrate',  icon: IC.star,  label: 'Celebrate Students' },
+      { id: 'aitools',    icon: IC.bulb,  label: 'AI Teaching Tools' },
+    ];
+  }
+
+  const userName = currentUser?.name || 'Sarah Johnson';
+  const userInitials = userName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  const roleLabel = userRole === 'student' ? (currentUser?.grade || '4th') + ' Grade Student' :
+                    userRole === 'principal' ? 'School Principal' :
+                    (currentUser?.grade || '4th') + ' Grade Teacher';
+
+  let html = `
+    <div class="sidebar-brand">
+      ${IC.key}
+      <span>key2read</span>
+    </div>
+    <nav class="sidebar-nav">`;
+
+  items.forEach(item => {
+    if (item.section) {
+      html += `<div class="sidebar-section"><div class="sidebar-section-label">${item.section}</div></div>`;
+      return;
+    }
+    const active = page === item.id ? 'active' : '';
+    const badge = item.badge ? `<span class="item-badge ${item.badgeCls}">${item.badge}</span>` : '';
+    html += `<button class="sidebar-item ${active}" onclick="navigate('${item.id}')">${item.icon}<span>${item.label}</span>${badge}</button>`;
+  });
+
+  html += `</nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-avatar">${userInitials}</div>
+      <div>
+        <div class="sidebar-user-name">${userName}</div>
+        <div class="sidebar-user-role">${roleLabel}</div>
+      </div>
+    </div>`;
+
+  document.getElementById('sidebar').innerHTML = html;
+}
+
+// ---- Render Header ----
+function renderHeader() {
+  document.getElementById('dash-header').innerHTML = `
+    <div class="header-tabs">
+      <button class="header-tab active">Reading</button>
+      <button class="header-tab">Vocabulary</button>
+    </div>
+    <div class="header-search">
+      ${IC.search}
+      <input type="text" placeholder="Search students, books, quizzes...">
+    </div>
+    <div class="header-actions">
+      <button class="header-icon-btn">${IC.bell}<span class="notif-dot"></span></button>
+      <button class="header-icon-btn">${IC.gear}</button>
+    </div>`;
+}
+
+// ---- Navigate ----
+function navigate(p, detail, sid) {
+  page = p;
+  detailId = detail != null ? detail : null;
+  studentId = sid != null ? sid : null;
+  if (p !== 'reports') reportStudentId = null;
+  renderSidebar();
+  renderMain();
+}
+
+// ---- Render Main ----
+function renderMain() {
+  const el = document.getElementById('dash-main');
+  switch (page) {
+    // Teacher pages
+    case 'quizzes':
+      if (detailId) { el.innerHTML = renderAssignmentDetail(); break; }
+      el.innerHTML = renderQuizzes();
+      break;
+    case 'students':
+      if (studentId !== null) { el.innerHTML = renderStudentProfile(); break; }
+      el.innerHTML = renderStudents();
+      break;
+    case 'templates':  el.innerHTML = renderTemplates(); break;
+    case 'goals':      el.innerHTML = renderGoals(); break;
+    case 'store':      el.innerHTML = renderStore(); break;
+    case 'library':    el.innerHTML = renderLibrary(); break;
+    case 'celebrate':  el.innerHTML = renderCelebrate(); break;
+    case 'aitools':    el.innerHTML = renderAITools(); break;
+    case 'reports':
+      if (reportStudentId !== null) { el.innerHTML = renderStudentReport(); break; }
+      el.innerHTML = renderReports();
+      break;
+    case 'quiz-player':
+      el.innerHTML = '<div id="quiz-player-root"></div>';
+      break;
+    // Student pages
+    case 'student-dashboard':  el.innerHTML = renderStudentDashboard(); break;
+    case 'student-quizzes':    el.innerHTML = renderStudentQuizzes(); break;
+    case 'student-progress':   el.innerHTML = renderStudentProgress(); break;
+    case 'student-badges':     el.innerHTML = renderStudentBadges(); break;
+    // Principal pages
+    case 'principal-dashboard': el.innerHTML = renderPrincipalDashboard(); break;
+    case 'principal-classes':   el.innerHTML = renderPrincipalClasses(); break;
+    case 'principal-teachers':  el.innerHTML = renderPrincipalTeachers(); break;
+    case 'principal-settings':  el.innerHTML = renderPrincipalSettings(); break;
+    default:
+      if (userRole === 'student') el.innerHTML = renderStudentDashboard();
+      else if (userRole === 'principal') el.innerHTML = renderPrincipalDashboard();
+      else el.innerHTML = renderQuizzes();
+  }
+}
+
+// ---- Launch Quiz Player ----
+async function launchQuiz(bookId, chapterNum, sid, personalize) {
+  const s = sid != null ? students.find(st => st.id === sid) : students[0];
+  page = 'quiz-player';
+  renderSidebar();
+  renderMain();
+
+  const playerRoot = document.getElementById('quiz-player-root');
+  const loadMsg = personalize ? 'Generating personalized questions with AI' : 'Loading chapter questions';
+  if (playerRoot) playerRoot.innerHTML = '<div style="text-align:center;padding:60px;color:var(--g400)"><div style="font-size:2rem;margin-bottom:12px">📖</div>Loading quiz...<br><small>' + loadMsg + '</small></div>';
+
+  try {
+    const quizData = await API.getChapterQuiz(bookId, chapterNum);
+    // Get book info
+    let book = books.find(b => b.id === bookId);
+    if (!book) {
+      try { const allBooks = await API.getBooks(); book = allBooks.find(b => b.id === bookId); } catch(e) {}
+    }
+    if (!book) book = { title: 'Book Quiz', author: '' };
+
+    // Only personalize for assessments (not book quizzes from library)
+    if (personalize && s && s.interests && s.interests.onboarded) {
+      try {
+        const personalized = await API.personalizeAll(quizData.chapter.id, s.id);
+        if (personalized.questions) quizData.questions = personalized.questions;
+      } catch(e) { /* Use standard questions */ }
+    }
+
+    QuizEngine.start({ chapter: quizData.chapter, questions: quizData.questions, book }, s, (results) => {
+      // Quiz completed callback — refresh student data
+      if (s) {
+        s.score = results.newReadingScore || s.score;
+        s.reading_level = results.newReadingLevel || s.reading_level;
+        s.keys = (s.keys || 0) + (results.keysEarned || 0);
+        s.quizzes = (s.quizzes || 0) + 1;
+      }
+    });
+    QuizEngine.render();
+  } catch(e) {
+    playerRoot.innerHTML = '<div style="text-align:center;padding:60px;color:var(--g400)"><div style="font-size:2rem;margin-bottom:12px">⚠️</div>Could not load quiz.<br><small>' + (e.message || 'Check that the server is running') + '</small><br><br><button class="btn btn-outline" onclick="navigate(\'quizzes\')">Back to Dashboard</button></div>';
+  }
+}
+
+// ---- Page: Quizzes & Assessments ----
+function renderQuizzes() {
+  const avgAcc = students.length > 0 ? Math.round(students.reduce((s, st) => s + st.accuracy, 0) / students.length) : 0;
+  const totalKeys = students.reduce((s, st) => s + st.keys, 0);
+  const totalBooks = books.length;
+  const onboardedCount = students.filter(s => s.interests && s.interests.onboarded).length;
+  const pctPersonalized = students.length > 0 ? Math.round((onboardedCount / students.length) * 100) : 0;
+  const classCode = currentUser?.classCode || '';
+
+  return `
+    ${classCode ? `
+    <div class="class-code-banner">
+      <div class="class-code-banner-left">
+        <div class="class-code-banner-icon">${IC.users}</div>
+        <div>
+          <div class="class-code-banner-label">Your Class Code</div>
+          <div class="class-code-banner-desc">Share this code with students so they can join your class.</div>
+        </div>
+      </div>
+      <div class="class-code-banner-right">
+        <span class="class-code-value">${classCode}</span>
+        <button class="btn btn-sm btn-outline" onclick="navigator.clipboard.writeText('${classCode}'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
+      </div>
+    </div>` : ''}
+
+    <div class="page-header">
+      <h1>Quizzes & Assessments <span class="badge badge-blue">${assignments.length}</span></h1>
+      <div class="page-header-actions">
+        <button class="btn btn-outline btn-sm" onclick="openModal('assign')">Assign Assessment</button>
+        <button class="btn btn-primary btn-sm" onclick="navigate('templates')">Browse Templates</button>
+      </div>
+    </div>
+
+    <div class="stat-cards stat-cards-5">
+      <div class="stat-card">
+        <div class="stat-card-label">Class Reading Score</div>
+        <div class="stat-card-value">724 <span class="stat-card-trend up">${IC.arrowUp}12%</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Avg Comprehension</div>
+        <div class="stat-card-value">${avgAcc}% <span class="stat-card-trend up">${IC.arrowUp}3 pts</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Keys This Week</div>
+        <div class="stat-card-value">${totalKeys.toLocaleString()} <span class="stat-card-trend down">${IC.arrowDown}5%</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Books Completed</div>
+        <div class="stat-card-value">${totalBooks}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Personalized</div>
+        <div class="stat-card-value">${pctPersonalized}% <span class="stat-card-trend up">${IC.sparkle}</span></div>
+      </div>
+    </div>
+
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Assigned</th>
+            <th>Due</th>
+            <th>Activity</th>
+            <th>Results</th>
+            <th>Keys</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${assignments.map(a => `
+            <tr onclick="navigate('quizzes','${a.id}')">
+              <td>${a.date}</td>
+              <td>${a.due}</td>
+              <td>
+                <div class="activity-cell">
+                  <span class="type-label ${a.type}">${a.label}</span>
+                  <span class="activity-name">${a.name}</span>
+                </div>
+              </td>
+              <td>
+                <div class="results-cell">
+                  <span class="results-count">${a.done}/${a.total} completed</span>
+                  ${distBar(a.dist)}
+                </div>
+              </td>
+              <td>${keysDisp(a.keys)}</td>
+              <td><button class="btn btn-sm btn-ghost">${IC.eye} View</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ---- Page: Assignment Detail ----
+function renderAssignmentDetail() {
+  const a = assignments.find(x => x.id === detailId);
+  if (!a) return '<p>Assignment not found.</p>';
+
+  return `
+    <button class="back-btn" onclick="navigate('quizzes')">${IC.arrowLeft} Back to Quizzes</button>
+
+    <div class="detail-header">
+      <div class="detail-header-bar ${a.type}"></div>
+      <div class="detail-header-body">
+        <div class="detail-header-top">
+          <div>
+            <span class="badge badge-${a.type === 'quiz' ? 'blue' : a.type === 'assessment' ? 'purple' : 'orange'}">${a.label}</span>
+            <h2>${a.name}</h2>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn btn-ghost btn-sm">${IC.printer} Print</button>
+            <button class="btn btn-outline btn-sm">${IC.download} Export</button>
+          </div>
+        </div>
+        <div class="detail-header-meta">
+          <span>${IC.calendar} Assigned: ${a.date}</span>
+          <span>${IC.calendar} Due: ${a.due}</span>
+          <span>${statusPill(a.status)}</span>
+        </div>
+        <div class="detail-header-stats">
+          <div class="detail-stat">
+            <div class="detail-stat-value">${a.done}/${a.total}</div>
+            <div class="detail-stat-label">Completed</div>
+          </div>
+          <div class="detail-stat">
+            <div class="detail-stat-value">${keysDisp(a.keys)}</div>
+            <div class="detail-stat-label">Keys Earned</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Level</th>
+            <th>Reading Score</th>
+            <th>Accuracy</th>
+            <th>Personalization</th>
+            <th>Keys</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${students.map(s => {
+            const sb = scoreBadge(s.accuracy);
+            const pBadge = s.interests && s.interests.onboarded
+              ? `<div class="flex items-center gap-8">${personalizationBadge()}</div>`
+              : '<span class="interest-empty">Standard</span>';
+            return `
+            <tr onclick="navigate('students',null,${s.id})">
+              <td><div class="student-cell">${avatar(s)} <span class="student-name">${s.name}</span> ${warnTag(s)}</div></td>
+              <td>${s.level}</td>
+              <td>${s.score}</td>
+              <td>
+                <span class="score-badge ${sb.cls}">${s.accuracy}% ${sb.label}</span>
+                <div class="mini-progress"><div class="mini-progress-bar" style="width:${s.accuracy}%;background:${sb.barColor}"></div></div>
+              </td>
+              <td>${pBadge}</td>
+              <td>${keysDisp(s.keys)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ---- Page: Students ----
+function renderStudents() {
+  const sorted = [...students].sort((a, b) => b.score - a.score);
+  return `
+    <div class="page-header">
+      <h1>Students <span class="badge badge-blue">${students.length}</span></h1>
+    </div>
+
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Level</th>
+            <th>Score</th>
+            <th>Accuracy</th>
+            <th>Interests</th>
+            <th>Keys</th>
+            <th>Streak</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sorted.map(s => {
+            const sb = scoreBadge(s.accuracy);
+            const intCell = s.interests && s.interests.onboarded
+              ? `<div class="interest-tags-compact">${interestTagsCompact(s, 2)}</div>`
+              : `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); onboardingStudent=${s.id}; onboardingStep=0; selectedInterests=[]; openModal('onboarding',${s.id})">${IC.heart} Set Up</button>`;
+            return `
+            <tr onclick="navigate('students',null,${s.id})">
+              <td><div class="student-cell">${avatar(s)} <span class="student-name">${s.name}</span> ${warnTag(s)}</div></td>
+              <td>${s.level}</td>
+              <td><strong>${s.score}</strong></td>
+              <td>
+                <span class="score-badge ${sb.cls}">${s.accuracy}% ${sb.label}</span>
+                <div class="mini-progress"><div class="mini-progress-bar" style="width:${s.accuracy}%;background:${sb.barColor}"></div></div>
+              </td>
+              <td>${intCell}</td>
+              <td>${keysDisp(s.keys)}</td>
+              <td>${streakDisp(s.streak)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ---- Page: Student Profile ----
+function renderStudentProfile() {
+  const s = students.find(x => x.id === studentId);
+  if (!s) return '<p>Student not found.</p>';
+  const sb = scoreBadge(s.accuracy);
+  const gd = growthData[s.id];
+  const readingStyleLabels = { detailed: 'Detailed Reader', visual: 'Visual Learner', fast: 'Speed Reader' };
+
+  // Interest profile section
+  let interestSection = '';
+  if (s.interests && s.interests.onboarded) {
+    interestSection = `
+      <div class="interest-profile-card">
+        <div class="interest-profile-header">
+          <h3>${IC.heart} Interest Profile ${personalizationBadge()}</h3>
+          <button class="btn btn-sm btn-ghost" onclick="onboardingStudent=${s.id}; onboardingStep=0; selectedInterests=[...students[${s.id}].interests.tags]; openModal('onboarding',${s.id})">Edit</button>
+        </div>
+        <div class="interest-profile-body">
+          <div class="interest-profile-row">
+            <span class="interest-profile-label">Interests</span>
+            <div class="interest-tags-wrap">${interestTags(s)}</div>
+          </div>
+          <div class="interest-profile-row">
+            <span class="interest-profile-label">Reading Style</span>
+            <span class="badge badge-blue">${readingStyleLabels[s.interests.readingStyle] || 'Not set'}</span>
+          </div>
+          <div class="interest-profile-row">
+            <span class="interest-profile-label">Fav Genre</span>
+            <span style="color:var(--g700);font-weight:500">${s.interests.favoriteGenre}</span>
+          </div>
+        </div>
+      </div>`;
+  } else {
+    interestSection = `
+      <div class="interest-cta-card">
+        <h3>${IC.sparkle} Personalize ${s.name.split(' ')[0]}'s Experience</h3>
+        <p>Set up their interest profile to enable AI-personalized quizzes and assessments that match topics they care about.</p>
+        <button class="btn btn-primary btn-sm" onclick="onboardingStudent=${s.id}; onboardingStep=0; selectedInterests=[]; openModal('onboarding',${s.id})">Start Setup</button>
+      </div>`;
+  }
+
+  return `
+    <button class="back-btn" onclick="navigate('students')">${IC.arrowLeft} Back to Students</button>
+
+    <div class="profile-header">
+      ${avatar(s, 'lg')}
+      <div class="profile-info">
+        <h2>${s.name} ${warnTag(s)}</h2>
+        <div class="profile-meta">
+          <span>Level ${s.level}</span>
+          <span>Grade: ${s.grade}</span>
+          <span>Joined: ${s.joined}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-stats">
+      <div class="profile-stat-card">
+        <div class="stat-icon blue">${IC.barChart}</div>
+        <div class="profile-stat-value">${s.score}</div>
+        <div class="profile-stat-label">Reading Score</div>
+        ${gd ? `<div style="margin-top:6px">${miniChart(gd.scores, 'var(--blue)')}</div>` : ''}
+      </div>
+      <div class="profile-stat-card">
+        <div class="stat-icon green">${IC.check}</div>
+        <div class="profile-stat-value">${s.accuracy}%</div>
+        <div class="profile-stat-label">Accuracy</div>
+        ${gd ? `<div style="margin-top:6px">${miniChart(gd.accuracy, 'var(--green)')}</div>` : ''}
+      </div>
+      <div class="profile-stat-card">
+        <div class="stat-icon gold">${IC.key}</div>
+        <div class="profile-stat-value">${s.keys}</div>
+        <div class="profile-stat-label">Keys</div>
+      </div>
+      <div class="profile-stat-card">
+        <div class="stat-icon orange">${IC.fire}</div>
+        <div class="profile-stat-value">${s.streak === '\u2014' ? '0' : s.streak}</div>
+        <div class="profile-stat-label">Streak</div>
+      </div>
+      <div class="profile-stat-card">
+        <div class="stat-icon purple">${IC.hash}</div>
+        <div class="profile-stat-value">${s.quizzes}</div>
+        <div class="profile-stat-label">Quizzes</div>
+      </div>
+    </div>
+
+    ${interestSection}
+
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Book / Assessment</th>
+            <th>Origin</th>
+            <th>Score</th>
+            <th>Keys</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${quizHistory.map(q => {
+            const qsb = scoreBadge(q.score);
+            return `
+            <tr>
+              <td>${q.date}</td>
+              <td><strong>${q.name}</strong></td>
+              <td>
+                ${q.origin === 'student'
+                  ? `<span class="origin-badge student">${IC.bookOpen} Student Initiated</span>`
+                  : `<span class="origin-badge teacher">${IC.target} Teacher Assigned</span>`
+                }
+              </td>
+              <td><span class="score-badge ${qsb.cls}">${q.score}% ${qsb.label}</span></td>
+              <td>${keysDisp(q.keys)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ---- Page: Quiz Templates ----
+function renderTemplates() {
+  const filtered = templateFilter === 'all'
+    ? templates
+    : templates.filter(t => t.type === templateFilter);
+
+  const chips = [
+    { id: 'all', label: 'All' },
+    { id: 'quiz', label: 'Quizzes' },
+    { id: 'assessment', label: 'Assessments' },
+    { id: 'challenge', label: 'Challenges' },
+  ];
+
+  return `
+    <div class="page-header">
+      <h1>Quiz Templates</h1>
+      <div class="page-header-actions">
+        <button class="btn btn-primary btn-sm" onclick="openModal('template')">${IC.plus} Create Custom</button>
+      </div>
+    </div>
+
+    <div class="template-filters">
+      ${chips.map(c => `<button class="filter-chip ${templateFilter === c.id ? 'active' : ''}" onclick="setFilter('${c.id}')">${c.label}</button>`).join('')}
+    </div>
+
+    <div class="template-grid">
+      ${filtered.map(t => `
+        <div class="template-card" onclick="openModal('assign','${t.name}')">
+          <div class="template-card-bar ${t.type}"></div>
+          <div class="template-card-body">
+            <span class="badge badge-${t.type === 'quiz' ? 'blue' : t.type === 'assessment' ? 'purple' : 'orange'}">${t.type.charAt(0).toUpperCase() + t.type.slice(1)}</span>
+            <h3>${t.name}</h3>
+            <p>${t.desc}</p>
+            <div class="template-card-meta">
+              <span>${IC.hash} ${t.questions} questions</span>
+              <span>${IC.clock} ${t.time}</span>
+              <span>${IC.layers} ${t.level}</span>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+function setFilter(f) {
+  templateFilter = f;
+  renderMain();
+}
+
+// ---- Page: Class Goals ----
+function renderGoals() {
+  return `
+    <div class="page-header">
+      <h1>Class Goals</h1>
+      <div class="page-header-actions">
+        <button class="btn btn-primary btn-sm" onclick="openModal('goal')">${IC.plus} Add Goal</button>
+      </div>
+    </div>
+
+    <div class="goals-grid">
+      ${goals.map(g => {
+        const p = pct(g.current, g.target);
+        return `
+        <div class="goal-card">
+          <div class="goal-card-header">
+            <h3>${g.title}</h3>
+            <span class="goal-due">${IC.calendar} Due ${g.due}</span>
+          </div>
+          <div class="goal-progress">
+            <div class="goal-progress-bar">
+              <div class="goal-progress-fill ${g.color}" style="width:${p}%"></div>
+            </div>
+          </div>
+          <div class="goal-stats">
+            <span class="goal-current">${typeof g.current === 'number' && g.unit === '%' ? g.current + '%' : g.current.toLocaleString()} / ${typeof g.target === 'number' && g.unit === '%' ? g.target + '%' : g.target.toLocaleString()} ${g.unit}</span>
+            <span class="goal-pct" style="color:var(--${g.color})">${p}%</span>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="info-panel">
+      <h4>${IC.info} How Class Goals Work</h4>
+      <p>Goals update automatically as students complete quizzes and earn Keys. Students can see shared goals on their own dashboards, building a sense of class community and collective achievement. When a goal is reached, consider celebrating with a class reward from the Class Store.</p>
+    </div>`;
+}
+
+// ---- Page: Class Store ----
+function renderStore() {
+  return `
+    <div class="page-header">
+      <h1>Class Store <span class="badge badge-gold">${storeItems.length}</span></h1>
+      <div class="page-header-actions">
+        <button class="btn btn-primary btn-sm">${IC.plus} Add Reward</button>
+      </div>
+    </div>
+
+    <div class="list-card">
+      ${storeItems.map(item => `
+        <div class="list-item">
+          <div class="list-item-info">
+            <span class="list-item-name">${item.name}</span>
+            <span class="list-item-sub">${item.stock} in stock</span>
+          </div>
+          <div class="list-item-right">
+            ${keysDisp(item.price)}
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+// ---- Page: Book Library ----
+function renderLibrary() {
+  if (books.length === 0) {
+    return `
+      <div class="page-header">
+        <h1>Book Library</h1>
+      </div>
+      <div class="list-card" style="padding:48px;text-align:center;color:var(--g400)">
+        <p>Loading books...</p>
+      </div>`;
+  }
+
+  return `
+    <div class="page-header">
+      <h1>Book Library <span class="badge badge-blue">${books.length}</span></h1>
+    </div>
+
+    <div class="book-grid">
+      ${books.map(b => {
+        const coverUrl = b.cover_url || '';
+        const level = b.grade_level || b.lexile_level || '';
+        const genre = b.genre || '';
+        return `
+        <div class="book-card" onclick="launchQuiz(${b.id}, 1, ${currentUser?.studentId || 0}, false)">
+          <div class="book-card-cover">
+            ${coverUrl
+              ? `<img src="${coverUrl}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+              : ''}
+            <div class="book-card-cover-fallback" ${coverUrl ? 'style="display:none"' : ''}>
+              ${IC.book}
+              <span>${b.title.substring(0, 20)}</span>
+            </div>
+          </div>
+          <div class="book-card-info">
+            <h4 class="book-card-title">${b.title}</h4>
+            <p class="book-card-author">${b.author || ''}</p>
+            <div class="book-card-meta">
+              ${level ? `<span class="badge badge-blue">${level}</span>` : ''}
+              ${genre ? `<span class="badge badge-outline">${genre}</span>` : ''}
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ---- Page: Celebrate Students ----
+function renderCelebrate() {
+  const sorted = [...students].sort((a, b) => b.score - a.score);
+  const topReader = sorted[0];
+  const mostImproved = students[0];
+  const longestStreak = students[6];
+  const mostQuizzes = students[6];
+
+  const awards = [
+    { title: 'Top Reader',     icon: 'gold',   student: topReader,     stat: `Score: ${topReader.score}` },
+    { title: 'Most Improved',  icon: 'green',  student: mostImproved,  stat: `+12% this month` },
+    { title: 'Longest Streak', icon: 'orange', student: longestStreak, stat: longestStreak.streak },
+    { title: 'Most Quizzes',   icon: 'blue',   student: mostQuizzes,   stat: `${mostQuizzes.quizzes} quizzes` },
+  ];
+
+  return `
+    <div class="page-header">
+      <h1>Celebrate Students</h1>
+    </div>
+
+    <div class="awards-grid">
+      ${awards.map(aw => `
+        <div class="award-card">
+          <div class="award-card-icon ${aw.icon}">${IC.star}</div>
+          <h3>${aw.title}</h3>
+          <div class="award-student">
+            ${avatar(aw.student)}
+            <span class="award-student-name">${aw.student.name}</span>
+            <span class="award-student-score">${aw.stat}</span>
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+// ---- Page: AI Teaching Tools ----
+function renderAITools() {
+  const tools = [
+    { name: 'Generate Quiz Questions',   desc: 'Create custom comprehension questions for any book using AI.', barColor: 'blue',   iconColor: 'blue',   icon: IC.layers },
+    { name: 'Struggling Reader Report',  desc: 'Get an AI-generated analysis of students who need additional support.', barColor: 'red',    iconColor: 'red',    icon: IC.warn },
+    { name: 'Reading Level Predictor',   desc: 'Predict where each student\'s reading level will be in 30/60/90 days.', barColor: 'green',  iconColor: 'green',  icon: IC.trend },
+    { name: 'Adaptive Recommendations',  desc: 'AI-powered book recommendations matched to each student\'s level and interests.', barColor: 'purple', iconColor: 'purple', icon: IC.target },
+    { name: 'Parent Report Generator',   desc: 'Auto-generate parent-friendly progress reports with actionable insights.', barColor: 'orange', iconColor: 'orange', icon: IC.download },
+    { name: 'Vocabulary Gap Analysis',   desc: 'Identify vocabulary gaps across your class based on quiz performance data.', barColor: 'gold',   iconColor: 'gold',   icon: IC.activity },
+  ];
+
+  return `
+    <div class="page-header">
+      <h1>AI Teaching Tools</h1>
+    </div>
+
+    <div class="tools-grid">
+      ${tools.map(t => `
+        <div class="tool-card">
+          <div class="tool-card-bar ${t.barColor}"></div>
+          <div class="tool-card-body">
+            <div class="tool-card-icon ${t.iconColor}">${t.icon}</div>
+            <h3>${t.name}</h3>
+            <p>${t.desc}</p>
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+// ---- Page: Growth Reports (Class View) ----
+function renderReports() {
+  // Aggregate class data
+  const classScores = months.map((_, mi) => {
+    return Math.round(students.reduce((sum, s) => sum + growthData[s.id].scores[mi], 0) / students.length);
+  });
+  const classAccuracy = months.map((_, mi) => {
+    return Math.round(students.reduce((sum, s) => sum + growthData[s.id].accuracy[mi], 0) / students.length);
+  });
+  const totalKeysAll = students.reduce((s, st) => s + st.keys, 0);
+  const improvingCount = students.filter(s => {
+    const gd = growthData[s.id];
+    return gd.scores[5] > gd.scores[0];
+  }).length;
+
+  return `
+    <div class="page-header">
+      <h1>${IC.chart} Growth Reports</h1>
+      <div class="page-header-actions">
+        <button class="btn btn-ghost btn-sm">${IC.printer} Print Report</button>
+        <button class="btn btn-primary btn-sm">${IC.download} Export PDF</button>
+      </div>
+    </div>
+
+    <div class="report-header-card">
+      <div class="report-header-bar"></div>
+      <div class="report-header-body">
+        <div class="report-header-top">
+          <div>
+            <h2>Class Growth Report</h2>
+            <div class="report-meta">
+              <span>Sarah Johnson's 4th Grade Class</span>
+              <span>${IC.calendar} Sep 2025 \u2014 Feb 2026</span>
+              <span>${students.length} Students</span>
+            </div>
+          </div>
+          <div class="report-share-badge">
+            <span class="badge badge-green">${IC.check} Ready to Share</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-cards">
+      <div class="stat-card">
+        <div class="stat-card-label">Avg Reading Score</div>
+        <div class="stat-card-value">${classScores[5]} ${growthArrow(classScores[0], classScores[5])}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Avg Accuracy</div>
+        <div class="stat-card-value">${classAccuracy[5]}% ${growthArrow(classAccuracy[0], classAccuracy[5])}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Total Keys Earned</div>
+        <div class="stat-card-value">${totalKeysAll.toLocaleString()}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Students Improving</div>
+        <div class="stat-card-value">${improvingCount}/${students.length}</div>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <h3>Class Reading Score Trend</h3>
+      <p class="chart-subtitle">Average reading score across all students, Sep 2025 \u2013 Feb 2026</p>
+      ${svgAreaChart(classScores, months, 'var(--blue)', 620, 220)}
+    </div>
+
+    <div class="data-table-wrap" style="margin-top:24px">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Sep Score</th>
+            <th>Feb Score</th>
+            <th>Change</th>
+            <th>Trend</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${[...students].sort((a, b) => {
+            const aGain = growthData[a.id].scores[5] - growthData[a.id].scores[0];
+            const bGain = growthData[b.id].scores[5] - growthData[b.id].scores[0];
+            return bGain - aGain;
+          }).map(s => {
+            const gd = growthData[s.id];
+            const gain = gd.scores[5] - gd.scores[0];
+            const gainPct = Math.round((gain / gd.scores[0]) * 100);
+            let statusCls = 'green', statusLabel = 'Improving';
+            if (gainPct < 5) { statusCls = 'gold'; statusLabel = 'Steady'; }
+            if (gainPct < 0) { statusCls = 'red'; statusLabel = 'Declining'; }
+            return `
+            <tr onclick="reportStudentId=${s.id}; renderMain();" style="cursor:pointer">
+              <td><div class="student-cell">${avatar(s)} <span class="student-name">${s.name}</span> ${warnTag(s)}</div></td>
+              <td>${gd.scores[0]}</td>
+              <td><strong>${gd.scores[5]}</strong></td>
+              <td><span class="growth-arrow ${gain >= 0 ? 'up' : 'down'}">${gain >= 0 ? IC.arrowUp + '+' : IC.arrowDown}${Math.abs(gain)} pts</span></td>
+              <td>${miniChart(gd.scores, gain >= 50 ? 'var(--green)' : 'var(--gold)', 80, 28)}</td>
+              <td><span class="badge badge-${statusCls}">${statusLabel}</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="info-panel" style="margin-top:24px">
+      <h4>${IC.bulb} Key Insights</h4>
+      <ul class="insight-list">
+        <li>${improvingCount} of ${students.length} students showed reading score improvement since September</li>
+        <li>Class average reading score increased by ${classScores[5] - classScores[0]} points (+${Math.round(((classScores[5] - classScores[0]) / classScores[0]) * 100)}%)</li>
+        <li>Average accuracy improved from ${classAccuracy[0]}% to ${classAccuracy[5]}% (+${classAccuracy[5] - classAccuracy[0]} percentage points)</li>
+        <li>Students collectively earned ${totalKeysAll.toLocaleString()} Keys, demonstrating consistent engagement</li>
+      </ul>
+    </div>`;
+}
+
+// ---- Page: Individual Student Report ----
+function renderStudentReport() {
+  const s = students.find(x => x.id === reportStudentId);
+  if (!s) return '<p>Student not found.</p>';
+  const gd = growthData[s.id];
+
+  return `
+    <button class="back-btn" onclick="reportStudentId=null; renderMain()">${IC.arrowLeft} Back to Class Report</button>
+
+    <div class="report-header-card">
+      <div class="report-header-bar"></div>
+      <div class="report-header-body">
+        <div class="report-header-top">
+          <div style="display:flex;align-items:center;gap:16px">
+            ${avatar(s, 'lg')}
+            <div>
+              <h2>${s.name} ${warnTag(s)}</h2>
+              <div class="report-meta">
+                <span>Grade: ${s.grade}</span>
+                <span>Level ${s.level}</span>
+                <span>${IC.calendar} Sep 2025 \u2014 Feb 2026</span>
+              </div>
+            </div>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn btn-ghost btn-sm">${IC.printer} Print</button>
+            <button class="btn btn-primary btn-sm">${IC.download} Export PDF</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-cards">
+      <div class="stat-card">
+        <div class="stat-card-label">Reading Score</div>
+        <div class="stat-card-value">${s.score} ${growthArrow(gd.scores[0], gd.scores[5])}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Accuracy</div>
+        <div class="stat-card-value">${s.accuracy}% ${growthArrow(gd.accuracy[0], gd.accuracy[5])}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Keys Earned</div>
+        <div class="stat-card-value">${s.keys.toLocaleString()}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Quizzes Taken</div>
+        <div class="stat-card-value">${s.quizzes}</div>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <h3>Reading Score Growth</h3>
+      <p class="chart-subtitle">${s.name.split(' ')[0]}'s reading score over time</p>
+      ${svgAreaChart(gd.scores, months, 'var(--blue)', 620, 220)}
+    </div>
+
+    <div class="data-table-wrap" style="margin-top:24px">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Reading Score</th>
+            <th>Accuracy</th>
+            <th>Quizzes</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${months.map((m, i) => `
+            <tr>
+              <td><strong>${m} ${i < 4 ? '2025' : '2026'}</strong></td>
+              <td>${gd.scores[i]} ${i > 0 ? `<span class="growth-arrow ${gd.scores[i] >= gd.scores[i-1] ? 'up' : 'down'}">${gd.scores[i] >= gd.scores[i-1] ? IC.arrowUp + '+' : IC.arrowDown}${Math.abs(gd.scores[i] - gd.scores[i-1])}</span>` : ''}</td>
+              <td>${gd.accuracy[i]}%</td>
+              <td>${gd.quizzes[i]}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    ${s.interests && s.interests.onboarded ? `
+    <div class="info-panel" style="margin-top:24px">
+      <h4>${IC.sparkle} Personalization Impact</h4>
+      <p>${s.name.split(' ')[0]}'s assessments are personalized around their interests in <strong>${s.interests.tags.map(t => interestCategories.find(c => c.id === t)?.label).join(', ')}</strong>. Personalized questions have shown increased engagement and completion rates. Their preferred reading style is <strong>${s.interests.readingStyle}</strong> and favorite genre is <strong>${s.interests.favoriteGenre}</strong>.</p>
+    </div>` : `
+    <div class="interest-cta-card" style="margin-top:24px">
+      <h3>${IC.sparkle} Boost ${s.name.split(' ')[0]}'s Engagement</h3>
+      <p>Set up an interest profile to personalize assessments and potentially improve reading scores.</p>
+      <button class="btn btn-primary btn-sm" onclick="onboardingStudent=${s.id}; onboardingStep=0; selectedInterests=[]; openModal('onboarding',${s.id})">Set Up Interests</button>
+    </div>`}`;
+}
+
+// ---- Onboarding Helpers ----
+function nextOnboardingStep() {
+  onboardingStep++;
+  openModal('onboarding', onboardingStudent);
+}
+
+function prevOnboardingStep() {
+  onboardingStep = Math.max(0, onboardingStep - 1);
+  openModal('onboarding', onboardingStudent);
+}
+
+function selectInterestTag(tagId) {
+  const idx = selectedInterests.indexOf(tagId);
+  if (idx >= 0) selectedInterests.splice(idx, 1);
+  else if (selectedInterests.length < 4) selectedInterests.push(tagId);
+  openModal('onboarding', onboardingStudent);
+}
+
+function selectReadingStyle(style) {
+  selectedReadingStyle = style;
+  openModal('onboarding', onboardingStudent);
+}
+
+function toggleSurveyChip(type, id) {
+  const key = '_survey' + type.charAt(0).toUpperCase() + type.slice(1);
+  if (!window[key]) window[key] = [];
+  const idx = window[key].indexOf(id);
+  if (idx >= 0) window[key].splice(idx, 1);
+  else window[key].push(id);
+  openModal('onboarding', onboardingStudent);
+}
+
+function saveSurveyInputs() {
+  const job = document.getElementById('survey-dream-job');
+  const place = document.getElementById('survey-fav-place');
+  const fact = document.getElementById('survey-fun-fact');
+  if (job) window._surveyDreamJob = job.value;
+  if (place) window._surveyFavPlace = place.value;
+  if (fact) window._surveyFunFact = fact.value;
+}
+
+async function saveOnboarding() {
+  const s = students.find(x => x.id === onboardingStudent);
+  if (s) {
+    s.interests.tags = [...selectedInterests];
+    s.interests.readingStyle = selectedReadingStyle || 'detailed';
+    const genreSelect = document.getElementById('genre-select');
+    s.interests.favoriteGenre = genreSelect ? genreSelect.value : 'Fantasy';
+    s.interests.onboarded = true;
+
+    // Save to backend DB
+    try {
+      await API.updateSurvey(s.id, {
+        interest_tags: JSON.stringify(selectedInterests),
+        reading_style: selectedReadingStyle || 'detailed',
+        favorite_genre: genreSelect ? genreSelect.value : 'Fantasy',
+        hobbies: JSON.stringify(window._surveyHobbies || []),
+        favorite_animals: JSON.stringify(window._surveyAnimals || []),
+        dream_job: window._surveyDreamJob || '',
+        favorite_place: window._surveyFavPlace || '',
+        fun_fact: window._surveyFunFact || ''
+      });
+    } catch(e) { console.log('Survey save (offline mode):', e.message); }
+  }
+
+  // Clean up
+  onboardingStep = 0;
+  onboardingStudent = null;
+  selectedInterests = [];
+  window._surveyHobbies = [];
+  window._surveyAnimals = [];
+  window._surveyDreamJob = '';
+  window._surveyFavPlace = '';
+  window._surveyFunFact = '';
+  closeModal();
+  renderMain();
+}
+
+// ---- Modal System ----
+function openModal(type, prefill) {
+  let html = '';
+  const modalRoot = (type === 'personalization-preview') ? 'modal-root-2' : 'modal-root';
+
+  if (type === 'assign') {
+    const previewStudents = students.slice(0, 4);
+    html = `
+      <div class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal modal-lg" onclick="event.stopPropagation()">
+          <div class="modal-header">
+            <h3>Assign Assessment</h3>
+            <button class="modal-close" onclick="closeModal()">${IC.x}</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label">Assessment Name</label>
+              <input type="text" class="form-input" value="${prefill || ''}" placeholder="e.g. Charlotte's Web Quiz">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Assign To</label>
+              <select class="form-select">
+                <option>Entire Class</option>
+                <option>Reading Group A</option>
+                <option>Struggling Readers</option>
+                <option>Individual Student</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Due Date</label>
+              <input type="date" class="form-input">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Instructions (optional)</label>
+              <textarea class="form-input" placeholder="Add any special instructions for students..."></textarea>
+            </div>
+
+            <div class="personalization-section">
+              <div class="personalization-header">
+                <h4>${IC.sparkle} AI Personalization</h4>
+                <span class="badge badge-green">Active</span>
+              </div>
+              <p class="personalization-desc">Questions will be automatically adapted to each student's interests and reading style.</p>
+              <div class="personalization-student-list">
+                ${previewStudents.map(s => `
+                  <div class="personalization-student-row">
+                    <div class="student-cell" style="min-width:140px">${avatar(s)} <span class="student-name">${s.name}</span></div>
+                    <div class="interest-tags-compact" style="flex:1">
+                      ${s.interests && s.interests.onboarded
+                        ? interestTagsCompact(s, 2)
+                        : '<span class="interest-empty-sm">Not set up</span>'
+                      }
+                    </div>
+                    ${s.interests && s.interests.onboarded
+                      ? `<button class="btn btn-sm btn-ghost" onclick="event.stopPropagation(); openModal('personalization-preview', ${s.id})">Preview</button>`
+                      : ''
+                    }
+                  </div>
+                `).join('')}
+                <div class="personalization-more">+ ${students.length - 4} more students</div>
+              </div>
+            </div>
+
+            <div class="modal-info">
+              <strong>How it works:</strong> key2read's AI adapts question framing, examples, and context to match each student's interests. The core comprehension skills assessed stay the same \u2014 only the context changes to increase engagement.
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="closeModal()">Assign</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  if (type === 'personalization-preview') {
+    const s = students.find(x => x.id === prefill);
+    if (!s) return;
+    const topInterest = s.interests.tags[0] || 'friendship';
+    const personalizedQ = personalizedQuestions.personalized[topInterest] || personalizedQuestions.personalized.friendship;
+    const matchScore = 82 + Math.floor(Math.random() * 15);
+
+    html = `
+      <div class="modal-overlay" onclick="closeModal2(event)">
+        <div class="modal modal-lg" onclick="event.stopPropagation()">
+          <div class="modal-header">
+            <h3>${IC.sparkle} Personalization Preview</h3>
+            <button class="modal-close" onclick="closeModal2()">${IC.x}</button>
+          </div>
+          <div class="modal-body">
+            <div class="preview-student-bar">
+              ${avatar(s, 'lg')}
+              <div>
+                <h4 style="font-size:1.125rem;font-weight:600">${s.name}</h4>
+                <div class="interest-tags-wrap" style="margin-top:6px">${interestTags(s)}</div>
+              </div>
+            </div>
+
+            <div class="question-comparison">
+              <div class="question-card standard">
+                <div class="question-card-label">Standard Question</div>
+                <p>${personalizedQuestions.original}</p>
+              </div>
+              <div class="question-card personalized">
+                <div class="question-card-label">${IC.sparkle} Personalized for ${s.name.split(' ')[0]}</div>
+                <p>${personalizedQ}</p>
+                <div class="question-card-match">
+                  <span>Interest Match</span>
+                  <div class="match-bar"><div class="match-fill" style="width:${matchScore}%"></div></div>
+                  <span class="match-pct">${matchScore}%</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-info">
+              <strong>How it works:</strong> The AI adapts vocabulary, examples, and real-world connections to match ${s.name.split(' ')[0]}'s interest in <strong>${interestCategories.find(c => c.id === topInterest)?.label}</strong>. The comprehension skill being assessed stays the same \u2014 only the context changes.
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeModal2()">Close</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  if (type === 'onboarding') {
+    const s = students.find(x => x.id === onboardingStudent);
+    if (!s) return;
+
+    const totalSteps = 6;
+    const stepDots = Array.from({length: totalSteps}, (_, i) => {
+      let cls = 'step-dot';
+      if (i === onboardingStep) cls += ' active';
+      else if (i < onboardingStep) cls += ' done';
+      return `<div class="${cls}"></div>`;
+    }).join('');
+
+    let stepContent = '';
+
+    if (onboardingStep === 0) {
+      // Welcome
+      stepContent = `
+        <div class="onboarding-welcome">
+          <div style="margin:0 auto 20px">${avatar(s, 'lg')}</div>
+          <h2 style="text-align:center;margin-bottom:8px">Let's personalize reading for ${s.name.split(' ')[0]}!</h2>
+          <p style="text-align:center;color:var(--g500);margin-bottom:24px">We'll ask a few fun questions about your interests so we can make quizzes more fun and help you learn better!</p>
+          <div style="text-align:center">
+            <button class="btn btn-primary" onclick="nextOnboardingStep()">Let's Go! 🎉</button>
+          </div>
+        </div>`;
+    } else if (onboardingStep === 1) {
+      // Pick interests
+      stepContent = `
+        <h3 style="text-align:center;margin-bottom:4px">What do you love?</h3>
+        <p style="text-align:center;color:var(--g500);margin-bottom:20px">Pick 2\u20134 topics that interest you the most.</p>
+        <div class="interest-grid">
+          ${interestCategories.map(cat => {
+            const selected = selectedInterests.includes(cat.id) ? 'selected' : '';
+            return `<div class="interest-card ${selected}" onclick="selectInterestTag('${cat.id}')">
+              <div class="interest-card-icon ${cat.color}">${cat.icon}</div>
+              <span>${cat.label}</span>
+              ${selected ? `<div class="interest-card-check">${IC.check}</div>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+        <p style="text-align:center;color:var(--g400);font-size:0.8125rem;margin-top:12px">${selectedInterests.length}/4 selected ${selectedInterests.length < 2 ? '(pick at least 2)' : ''}</p>
+        <div style="display:flex;justify-content:space-between;margin-top:20px">
+          <button class="btn btn-ghost" onclick="prevOnboardingStep()">Back</button>
+          <button class="btn btn-primary" onclick="nextOnboardingStep()" ${selectedInterests.length < 2 ? 'disabled style="opacity:0.5;pointer-events:none"' : ''}>Next</button>
+        </div>`;
+    } else if (onboardingStep === 2) {
+      // NEW: Hobbies & Activities
+      const hobbyOptions = [
+        { id: 'drawing', label: 'Drawing', icon: '🎨' }, { id: 'sports', label: 'Sports', icon: '⚽' },
+        { id: 'reading', label: 'Reading', icon: '📚' }, { id: 'gaming', label: 'Video Games', icon: '🎮' },
+        { id: 'music', label: 'Music', icon: '🎵' }, { id: 'cooking', label: 'Cooking', icon: '🍳' },
+        { id: 'building', label: 'Building / LEGO', icon: '🧱' }, { id: 'coding', label: 'Coding', icon: '💻' },
+        { id: 'swimming', label: 'Swimming', icon: '🏊' }, { id: 'dance', label: 'Dance', icon: '💃' },
+        { id: 'writing', label: 'Writing Stories', icon: '✏️' }, { id: 'nature', label: 'Nature / Outdoors', icon: '🌳' },
+        { id: 'science', label: 'Science Experiments', icon: '🔬' }, { id: 'skateboarding', label: 'Skateboarding', icon: '🛹' },
+        { id: 'baking', label: 'Baking', icon: '🧁' }, { id: 'gardening', label: 'Gardening', icon: '🌱' },
+      ];
+      if (!window._surveyHobbies) window._surveyHobbies = [];
+      stepContent = `
+        <h3 style="text-align:center;margin-bottom:4px">What do you like to do for fun?</h3>
+        <p style="text-align:center;color:var(--g500);margin-bottom:20px">Pick your favorite hobbies and activities!</p>
+        <div class="survey-chips" style="justify-content:center">
+          ${hobbyOptions.map(h => `
+            <div class="survey-chip ${(window._surveyHobbies||[]).includes(h.id)?'selected':''}" onclick="toggleSurveyChip('hobbies','${h.id}')">
+              <span class="chip-icon">${h.icon}</span> ${h.label}
+            </div>
+          `).join('')}
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:20px">
+          <button class="btn btn-ghost" onclick="prevOnboardingStep()">Back</button>
+          <button class="btn btn-primary" onclick="nextOnboardingStep()">Next</button>
+        </div>`;
+    } else if (onboardingStep === 3) {
+      // NEW: Favorite things
+      const animalOptions = [
+        { id: 'dogs', label: 'Dogs', icon: '🐕' }, { id: 'cats', label: 'Cats', icon: '🐱' },
+        { id: 'horses', label: 'Horses', icon: '🐴' }, { id: 'dolphins', label: 'Dolphins', icon: '🐬' },
+        { id: 'birds', label: 'Birds', icon: '🦜' }, { id: 'rabbits', label: 'Rabbits', icon: '🐰' },
+        { id: 'turtles', label: 'Turtles', icon: '🐢' }, { id: 'lizards', label: 'Lizards', icon: '🦎' },
+        { id: 'wolves', label: 'Wolves', icon: '🐺' }, { id: 'butterflies', label: 'Butterflies', icon: '🦋' },
+        { id: 'owls', label: 'Owls', icon: '🦉' }, { id: 'fish', label: 'Fish', icon: '🐠' },
+      ];
+      if (!window._surveyAnimals) window._surveyAnimals = [];
+      stepContent = `
+        <h3 style="text-align:center;margin-bottom:4px">Tell us about your favorites!</h3>
+        <p style="text-align:center;color:var(--g500);margin-bottom:20px">This helps us make your quizzes super interesting.</p>
+
+        <div class="survey-section">
+          <div class="survey-section-label">Favorite Animals (pick a few!)</div>
+          <div class="survey-chips">
+            ${animalOptions.map(a => `
+              <div class="survey-chip ${(window._surveyAnimals||[]).includes(a.id)?'selected':''}" onclick="toggleSurveyChip('animals','${a.id}')">
+                <span class="chip-icon">${a.icon}</span> ${a.label}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="survey-section">
+          <div class="survey-section-label">What do you want to be when you grow up?</div>
+          <input class="survey-input" id="survey-dream-job" placeholder="e.g., Veterinarian, Astronaut, Chef..." value="${window._surveyDreamJob||''}">
+        </div>
+
+        <div class="survey-section">
+          <div class="survey-section-label">Favorite place in the world?</div>
+          <input class="survey-input" id="survey-fav-place" placeholder="e.g., The beach, a treehouse, outer space..." value="${window._surveyFavPlace||''}">
+        </div>
+
+        <div class="survey-section">
+          <div class="survey-section-label">A fun fact about you!</div>
+          <input class="survey-input" id="survey-fun-fact" placeholder="e.g., I can juggle, I have 3 pets..." value="${window._surveyFunFact||''}">
+        </div>
+
+        <div style="display:flex;justify-content:space-between;margin-top:20px">
+          <button class="btn btn-ghost" onclick="saveSurveyInputs(); prevOnboardingStep()">Back</button>
+          <button class="btn btn-primary" onclick="saveSurveyInputs(); nextOnboardingStep()">Next</button>
+        </div>`;
+    } else if (onboardingStep === 4) {
+      // Reading preferences
+      const styles = [
+        { id: 'detailed', label: 'Detailed Reader', desc: 'I like lots of details', icon: IC.bookOpen },
+        { id: 'visual',   label: 'Visual Learner',  desc: 'Show me pictures',      icon: IC.eye },
+        { id: 'fast',     label: 'Speed Reader',    desc: 'I read fast',            icon: IC.fire },
+      ];
+      stepContent = `
+        <h3 style="text-align:center;margin-bottom:4px">How do you like to read?</h3>
+        <p style="text-align:center;color:var(--g500);margin-bottom:20px">Choose the style that fits you best.</p>
+        <div class="reading-style-grid">
+          ${styles.map(st => `
+            <div class="interest-card ${selectedReadingStyle === st.id ? 'selected' : ''}" onclick="selectReadingStyle('${st.id}')">
+              <div class="interest-card-icon blue">${st.icon}</div>
+              <span>${st.label}</span>
+              <span style="font-size:0.6875rem;color:var(--g400)">${st.desc}</span>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="form-group" style="margin-top:20px">
+          <label class="form-label">What's your favorite kind of story?</label>
+          <select class="form-select" id="genre-select">
+            <option>Fantasy</option><option>Mystery</option><option>Realistic Fiction</option>
+            <option>Sci-Fi</option><option>Adventure</option><option>Sports Fiction</option>
+            <option>Non-Fiction</option><option>Funny Stories</option><option>Historical Fiction</option>
+          </select>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;margin-top:20px">
+          <button class="btn btn-ghost" onclick="prevOnboardingStep()">Back</button>
+          <button class="btn btn-primary" onclick="nextOnboardingStep()">Next</button>
+        </div>`;
+    } else if (onboardingStep === 5) {
+      // Done / Summary
+      const topInterest = selectedInterests[0] || 'friendship';
+      const personalizedQ = personalizedQuestions.personalized[topInterest] || personalizedQuestions.personalized.friendship;
+      const hobbies = (window._surveyHobbies || []).slice(0, 4);
+      const animals = (window._surveyAnimals || []).slice(0, 3);
+      stepContent = `
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="margin:0 auto 12px">${avatar(s, 'lg')}</div>
+          <h2>You're all set, ${s.name.split(' ')[0]}! 🎉</h2>
+          <p style="color:var(--g500);margin-top:6px">Your quizzes will now be personalized to match your interests.</p>
+        </div>
+        <div style="margin-bottom:16px">
+          <span class="interest-profile-label" style="display:block;margin-bottom:6px">Your Interests</span>
+          <div class="interest-tags-wrap">
+            ${selectedInterests.map(tagId => {
+              const cat = interestCategories.find(c => c.id === tagId);
+              return cat ? `<span class="interest-tag ${cat.color}">${cat.label}</span>` : '';
+            }).join('')}
+          </div>
+        </div>
+        ${hobbies.length > 0 ? `<div style="margin-bottom:12px"><span class="interest-profile-label" style="display:block;margin-bottom:4px">Hobbies</span><span style="color:var(--g600);font-size:0.85rem">${hobbies.join(', ')}</span></div>` : ''}
+        ${animals.length > 0 ? `<div style="margin-bottom:12px"><span class="interest-profile-label" style="display:block;margin-bottom:4px">Favorite Animals</span><span style="color:var(--g600);font-size:0.85rem">${animals.join(', ')}</span></div>` : ''}
+        ${window._surveyDreamJob ? `<div style="margin-bottom:12px"><span class="interest-profile-label" style="display:block;margin-bottom:4px">Dream Job</span><span style="color:var(--g600);font-size:0.85rem">${window._surveyDreamJob}</span></div>` : ''}
+
+        <div class="question-comparison" style="margin-top:16px">
+          <div class="question-card standard">
+            <div class="question-card-label">Standard Question</div>
+            <p style="font-size:0.8125rem">${personalizedQuestions.original}</p>
+          </div>
+          <div class="question-card personalized">
+            <div class="question-card-label">${IC.sparkle} Personalized for You</div>
+            <p style="font-size:0.8125rem">${personalizedQ}</p>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;margin-top:20px">
+          <button class="btn btn-ghost" onclick="prevOnboardingStep()">Back</button>
+          <button class="btn btn-primary" onclick="saveOnboarding()">${IC.check} Save Profile</button>
+        </div>`;
+    }
+
+    html = `
+      <div class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal modal-lg" onclick="event.stopPropagation()">
+          <div class="modal-header">
+            <h3>${IC.heart} Student Interest Setup</h3>
+            <button class="modal-close" onclick="closeModal()">${IC.x}</button>
+          </div>
+          <div class="modal-body">
+            <div class="onboarding-step-indicator">${stepDots}</div>
+            ${stepContent}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  if (type === 'goal') {
+    html = `
+      <div class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+          <div class="modal-header">
+            <h3>Add Class Goal</h3>
+            <button class="modal-close" onclick="closeModal()">${IC.x}</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label">Goal Description</label>
+              <input type="text" class="form-input" placeholder="e.g. Class reads 50 books">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Target Value</label>
+                <input type="number" class="form-input" placeholder="100">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Due Date</label>
+                <input type="date" class="form-input">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Goal Type</label>
+              <select class="form-select">
+                <option>Books Completed</option>
+                <option>Avg Comprehension %</option>
+                <option>Total Keys</option>
+                <option>Students Passing</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Keys Bonus (optional)</label>
+              <input type="number" class="form-input" placeholder="Bonus Keys per student on completion">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="closeModal()">Create Goal</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  if (type === 'template') {
+    html = `
+      <div class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+          <div class="modal-header">
+            <h3>Create Custom Template</h3>
+            <button class="modal-close" onclick="closeModal()">${IC.x}</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label">Template Name</label>
+              <input type="text" class="form-input" placeholder="e.g. My Custom Quiz">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Type</label>
+              <select class="form-select">
+                <option>Quiz</option>
+                <option>Assessment</option>
+                <option>Challenge</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Questions</label>
+                <input type="number" class="form-input" placeholder="10" value="10">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Time Limit</label>
+                <input type="text" class="form-input" placeholder="15 min" value="15 min">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Description</label>
+              <textarea class="form-input" placeholder="Describe what this template covers..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="closeModal()">Create Template</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  document.getElementById(modalRoot).innerHTML = html;
+}
+
+function closeModal(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('modal-root').innerHTML = '';
+}
+
+function closeModal2(e) {
+  if (e && e.target !== e.currentTarget) return;
+  const el = document.getElementById('modal-root-2');
+  if (el) el.innerHTML = '';
+}
+
+// ============================================================
+// ---- STUDENT DASHBOARD PAGES ----
+// ============================================================
+
+function renderStudentDashboard() {
+  // Build student object from currentUser (real data from API)
+  let s = {
+    id: currentUser?.studentId || 0,
+    name: currentUser?.name || 'Student',
+    level: currentUser?.reading_level || '3.0',
+    score: currentUser?.reading_score || 500,
+    keys: currentUser?.keys_earned || 0,
+    quizzes: currentUser?.quizzes_completed || 0,
+    accuracy: currentUser?.accuracy || 0,
+    streak: currentUser?.streak_days || 0,
+    interests: null,
+    onboarded: currentUser?.onboarded || 0
+  };
+  const lvlColor = s.accuracy >= 90 ? 'green' : s.accuracy >= 75 ? 'blue' : s.accuracy >= 60 ? 'gold' : 'red';
+  const lvlLabel = s.accuracy >= 90 ? 'Excellent' : s.accuracy >= 75 ? 'Good' : s.accuracy >= 60 ? 'Fair' : 'Needs Practice';
+
+  return `
+    <div class="page-header"><h1>Welcome back, ${s.name.split(' ')[0]}!</h1></div>
+    <div class="stat-cards stat-cards-5">
+      <div class="stat-card"><div class="stat-card-label">Reading Level</div><div class="stat-card-value">${s.level}</div><div class="stat-card-trend" style="color:var(--g500)">Grade ${s.level}</div></div>
+      <div class="stat-card"><div class="stat-card-label">Reading Score</div><div class="stat-card-value">${s.score}</div></div>
+      <div class="stat-card"><div class="stat-card-label">Keys Earned</div><div class="stat-card-value"><span class="icon-sm" style="color:var(--gold)">${IC.key}</span> ${s.keys}</div></div>
+      <div class="stat-card"><div class="stat-card-label">Quizzes Done</div><div class="stat-card-value">${s.quizzes}</div></div>
+      <div class="stat-card"><div class="stat-card-label">Accuracy</div><div class="stat-card-value">${s.accuracy}%</div><div class="stat-card-trend" style="color:var(--${lvlColor})">${lvlLabel}</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px">
+      <div class="list-card" style="padding:24px">
+        <h3 style="margin-bottom:16px">Assigned Quizzes</h3>
+        <div class="list-item" style="cursor:pointer" onclick="page='student-quizzes'; renderSidebar(); renderMain()">
+          <div class="list-item-info">
+            <span class="list-item-name">Charlotte's Web — Ch. 1</span>
+            <span class="list-item-sub" style="color:var(--red)">Due tomorrow</span>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); launchQuiz(1, 1, ${s.id}, false)">Start Quiz</button>
+        </div>
+        <div class="list-item" style="cursor:pointer" onclick="page='student-quizzes'; renderSidebar(); renderMain()">
+          <div class="list-item-info">
+            <span class="list-item-name">Charlotte's Web — Ch. 2</span>
+            <span class="list-item-sub">Due in 3 days</span>
+          </div>
+          <button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); launchQuiz(1, 2, ${s.id}, false)">Start Quiz</button>
+        </div>
+        <div style="text-align:center;padding:12px 0">
+          <button class="btn btn-sm btn-ghost" onclick="navigate('student-quizzes')">View All Quizzes</button>
+        </div>
+      </div>
+
+      <div class="list-card" style="padding:24px">
+        <h3 style="margin-bottom:16px">Reading Streak</h3>
+        <div style="text-align:center;padding:20px 0">
+          <div style="width:48px;height:48px;margin:0 auto 4px;color:var(--orange,#F59E0B)">${IC.fire}</div>
+          <div style="font-size:2.5rem;font-weight:800;color:var(--navy)">${s.streak === '—' ? '0 days' : s.streak}</div>
+          <div style="color:var(--g500);margin-top:4px">Keep it going!</div>
+        </div>
+        <div style="display:flex;gap:6px;justify-content:center;margin-top:12px">
+          ${['M','T','W','T','F','S','S'].map((d, i) => { const streakNum = parseInt(s.streak) || 0; return `<div style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:600;${i < Math.min(streakNum, 7) ? 'background:var(--gold-p);color:var(--gold);border:2px solid var(--gold)' : 'background:var(--g100);color:var(--g400);border:2px solid var(--g200)'}">${d}</div>`; }).join('')}
+        </div>
+      </div>
+    </div>
+
+    ${!s.interests || !s.interests.onboarded ? `
+    <div class="interest-cta-card" style="margin-top:24px">
+      <h3 style="margin-bottom:8px">${IC.heart} Personalize Your Experience!</h3>
+      <p style="margin-bottom:16px">Tell us about your interests so we can make your quizzes more fun!</p>
+      <button class="btn btn-primary" onclick="onboardingStudent=${s.id}; onboardingStep=0; openModal('onboarding')">Set Up My Profile</button>
+    </div>` : ''}
+  `;
+}
+
+function renderStudentQuizzes() {
+  let s = {
+    id: currentUser?.studentId || 0,
+    name: currentUser?.name || 'Student',
+    level: currentUser?.reading_level || '3.0',
+    score: currentUser?.reading_score || 500,
+    keys: currentUser?.keys_earned || 0,
+    quizzes: currentUser?.quizzes_completed || 0,
+    accuracy: currentUser?.accuracy || 0,
+    streak: currentUser?.streak_days || 0
+  };
+
+  return `
+    <div class="page-header"><h1>My Quizzes</h1></div>
+    <div class="stat-cards">
+      <div class="stat-card"><div class="stat-card-label">Quizzes Completed</div><div class="stat-card-value">${s.quizzes}</div></div>
+      <div class="stat-card"><div class="stat-card-label">Avg Accuracy</div><div class="stat-card-value">${s.accuracy}%</div></div>
+      <div class="stat-card"><div class="stat-card-label">Keys Earned</div><div class="stat-card-value">${s.keys}</div></div>
+    </div>
+
+    <div class="list-card" style="margin-top:24px">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--g150);font-weight:700;color:var(--navy)">Assigned To You</div>
+      ${books.slice(0, 3).map((b, i) => `
+        <div class="list-item">
+          <div class="list-item-info">
+            <span class="list-item-name">${b.title} — Chapter ${i + 1}</span>
+            <span class="list-item-sub">${i === 0 ? '<span style="color:var(--red)">Due tomorrow</span>' : i === 1 ? 'Due in 3 days' : 'Due next week'}</span>
+          </div>
+          <div class="list-item-right" style="display:flex;align-items:center;gap:12px">
+            <span class="badge badge-blue">5 questions</span>
+            <button class="btn btn-sm btn-primary" onclick="launchQuiz(${i + 1}, ${i + 1}, ${s.id}, false)">Start Quiz</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="list-card" style="margin-top:20px">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--g150);font-weight:700;color:var(--navy)">Completed</div>
+      ${books.slice(3, 8).map((b, i) => `
+        <div class="list-item" style="opacity:0.7">
+          <div class="list-item-info">
+            <span class="list-item-name">${b.title}</span>
+            <span class="list-item-sub" style="color:var(--green)">Completed ${5 - i} days ago</span>
+          </div>
+          <div class="list-item-right" style="display:flex;align-items:center;gap:12px">
+            <span class="badge badge-green">${75 + i * 5}%</span>
+            <span style="color:var(--gold);font-size:0.8125rem">${IC.key} ${20 + i * 10}</span>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderStudentProgress() {
+  let s = {
+    id: currentUser?.studentId || 0,
+    name: currentUser?.name || 'Student',
+    level: currentUser?.reading_level || '3.0',
+    score: currentUser?.reading_score || 500,
+    keys: currentUser?.keys_earned || 0,
+    quizzes: currentUser?.quizzes_completed || 0,
+    accuracy: currentUser?.accuracy || 0,
+    streak: currentUser?.streak_days || 0,
+    interests: null
+  };
+  const gd = growthData[s.id] || growthData[0];
+  const months = ['Sep','Oct','Nov','Dec','Jan','Feb'];
+  const scores = gd?.scores || [500, 520, 540, 560, 580, 600];
+  const minS = Math.min(...scores) - 30;
+  const maxS = Math.max(...scores) + 30;
+  const range = maxS - minS;
+  const pts = scores.map((v, i) => `${60 + i * 130},${180 - ((v - minS) / range) * 150}`).join(' ');
+
+  return `
+    <div class="page-header"><h1>My Reading Progress</h1></div>
+    <div class="stat-cards">
+      <div class="stat-card"><div class="stat-card-label">Current Level</div><div class="stat-card-value">${s.level}</div></div>
+      <div class="stat-card"><div class="stat-card-label">Reading Score</div><div class="stat-card-value">${s.score}</div><div class="stat-card-trend" style="color:var(--green)"><span class="icon-sm">${IC.arrowUp}</span> +${scores[scores.length - 1] - scores[0]} pts</div></div>
+      <div class="stat-card"><div class="stat-card-label">Total Keys</div><div class="stat-card-value">${s.keys}</div></div>
+      <div class="stat-card"><div class="stat-card-label">Accuracy</div><div class="stat-card-value">${s.accuracy}%</div></div>
+    </div>
+
+    <div class="list-card" style="margin-top:24px;padding:24px">
+      <h3 style="margin-bottom:16px">My Reading Score Over Time</h3>
+      <svg viewBox="0 0 760 220" style="width:100%;height:220px">
+        ${[0,1,2,3,4].map(i => `<line x1="60" y1="${30 + i * 37.5}" x2="740" y2="${30 + i * 37.5}" stroke="var(--g150)" stroke-dasharray="4"/><text x="50" y="${34 + i * 37.5}" text-anchor="end" fill="var(--g400)" font-size="11">${Math.round(maxS - (range * i / 4))}</text>`).join('')}
+        ${months.map((m, i) => `<text x="${60 + i * 130}" y="${210}" text-anchor="middle" fill="var(--g500)" font-size="12" font-weight="500">${m}</text>`).join('')}
+        <polyline points="${pts}" fill="none" stroke="var(--blue)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <polygon points="${pts} ${60 + (scores.length - 1) * 130},180 60,180" fill="url(#studentGrad)" opacity="0.15"/>
+        <defs><linearGradient id="studentGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--blue)"/><stop offset="100%" stop-color="var(--blue)" stop-opacity="0"/></linearGradient></defs>
+        ${scores.map((v, i) => `<circle cx="${60 + i * 130}" cy="${180 - ((v - minS) / range) * 150}" r="5" fill="var(--blue)" stroke="#fff" stroke-width="2"/><text x="${60 + i * 130}" y="${180 - ((v - minS) / range) * 150 - 12}" text-anchor="middle" fill="var(--navy)" font-size="12" font-weight="700">${v}</text>`).join('')}
+      </svg>
+    </div>
+
+    ${s.interests && s.interests.onboarded ? `
+    <div class="list-card" style="margin-top:20px;padding:24px">
+      <h3 style="margin-bottom:12px">My Interest Profile</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${s.interests.tags.map(t => { const c = interestCategories.find(cat => cat.id === t); return c ? `<span class="interest-tag ${c.color}">${c.label}</span>` : ''; }).join('')}</div>
+      <div style="margin-top:12px;color:var(--g500);font-size:0.875rem">Reading Style: <strong>${s.interests.readingStyle}</strong> | Favorite Genre: <strong>${s.interests.favoriteGenre}</strong></div>
+    </div>` : ''}
+  `;
+}
+
+function renderStudentBadges() {
+  let s = {
+    id: currentUser?.studentId || 0,
+    name: currentUser?.name || 'Student',
+    level: currentUser?.reading_level || '3.0',
+    score: currentUser?.reading_score || 500,
+    keys: currentUser?.keys_earned || 0,
+    quizzes: currentUser?.quizzes_completed || 0,
+    accuracy: currentUser?.accuracy || 0,
+    streak: currentUser?.streak_days || 0,
+    interests: null
+  };
+  const badges = [
+    { icon: IC.fire,   name: 'Reading Streak',    desc: `${s.streak} day streak!`, earned: s.streak >= 3, color: 'orange' },
+    { icon: IC.star,   name: 'Quiz Champion',     desc: 'Complete 10 quizzes',     earned: s.quizzes >= 10, color: 'gold' },
+    { icon: IC.target, name: 'Sharp Shooter',     desc: '90%+ accuracy',           earned: s.accuracy >= 90, color: 'green' },
+    { icon: IC.book,   name: 'Bookworm',          desc: 'Read 5 books',            earned: s.quizzes >= 15, color: 'blue' },
+    { icon: IC.key,    name: 'Key Collector',      desc: 'Earn 500 keys',           earned: s.keys >= 500, color: 'purple' },
+    { icon: IC.trend,  name: 'Level Up',           desc: 'Improve reading level',   earned: true, color: 'blue' },
+    { icon: IC.heart,  name: 'Personalized',       desc: 'Set up your profile',     earned: !!(s.interests && s.interests.onboarded), color: 'red' },
+    { icon: IC.check,  name: 'Perfect Score',      desc: 'Get 100% on a quiz',      earned: s.accuracy >= 95, color: 'green' },
+  ];
+
+  return `
+    <div class="page-header"><h1>My Badges</h1></div>
+    <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:16px;margin-top:8px">
+      ${badges.map(b => `
+        <div class="stat-card" style="text-align:center;padding:24px 16px;${b.earned ? '' : 'opacity:0.4;filter:grayscale(1)'}">
+          <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:50%;background:var(--${b.color}-p, var(--g100));display:flex;align-items:center;justify-content:center;color:var(--${b.color}, var(--g500))">${b.icon}</div>
+          <div style="font-weight:700;color:var(--navy);margin-bottom:4px">${b.name}</div>
+          <div style="font-size:0.75rem;color:var(--g500)">${b.desc}</div>
+          ${b.earned ? '<div style="margin-top:8px;font-size:0.7rem;font-weight:700;color:var(--green)">EARNED</div>' : '<div style="margin-top:8px;font-size:0.7rem;font-weight:600;color:var(--g400)">LOCKED</div>'}
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ============================================================
+// ---- PRINCIPAL DASHBOARD PAGES ----
+// ============================================================
+
+function renderPrincipalDashboard() {
+  const totalStudents = students.length;
+  const avgScore = Math.round(students.reduce((a, s) => a + s.score, 0) / totalStudents);
+  const avgAccuracy = Math.round(students.reduce((a, s) => a + s.accuracy, 0) / totalStudents);
+  const totalKeys = students.reduce((a, s) => a + s.keys, 0);
+
+  const classes = [
+    { name: "Sarah Johnson's 4th Grade", teacher: 'Sarah Johnson', students: 10, avgScore: avgScore, code: 'SARAH4' },
+    { name: "Mike Rivera's 3rd Grade", teacher: 'Mike Rivera', students: 22, avgScore: 612, code: 'MIKE3R' },
+    { name: "Emily Chen's 5th Grade", teacher: 'Emily Chen', students: 18, avgScore: 738, code: 'EMILY5' },
+    { name: "Lisa Park's 4th Grade", teacher: 'Lisa Park', students: 20, avgScore: 695, code: 'LISAP4' },
+  ];
+
+  return `
+    <div class="page-header">
+      <h1>School Dashboard</h1>
+      <div class="page-actions">
+        <button class="btn btn-outline" onclick="navigate('reports')">${IC.chart} View Growth Reports</button>
+      </div>
+    </div>
+
+    <div class="stat-cards">
+      <div class="stat-card"><div class="stat-card-label">Total Students</div><div class="stat-card-value">${totalStudents + 60}</div></div>
+      <div class="stat-card"><div class="stat-card-label">Avg Reading Score</div><div class="stat-card-value">${avgScore}</div><div class="stat-card-trend" style="color:var(--green)"><span class="icon-sm">${IC.arrowUp}</span> +14%</div></div>
+      <div class="stat-card"><div class="stat-card-label">Active Teachers</div><div class="stat-card-value">4</div></div>
+      <div class="stat-card"><div class="stat-card-label">Total Keys Earned</div><div class="stat-card-value">${(totalKeys + 12500).toLocaleString()}</div></div>
+    </div>
+
+    <div class="list-card" style="margin-top:24px">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--g150);display:flex;align-items:center;justify-content:space-between">
+        <span style="font-weight:700;color:var(--navy)">Classes Overview</span>
+        <button class="btn btn-sm btn-outline" onclick="navigate('principal-classes')">View All</button>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>CLASS</th><th>TEACHER</th><th>STUDENTS</th><th>AVG SCORE</th><th>STATUS</th></tr></thead>
+        <tbody>
+          ${classes.map(c => {
+            const status = c.avgScore >= 700 ? 'Excellent' : c.avgScore >= 600 ? 'Good' : 'Needs Attention';
+            const statusCls = c.avgScore >= 700 ? 'green' : c.avgScore >= 600 ? 'blue' : 'red';
+            return `<tr onclick="navigate('principal-classes')" style="cursor:pointer">
+              <td><strong>${c.name}</strong></td>
+              <td>${c.teacher}</td>
+              <td>${c.students}</td>
+              <td><strong>${c.avgScore}</strong></td>
+              <td><span class="badge badge-${statusCls}">${status}</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px">
+      <div class="list-card" style="padding:24px">
+        <h3 style="margin-bottom:16px">Recent Activity</h3>
+        ${['Sarah Johnson assigned Charlotte\'s Web quiz', 'Mike Rivera completed Winter Reading Benchmark', 'Emily Chen added 3 new students', 'Lisa Park assigned February Mystery Challenge'].map((a, i) => `
+          <div style="padding:8px 0;border-bottom:1px solid var(--g100);font-size:0.875rem;color:var(--g600)"><span style="color:var(--g400);font-size:0.75rem">${i + 1}h ago</span> &mdash; ${a}</div>
+        `).join('')}
+      </div>
+      <div class="list-card" style="padding:24px">
+        <h3 style="margin-bottom:16px">Quick Insights</h3>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="padding:12px;background:var(--green-p, #ECFDF5);border-radius:var(--radius-sm);font-size:0.875rem"><strong style="color:var(--green)">School Average Up 14%</strong><br><span style="color:var(--g600)">Reading scores improving across all grades</span></div>
+          <div style="padding:12px;background:var(--blue-p);border-radius:var(--radius-sm);font-size:0.875rem"><strong style="color:var(--blue)">70 Students Active This Week</strong><br><span style="color:var(--g600)">92% participation rate</span></div>
+          <div style="padding:12px;background:var(--gold-p);border-radius:var(--radius-sm);font-size:0.875rem"><strong style="color:var(--gold)">16,500 Keys Earned</strong><br><span style="color:var(--g600)">Students are highly engaged with the reward system</span></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderPrincipalClasses() {
+  const classes = [
+    { name: "Sarah Johnson's 4th Grade", teacher: 'Sarah Johnson', students: 10, avgScore: 674, accuracy: 81, books: 48, code: 'SARAH4' },
+    { name: "Mike Rivera's 3rd Grade", teacher: 'Mike Rivera', students: 22, avgScore: 612, accuracy: 76, books: 35, code: 'MIKE3R' },
+    { name: "Emily Chen's 5th Grade", teacher: 'Emily Chen', students: 18, avgScore: 738, accuracy: 85, books: 62, code: 'EMILY5' },
+    { name: "Lisa Park's 4th Grade", teacher: 'Lisa Park', students: 20, avgScore: 695, accuracy: 79, books: 44, code: 'LISAP4' },
+  ];
+
+  return `
+    <div class="page-header"><h1>All Classes <span class="badge badge-blue">${classes.length}</span></h1></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      ${classes.map(c => `
+        <div class="stat-card" style="padding:24px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div>
+              <div style="font-weight:700;color:var(--navy)">${c.name}</div>
+              <div style="font-size:0.8125rem;color:var(--g500)">${c.teacher} &bull; ${c.students} students</div>
+            </div>
+            <span class="badge badge-blue">Code: ${c.code}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;text-align:center">
+            <div><div style="font-size:1.25rem;font-weight:700;color:var(--navy)">${c.avgScore}</div><div style="font-size:0.7rem;color:var(--g500)">Avg Score</div></div>
+            <div><div style="font-size:1.25rem;font-weight:700;color:var(--navy)">${c.accuracy}%</div><div style="font-size:0.7rem;color:var(--g500)">Accuracy</div></div>
+            <div><div style="font-size:1.25rem;font-weight:700;color:var(--navy)">${c.books}</div><div style="font-size:0.7rem;color:var(--g500)">Books</div></div>
+            <div><div style="font-size:1.25rem;font-weight:700;color:var(--navy)">${c.students}</div><div style="font-size:0.7rem;color:var(--g500)">Students</div></div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderPrincipalTeachers() {
+  const teachers = [
+    { name: 'Sarah Johnson', grade: '4th', students: 10, avgScore: 674, classes: 1, initials: 'SJ', color: '#2563EB' },
+    { name: 'Mike Rivera',   grade: '3rd', students: 22, avgScore: 612, classes: 1, initials: 'MR', color: '#F59E0B' },
+    { name: 'Emily Chen',    grade: '5th', students: 18, avgScore: 738, classes: 1, initials: 'EC', color: '#10B981' },
+    { name: 'Lisa Park',     grade: '4th', students: 20, avgScore: 695, classes: 1, initials: 'LP', color: '#8B5CF6' },
+  ];
+
+  return `
+    <div class="page-header"><h1>Teachers <span class="badge badge-blue">${teachers.length}</span></h1></div>
+    <div class="list-card">
+      <table class="data-table">
+        <thead><tr><th>TEACHER</th><th>GRADE</th><th>STUDENTS</th><th>AVG READING SCORE</th><th>STATUS</th></tr></thead>
+        <tbody>
+          ${teachers.map(t => `
+            <tr>
+              <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar-sm" style="background:${t.color}">${t.initials}</div><strong>${t.name}</strong></div></td>
+              <td>${t.grade} Grade</td>
+              <td>${t.students}</td>
+              <td><strong>${t.avgScore}</strong></td>
+              <td><span class="badge badge-green">Active</span></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderPrincipalSettings() {
+  return `
+    <div class="page-header"><h1>School Settings</h1></div>
+    <div class="list-card" style="padding:24px;max-width:600px">
+      <h3 style="margin-bottom:20px">School Information</h3>
+      <div class="auth-form" style="display:flex;flex-direction:column;gap:18px">
+        <div class="form-group">
+          <label class="form-label">School Name</label>
+          <input type="text" class="form-input" value="${currentUser?.school || 'Lincoln Elementary'}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">District</label>
+          <input type="text" class="form-input" value="Westfield Unified School District">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Principal Email</label>
+          <input type="text" class="form-input" value="${currentUser?.email || 'principal@school.edu'}">
+        </div>
+        <button class="btn btn-primary" style="align-self:flex-start">Save Changes</button>
+      </div>
+    </div>
+  `;
+}
+
+// ---- Boot ----
+document.addEventListener('DOMContentLoaded', async () => {
+  // Detect user role from session
+  try {
+    const me = await API.getMe();
+    if (me.user) {
+      currentUser = me.user;
+      userRole = me.user.role || 'teacher';
+    }
+  } catch(e) { /* Not logged in — default teacher demo */ }
+
+  // Load books from API
+  try {
+    books = await API.getBooks();
+  } catch(e) { console.warn('Could not load books:', e); }
+
+  // Load class code for teachers
+  if (userRole === 'teacher' && currentUser) {
+    try {
+      const codeData = await API.getClassCode();
+      if (codeData.classCode) {
+        currentUser.classCode = codeData.classCode;
+        currentUser.className = codeData.className;
+      }
+    } catch(e) { /* no class yet */ }
+  }
+
+  // Set default page based on role
+  if (userRole === 'student') {
+    page = 'student-dashboard';
+  } else if (userRole === 'principal') {
+    page = 'principal-dashboard';
+  }
+
+  renderSidebar();
+  renderHeader();
+  renderMain();
+});

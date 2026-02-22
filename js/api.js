@@ -1,0 +1,65 @@
+// key2read API Client
+const API = {
+  async get(url) {
+    const r = await fetch(url);
+    if (!r.ok) {
+      const data = await r.json().catch(() => ({}));
+      throw new Error(data.error || `API error: ${r.status}`);
+    }
+    return r.json();
+  },
+  async post(url, body) {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!r.ok) {
+      const data = await r.json().catch(() => ({}));
+      throw new Error(data.error || `API error: ${r.status}`);
+    }
+    return r.json();
+  },
+  async put(url, body) {
+    const r = await fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!r.ok) {
+      const data = await r.json().catch(() => ({}));
+      throw new Error(data.error || `API error: ${r.status}`);
+    }
+    return r.json();
+  },
+
+  // Auth
+  signup: (data) => API.post('/api/auth/signup', data),
+  demoLogin: (name, email, role) => API.post('/api/auth/demo-login', { name, email, role: role || 'teacher' }),
+  googleLogin: (credential) => API.post('/api/auth/google', { credential }),
+  cleverLogin: (code) => API.post('/api/auth/clever', { code }),
+  getMe: () => API.get('/api/auth/me'),
+  logout: () => API.post('/api/auth/logout', {}),
+  getClassCode: () => API.get('/api/class/code'),
+  validateClassCode: (code) => API.get(`/api/class/validate/${code}`),
+
+  // Students
+  getStudents: (classId) => API.get(`/api/students?classId=${classId || 1}`),
+  getStudent: (id) => API.get(`/api/students/${id}`),
+  updateSurvey: (id, data) => API.put(`/api/students/${id}/survey`, data),
+  getReadingHistory: (id) => API.get(`/api/students/${id}/reading-history`),
+  getQuizResults: (id) => API.get(`/api/students/${id}/quiz-results`),
+
+  // Books
+  getBooks: () => API.get('/api/books'),
+  getChapters: (bookId) => API.get(`/api/books/${bookId}/chapters`),
+  getChapterQuiz: (bookId, chapterNum) => API.get(`/api/books/${bookId}/chapters/${chapterNum}/quiz`),
+
+  // Quiz
+  personalizeAll: (chapterId, studentId) => API.post('/api/quiz/personalize-all', { chapterId, studentId }),
+  submitQuiz: (data) => API.post('/api/quiz/submit', data),
+
+  // AI Features
+  defineWord: (word, context, gradeLevel) => API.post('/api/define', { word, context, gradeLevel }),
+  getStrategy: (strategyType, question, passage, gradeLevel) => API.post('/api/strategy', { strategyType, question, passage, gradeLevel }),
+  getFeedback: (data) => API.post('/api/feedback', data),
+
+  // Assignments
+  createAssignment: (data) => API.post('/api/assignments', data),
+  getAssignments: (classId) => API.get(`/api/assignments?classId=${classId || 1}`),
+
+  // Status
+  getStatus: () => API.get('/api/status')
+};

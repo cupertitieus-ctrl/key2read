@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>key2read — Reading comprehension that kids love and teachers trust</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/landing.css">
+</head>
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="9" r="5"/>
+        <path d="M12.5 12.5L28 28"/>
+        <path d="M22 22l6 0"/>
+        <path d="M25 19l0 6"/>
+      </svg>
+      <span>key2read</span>
+    </a>
+    <div class="navbar-links">
+      <a href="#features">Features</a>
+      <a href="#how-it-works">How It Works</a>
+      <a href="#pricing">Pricing</a>
+    </div>
+    <div class="navbar-actions">
+      <a href="pages/signin.html" class="btn btn-ghost btn-sm">Sign In</a>
+      <a href="pages/signup.html" class="btn btn-primary btn-sm">Get Started Free</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      Now powered by AI quiz generation
+    </div>
+    <h1>Reading comprehension that kids <span class="gradient-text">love</span> and teachers <span class="gradient-text">trust</span></h1>
+    <p>Students read books, take AI-generated quizzes, earn Keys, and grow their reading scores &mdash; while teachers track everything in real time.</p>
+    <div class="hero-actions">
+      <a href="pages/signup.html" class="btn btn-primary btn-lg">Start Free Trial</a>
+      <a href="pages/dashboard.html" class="btn btn-outline btn-lg">View Demo Dashboard</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <strong>25,000+</strong>
+        <span>Book Quizzes</span>
+      </div>
+      <div class="hero-stat">
+        <strong>1.2M</strong>
+        <span>Quizzes Taken</span>
+      </div>
+      <div class="hero-stat">
+        <strong>8,500+</strong>
+        <span>Teachers</span>
+      </div>
+      <div class="hero-stat">
+        <strong>96%</strong>
+        <span>Satisfaction</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== DASHBOARD PREVIEW ===== -->
+<section class="preview-section">
+  <div class="preview-frame">
+    <div class="preview-chrome">
+      <div class="preview-dot red"></div>
+      <div class="preview-dot yellow"></div>
+      <div class="preview-dot green"></div>
+      <div class="preview-url">app.key2read.com/dashboard</div>
+    </div>
+    <div class="preview-body" style="padding:0;min-height:auto">
+      <!-- Inline mini-dashboard mockup -->
+      <div style="display:grid;grid-template-columns:200px 1fr;min-height:380px;width:100%">
+        <!-- Mini sidebar -->
+        <div style="background:rgba(255,255,255,.04);border-right:1px solid rgba(255,255,255,.06);padding:20px 16px;display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 10px;margin-bottom:12px">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E5A100" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="4"/><path d="M10.5 10.5L21 21"/><path d="M16 16l5 0"/><path d="M19 13l0 6"/></svg>
+            <span style="font-family:var(--font-display);font-weight:700;color:#fff;font-size:0.875rem">key2read</span>
+          </div>
+          <div style="padding:8px 10px;border-radius:6px;background:rgba(37,99,235,.2);color:#fff;font-size:0.75rem;font-weight:500;display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            Quizzes
+          </div>
+          <div style="padding:8px 10px;color:rgba(255,255,255,.4);font-size:0.75rem;font-weight:500;display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            Students
+          </div>
+          <div style="padding:8px 10px;color:rgba(255,255,255,.4);font-size:0.75rem;font-weight:500;display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+            Class Goals
+          </div>
+        </div>
+        <!-- Mini content area -->
+        <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
+          <!-- Mini stat cards -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+            <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:14px;border-top:2px solid #3B82F6">
+              <div style="font-size:0.625rem;color:rgba(255,255,255,.4);margin-bottom:4px">Reading Score</div>
+              <div style="font-family:var(--font-display);font-size:1.25rem;font-weight:800;color:#fff">724</div>
+            </div>
+            <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:14px;border-top:2px solid #059669">
+              <div style="font-size:0.625rem;color:rgba(255,255,255,.4);margin-bottom:4px">Comprehension</div>
+              <div style="font-family:var(--font-display);font-size:1.25rem;font-weight:800;color:#fff">82%</div>
+            </div>
+            <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:14px;border-top:2px solid #E5A100">
+              <div style="font-size:0.625rem;color:rgba(255,255,255,.4);margin-bottom:4px">Keys Earned</div>
+              <div style="font-family:var(--font-display);font-size:1.25rem;font-weight:800;color:#fff">4,000</div>
+            </div>
+          </div>
+          <!-- Mini table -->
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:8px;overflow:hidden;flex:1">
+            <div style="padding:10px 14px;font-size:0.625rem;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid rgba(255,255,255,.06);display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:8px">
+              <span>Activity</span><span>Results</span><span>Keys</span>
+            </div>
+            <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04);display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:8px;align-items:center">
+              <div><div style="font-size:0.5625rem;color:#3B82F6;font-weight:600;text-transform:uppercase">Book Quiz</div><div style="font-size:0.6875rem;color:#fff">Charlotte's Web</div></div>
+              <div style="display:flex;height:5px;border-radius:3px;overflow:hidden;background:rgba(255,255,255,.08)"><div style="width:30%;background:#059669"></div><div style="width:35%;background:#5BBF8E"></div><div style="width:22%;background:#E5A100"></div><div style="width:13%;background:#DC2626"></div></div>
+              <div style="font-size:0.6875rem;color:#E5A100;font-weight:600">1,840</div>
+            </div>
+            <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04);display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:8px;align-items:center">
+              <div><div style="font-size:0.5625rem;color:#7C3AED;font-weight:600;text-transform:uppercase">Assessment</div><div style="font-size:0.6875rem;color:#fff">Winter Benchmark</div></div>
+              <div style="display:flex;height:5px;border-radius:3px;overflow:hidden;background:rgba(255,255,255,.08)"><div style="width:25%;background:#059669"></div><div style="width:30%;background:#5BBF8E"></div><div style="width:20%;background:#E5A100"></div></div>
+              <div style="font-size:0.6875rem;color:#E5A100;font-weight:600">612</div>
+            </div>
+            <div style="padding:10px 14px;display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:8px;align-items:center">
+              <div><div style="font-size:0.5625rem;color:#EA580C;font-weight:600;text-transform:uppercase">Challenge</div><div style="font-size:0.6875rem;color:#fff">Mystery Genre</div></div>
+              <div style="display:flex;height:5px;border-radius:3px;overflow:hidden;background:rgba(255,255,255,.08)"><div style="width:40%;background:#059669"></div><div style="width:35%;background:#5BBF8E"></div><div style="width:15%;background:#E5A100"></div></div>
+              <div style="font-size:0.6875rem;color:#E5A100;font-weight:600">2,300</div>
+            </div>
+          </div>
+          <a href="pages/dashboard.html" class="btn btn-primary" style="align-self:center;font-size:0.8125rem;padding:8px 20px">Launch Full Dashboard</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FEATURES ===== -->
+<section class="features-section" id="features">
+  <div class="section-header">
+    <h2>Everything you need to supercharge reading</h2>
+    <p>Built for K&ndash;12 classrooms with tools teachers actually want and students genuinely enjoy.</p>
+  </div>
+  <div class="features-grid stagger">
+    <!-- 1: AI Quiz Generation -->
+    <div class="feature-card animate-slide-up">
+      <div class="feature-icon blue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <h3>AI Quiz Generation</h3>
+      <p>Automatically generate comprehension quizzes for any book in our library. AI creates questions aligned to reading standards.</p>
+    </div>
+    <!-- 2: Key Economy -->
+    <div class="feature-card animate-slide-up">
+      <div class="feature-icon gold">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="4"/><path d="M10.5 10.5L21 21"/><path d="M16 16l5 0"/><path d="M19 13l0 6"/></svg>
+      </div>
+      <h3>Key Economy</h3>
+      <p>Students earn Keys for passing quizzes and spend them in the Class Store. A rewards system that drives intrinsic motivation.</p>
+    </div>
+    <!-- 3: Real-Time Analytics -->
+    <div class="feature-card animate-slide-up">
+      <div class="feature-icon green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <h3>Real-Time Analytics</h3>
+      <p>Track every student's reading score, accuracy, streak, and growth trends on a live teacher dashboard.</p>
+    </div>
+    <!-- 4: Formative Assessments -->
+    <div class="feature-card animate-slide-up">
+      <div class="feature-icon purple">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      </div>
+      <h3>Formative Assessments</h3>
+      <p>Assign reading benchmarks and assessments to measure comprehension growth over time across your class.</p>
+    </div>
+    <!-- 5: Reading Score Algorithm -->
+    <div class="feature-card animate-slide-up">
+      <div class="feature-icon sky">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+      </div>
+      <h3>Reading Score Algorithm</h3>
+      <p>A transparent, multi-factor reading score that accounts for accuracy, difficulty, growth, and consistency.</p>
+    </div>
+    <!-- 6: Class Goals & Celebrations -->
+    <div class="feature-card animate-slide-up">
+      <div class="feature-icon orange">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </div>
+      <h3>Class Goals &amp; Celebrations</h3>
+      <p>Set class-wide reading goals and celebrate milestones. Students see progress and stay motivated together.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== HOW IT WORKS ===== -->
+<section class="how-section" id="how-it-works">
+  <div class="section-header">
+    <h2>How It Works</h2>
+    <p>Get started in minutes. See results in days.</p>
+  </div>
+  <div class="how-steps stagger">
+    <div class="how-step animate-slide-up">
+      <div class="step-number">1</div>
+      <h3>Sign Up &amp; Add Students</h3>
+      <p>Create your free teacher account, set up your class, and invite students with a class code or roster upload.</p>
+    </div>
+    <div class="how-step animate-slide-up">
+      <div class="step-number">2</div>
+      <h3>Students Read &amp; Quiz</h3>
+      <p>Students read books at their level and take AI-generated comprehension quizzes to earn Keys and build their Reading Score.</p>
+    </div>
+    <div class="how-step animate-slide-up">
+      <div class="step-number">3</div>
+      <h3>Watch Growth Happen</h3>
+      <p>Track progress on your real-time dashboard. Identify struggling readers, celebrate top performers, and guide instruction.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PRICING ===== -->
+<section class="pricing-section" id="pricing">
+  <div class="section-header">
+    <h2>Simple, transparent pricing</h2>
+    <p>Plans for every reader, from homeschool to district-wide.</p>
+  </div>
+  <div class="pricing-grid stagger">
+    <!-- Family -->
+    <div class="pricing-card animate-slide-up">
+      <div class="pricing-card-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <h3>Family</h3>
+      <div class="pricing-subtitle">For Homeschool</div>
+      <div class="pricing-price">
+        <span class="amount">$4</span>
+        <span class="period">/ child / month</span>
+      </div>
+      <p class="pricing-desc">Everything your homeschool family needs to build confident, independent readers at every grade level.</p>
+      <div class="pricing-features">
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Up to 8 children per family</span>
+        </div>
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>25,000+ book quiz library</span>
+        </div>
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>AI-personalized assessments</span>
+        </div>
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Parent dashboard &amp; progress reports</span>
+        </div>
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Key economy &amp; rewards</span>
+        </div>
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Multi-grade level support (K-12)</span>
+        </div>
+      </div>
+      <a href="pages/signup.html" class="btn btn-outline w-full">Start 14-Day Free Trial</a>
+    </div>
+    <!-- School -->
+    <div class="pricing-card popular animate-slide-up">
+      <div class="pricing-popular-badge">Most Popular</div>
+      <div class="pricing-card-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="13" y2="11"/></svg>
+      </div>
+      <h3>School</h3>
+      <div class="pricing-subtitle">For Classrooms &amp; Schools</div>
+      <div class="pricing-price">
+        <span class="amount">$6</span>
+        <span class="period">/ student / year</span>
+      </div>
+      <p class="pricing-desc">Full-featured AI reading platform for classrooms and schools with powerful teacher tools and growth tracking.</p>
+      <div class="pricing-features">
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Unlimited students &amp; classes</span>
+        </div>
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>25,000+ book quiz library</span>
+        </div>
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>AI quiz generation &amp; personalization</span>
+        </div>
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Growth reports for principals</span>
+        </div>
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Formative assessments &amp; AI tools</span>
+        </div>
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Class Store &amp; Key economy</span>
+        </div>
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Google Classroom integration</span>
+        </div>
+      </div>
+      <a href="pages/signup.html" class="btn btn-primary w-full">Start Free Trial</a>
+    </div>
+    <!-- District -->
+    <div class="pricing-card animate-slide-up">
+      <div class="pricing-card-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="22" height="16" rx="2"/><path d="M1 10h22"/><path d="M7 6V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><path d="M12 14v4"/></svg>
+      </div>
+      <h3>District</h3>
+      <div class="pricing-subtitle">For District-Wide Deployment</div>
+      <div class="pricing-price">
+        <span class="amount">Custom</span>
+      </div>
+      <p class="pricing-desc">Enterprise-grade deployment with SSO, rostering, and dedicated support for your entire district.</p>
+      <div class="pricing-features">
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Everything in School plan</span>
+        </div>
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Clever &amp; ClassLink SSO</span>
+        </div>
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>District-wide analytics &amp; reporting</span>
+        </div>
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Dedicated account manager</span>
+        </div>
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>FERPA &amp; COPPA compliant</span>
+        </div>
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Volume licensing &amp; PO accepted</span>
+        </div>
+        <div class="pricing-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Onboarding &amp; training for staff</span>
+        </div>
+      </div>
+      <a href="#" class="btn btn-ghost w-full">Contact Sales</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA ===== -->
+<section class="cta-section">
+  <div class="cta-box">
+    <h2>Ready to transform reading in your classroom?</h2>
+    <p>Join thousands of families, teachers, and districts using key2read to build stronger readers. Start your free trial today.</p>
+    <a href="pages/signup.html" class="btn btn-gold btn-lg">Get Started Free</a>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+        <circle cx="9" cy="9" r="5"/>
+        <path d="M12.5 12.5L28 28"/>
+        <path d="M22 22l6 0"/>
+        <path d="M25 19l0 6"/>
+      </svg>
+      <span>key2read</span>
+    </div>
+    <div class="footer-links">
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Help</a>
+      <a href="#">Blog</a>
+    </div>
+    <div class="footer-copy">&copy; 2026 key2read. All rights reserved.</div>
+  </div>
+</footer>
+
+</body>
+</html>
