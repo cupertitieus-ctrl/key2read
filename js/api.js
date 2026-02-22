@@ -37,7 +37,7 @@ const API = {
   validateClassCode: (code) => API.get(`/api/class/validate/${code}`),
 
   // Students
-  getStudents: (classId) => API.get(`/api/students?classId=${classId || 1}`),
+  getStudents: (classId) => API.get(`/api/students?classId=${classId}`),
   getStudent: (id) => API.get(`/api/students/${id}`),
   updateSurvey: (id, data) => API.put(`/api/students/${id}/survey`, data),
   getReadingHistory: (id) => API.get(`/api/students/${id}/reading-history`),
@@ -59,7 +59,7 @@ const API = {
 
   // Assignments
   createAssignment: (data) => API.post('/api/assignments', data),
-  getAssignments: (classId) => API.get(`/api/assignments?classId=${classId || 1}`),
+  getAssignments: (classId) => API.get(`/api/assignments?classId=${classId}`),
 
   // Status
   getStatus: () => API.get('/api/status')
