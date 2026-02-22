@@ -49,6 +49,7 @@ async function buildSessionUser(user) {
       sessionUser.classId = cls.id;
       sessionUser.classCode = cls.class_code;
       sessionUser.className = cls.name;
+      sessionUser.grade = cls.grade || '4th';
     }
   }
 
@@ -252,7 +253,7 @@ app.post('/api/auth/signup', async (req, res) => {
       // Teacher signup (default)
       const userEmail = email || `${name.toLowerCase().replace(/\s+/g, '.')}@key2read.com`;
       const user = await db.createUser({ email: userEmail, name, role: 'teacher', auth_provider: 'local', school: school || '' });
-      const grade = '4th';
+      const grade = req.body.grade || '4th';
       const cls = await db.createClass(`${name}'s Class`, grade, user.id);
 
       req.session.userId = user.id;

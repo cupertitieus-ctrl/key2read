@@ -124,6 +124,27 @@
           <input type="text" id="school" class="form-input" placeholder="Lincoln Elementary School">
         </div>
 
+        <!-- Grade Level (Teacher) -->
+        <div class="form-group" id="field-grade">
+          <label class="form-label" for="grade">Grade Level You Teach</label>
+          <select id="grade" class="form-input" style="appearance:auto">
+            <option value="">Select grade...</option>
+            <option value="K">Kindergarten</option>
+            <option value="1st">1st Grade</option>
+            <option value="2nd">2nd Grade</option>
+            <option value="3rd">3rd Grade</option>
+            <option value="4th">4th Grade</option>
+            <option value="5th">5th Grade</option>
+            <option value="6th">6th Grade</option>
+            <option value="7th">7th Grade</option>
+            <option value="8th">8th Grade</option>
+            <option value="9th">9th Grade</option>
+            <option value="10th">10th Grade</option>
+            <option value="11th">11th Grade</option>
+            <option value="12th">12th Grade</option>
+          </select>
+        </div>
+
         <!-- School/District Name (Principal) -->
         <div class="form-group" id="field-district" style="display:none">
           <label class="form-label" for="district">School / District Name</label>
@@ -212,6 +233,7 @@ function selectRole(el) {
   // Field references
   const fieldEmail     = document.getElementById('field-email');
   const fieldSchool    = document.getElementById('field-school');
+  const fieldGrade     = document.getElementById('field-grade');
   const fieldDistrict  = document.getElementById('field-district');
   const fieldClasscode = document.getElementById('field-classcode');
   const fieldTerms     = document.getElementById('field-terms');
@@ -220,6 +242,7 @@ function selectRole(el) {
   // Hide all role-specific fields first
   fieldEmail.style.display     = 'none';
   fieldSchool.style.display    = 'none';
+  fieldGrade.style.display     = 'none';
   fieldDistrict.style.display  = 'none';
   fieldClasscode.style.display = 'none';
   fieldTerms.style.display     = 'none';
@@ -229,6 +252,7 @@ function selectRole(el) {
   if (role === 'teacher') {
     fieldEmail.style.display  = '';
     fieldSchool.style.display = '';
+    fieldGrade.style.display  = '';
     fieldTerms.style.display  = '';
   } else if (role === 'principal') {
     fieldEmail.style.display    = '';
@@ -257,14 +281,16 @@ document.getElementById('signup-form').addEventListener('submit', async function
   if (role === 'teacher') {
     const email  = document.getElementById('email').value.trim();
     const school = document.getElementById('school').value.trim();
+    const grade  = document.getElementById('grade').value;
     const terms  = document.getElementById('terms-checkbox').checked;
     if (!email)    return showError('Please enter your school email.');
     if (!school)   return showError('Please enter your school name.');
+    if (!grade)    return showError('Please select your grade level.');
     if (!password) return showError('Please create a password.');
     if (!terms)    return showError('Please agree to the Terms of Service and Privacy Policy.');
 
     try {
-      await API.post('/api/auth/signup', { name, email, password, role: 'teacher', school });
+      await API.post('/api/auth/signup', { name, email, password, role: 'teacher', school, grade });
       window.location.href = 'dashboard.html';
     } catch (err) {
       showError(err.message || 'Signup failed. Please try again.');

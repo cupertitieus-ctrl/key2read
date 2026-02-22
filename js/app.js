@@ -69,12 +69,7 @@ const templates = [
   { id: 't6', type: 'assessment', name: 'Vocabulary in Context',     desc: 'Assess vocabulary understanding within reading passages.', questions: 15, time: '20 min', level: '2.0\u20136.0' },
 ];
 
-const goals = [
-  { id: 'g1', title: 'Class reads 100 books by March',     current: 48,   target: 100,  due: '03/15/26', color: 'blue',   unit: 'books' },
-  { id: 'g2', title: 'Average comprehension above 85%',    current: 82,   target: 85,   due: '03/01/26', color: 'green',  unit: '%' },
-  { id: 'g3', title: 'Every student passes 3+ quizzes',    current: 19,   target: 23,   due: '02/28/26', color: 'purple', unit: 'students' },
-  { id: 'g4', title: 'Class earns 5,000 Keys',             current: 3247, target: 5000, due: '03/31/26', color: 'gold',   unit: 'Keys' },
-];
+let goals = [];
 
 // Default store items (teacher can customize)
 let storeItems = [
@@ -89,13 +84,7 @@ let storeItems = [
 // Books loaded from API (populated on init)
 let books = [];
 
-const quizHistory = [
-  { date: '02/18/26', name: 'Charlotte\'s Web \u2014 Ch. 1-5',   origin: 'student', score: 92, keys: 45 },
-  { date: '02/14/26', name: 'Winter Reading Benchmark',      origin: 'teacher', score: 88, keys: 80 },
-  { date: '02/10/26', name: 'The One and Only Ivan',         origin: 'student', score: 95, keys: 55 },
-  { date: '02/07/26', name: 'February Mystery Challenge',    origin: 'teacher', score: 78, keys: 35 },
-  { date: '02/03/26', name: 'Hatchet \u2014 Comprehension',       origin: 'student', score: 85, keys: 40 },
-];
+let quizHistory = [];
 
 // ---- Personalized Questions Demo ----
 const personalizedQuestions = {
@@ -118,18 +107,7 @@ const personalizedQuestions = {
 
 // ---- Growth Data (6 months: Sep-Feb) ----
 const months = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb'];
-const growthData = {
-  0:  { scores: [650, 672, 695, 710, 728, 742], accuracy: [78, 81, 83, 85, 87, 89], keys: [40, 55, 72, 85, 95, 485], quizzes: [2, 5, 8, 11, 15, 18] },
-  1:  { scores: [610, 635, 655, 670, 685, 698], accuracy: [72, 75, 78, 80, 82, 84], keys: [30, 48, 65, 78, 90, 410], quizzes: [2, 4, 7, 10, 12, 15] },
-  2:  { scores: [720, 740, 758, 775, 795, 812], accuracy: [88, 90, 92, 93, 95, 96], keys: [55, 80, 110, 140, 165, 580], quizzes: [3, 6, 10, 14, 18, 22] },
-  3:  { scores: [420, 435, 448, 460, 472, 485], accuracy: [48, 50, 52, 54, 56, 58], keys: [15, 25, 38, 50, 62, 175], quizzes: [1, 2, 4, 5, 7, 9] },
-  4:  { scores: [635, 655, 672, 690, 705, 721], accuracy: [74, 76, 79, 81, 83, 85], keys: [38, 55, 75, 90, 105, 445], quizzes: [2, 5, 8, 11, 14, 17] },
-  5:  { scores: [600, 620, 640, 655, 672, 688], accuracy: [70, 72, 74, 76, 78, 80], keys: [28, 45, 60, 75, 88, 380], quizzes: [2, 4, 6, 9, 11, 14] },
-  6:  { scores: [740, 760, 778, 798, 818, 835], accuracy: [90, 92, 93, 95, 96, 97], keys: [60, 88, 120, 155, 185, 610], quizzes: [3, 7, 11, 15, 20, 24] },
-  7:  { scores: [470, 490, 508, 522, 538, 552], accuracy: [60, 63, 65, 67, 70, 72], keys: [20, 35, 50, 65, 78, 260], quizzes: [1, 3, 5, 7, 9, 11] },
-  8:  { scores: [670, 690, 712, 730, 748, 765], accuracy: [80, 83, 85, 87, 89, 91], keys: [45, 68, 92, 115, 138, 510], quizzes: [3, 6, 9, 13, 16, 20] },
-  9:  { scores: [390, 405, 415, 425, 435, 445], accuracy: [45, 47, 49, 51, 53, 55], keys: [10, 20, 32, 45, 58, 145], quizzes: [1, 2, 3, 4, 5, 7] },
-};
+let growthData = {};
 
 // ---- State ----
 let page = 'quizzes';
@@ -876,6 +854,7 @@ function renderStudentProfile() {
 
     ${interestSection}
 
+    ${quizHistory.length > 0 ? `
     <div class="data-table-wrap">
       <table class="data-table">
         <thead>
@@ -906,7 +885,10 @@ function renderStudentProfile() {
           }).join('')}
         </tbody>
       </table>
-    </div>`;
+    </div>` : `
+    <div class="info-panel" style="text-align:center;padding:32px">
+      <p style="color:var(--g500);margin:0">${IC.bookOpen} No quiz history yet. Quizzes will appear here as ${s.name} completes them.</p>
+    </div>`}`;
 }
 
 // ---- Page: Quiz Templates ----
@@ -960,6 +942,22 @@ function setFilter(f) {
 
 // ---- Page: Class Goals ----
 function renderGoals() {
+  if (goals.length === 0) {
+    return `
+      <div class="page-header">
+        <h1>Class Goals</h1>
+        <div class="page-header-actions">
+          <button class="btn btn-primary btn-sm" onclick="openModal('goal')">${IC.plus} Add Goal</button>
+        </div>
+      </div>
+      <div class="empty-state">
+        <div class="empty-state-icon">${IC.target}</div>
+        <h2>No Goals Yet</h2>
+        <p>Set class goals to motivate your students! Goals update automatically as students complete quizzes and earn Keys.</p>
+        <button class="btn btn-primary" onclick="openModal('goal')">${IC.plus} Create Your First Goal</button>
+      </div>`;
+  }
+
   return `
     <div class="page-header">
       <h1>Class Goals</h1>
