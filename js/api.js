@@ -27,6 +27,7 @@ const API = {
 
   // Auth
   signup: (data) => API.post('/api/auth/signup', data),
+  login: (data) => API.post('/api/auth/login', data),
   demoLogin: (name, email, role) => API.post('/api/auth/demo-login', { name, email, role: role || 'teacher' }),
   googleLogin: (credential) => API.post('/api/auth/google', { credential }),
   cleverLogin: (code) => API.post('/api/auth/clever', { code }),

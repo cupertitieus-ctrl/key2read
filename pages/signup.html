@@ -322,7 +322,10 @@ async function handleCleverLogin() {
 
 async function handleDemoLogin() {
   try {
-    await API.demoLogin('Sarah Johnson', 'sarah@demo.com');
+    const role = getSelectedRole();
+    const demoName = role === 'student' ? 'Demo Student' : role === 'principal' ? 'Demo Principal' : 'Sarah Johnson';
+    const demoEmail = role === 'student' ? 'demo-student@demo.com' : role === 'principal' ? 'demo-principal@demo.com' : 'sarah@demo.com';
+    await API.demoLogin(demoName, demoEmail, role);
     window.location.href = 'dashboard.html';
   } catch (e) {
     showError('Demo login failed. Is the server running?');

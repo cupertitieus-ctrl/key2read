@@ -19,21 +19,21 @@ app.use(session({
 }));
 app.use(express.static(path.join(__dirname), { extensions: ['html'] }));
 
-// ─── AUTH ROUTES ───
-app.post('/api/auth/demo-login', async (req, res) => {
-  const { name, email, role } = req.body;
-  let user = await db.getUserByEmail(email || 'sarah@demo.com');
-  if (!user) {
-    user = await db.createUser({ email, name: name || 'Demo Teacher', role: role || 'teacher', auth_provider: 'demo' });
-  }
-  // If student role, find student record and include stats
-  if ((role === 'student' || user.role === 'student')) {
+// ─── Helper: build full session data for a user ───
+async function buildSessionUser(user) {
+  let sessionUser = { ...user };
+
+  if (user.role === 'student') {
     const studentRecord = await db.getStudentByUserId(user.id);
     if (studentRecord) {
-      user = {
-        ...user,
+      // Get class info for the student
+      const { data: cls } = await db.supabase.from('classes').select('*, users!teacher_id (name)').eq('id', studentRecord.class_id).single();
+      sessionUser = {
+        ...sessionUser,
         studentId: studentRecord.id,
         classId: studentRecord.class_id,
+        className: cls?.name || '',
+        teacherName: cls?.users?.name || '',
         reading_level: studentRecord.reading_level || 3.0,
         reading_score: studentRecord.reading_score || 500,
         keys_earned: studentRecord.keys_earned || 0,
@@ -43,10 +43,85 @@ app.post('/api/auth/demo-login', async (req, res) => {
         onboarded: studentRecord.onboarded || 0
       };
     }
+  } else if (user.role === 'teacher') {
+    const cls = await db.getTeacherClass(user.id);
+    if (cls) {
+      sessionUser.classId = cls.id;
+      sessionUser.classCode = cls.class_code;
+      sessionUser.className = cls.name;
+    }
   }
+
+  return sessionUser;
+}
+
+// ─── AUTH ROUTES ───
+app.post('/api/auth/login', async (req, res) => {
+  const { email, name, classCode, role } = req.body;
+
+  try {
+    if (role === 'student') {
+      // Student login: find by name + class code
+      if (!name) return res.status(400).json({ error: 'Please enter your name.' });
+      if (!classCode) return res.status(400).json({ error: 'Please enter your class code.' });
+
+      const cls = await db.getClassByCode(classCode);
+      if (!cls) return res.status(400).json({ error: 'Invalid class code. Ask your teacher for the correct code.' });
+
+      // Find student by name in this class
+      const { data: studentRecords } = await db.supabase
+        .from('students')
+        .select('*, users!user_id (id, email, name, role)')
+        .eq('class_id', cls.id)
+        .ilike('name', name.trim());
+
+      if (!studentRecords || studentRecords.length === 0) {
+        return res.status(400).json({ error: `No student named "${name}" found in this class. Did you sign up first?` });
+      }
+
+      const studentRecord = studentRecords[0];
+      const user = studentRecord.users || await db.getUserById(studentRecord.user_id);
+      if (!user) return res.status(400).json({ error: 'Student account not found.' });
+
+      const sessionUser = await buildSessionUser(user);
+      req.session.userId = user.id;
+      req.session.user = sessionUser;
+      return res.json({ success: true, user: sessionUser });
+
+    } else {
+      // Teacher / Principal login: find by email
+      if (!email) return res.status(400).json({ error: 'Please enter your email.' });
+
+      const user = await db.getUserByEmail(email);
+      if (!user) return res.status(400).json({ error: 'No account found with this email. Did you sign up first?' });
+
+      const sessionUser = await buildSessionUser(user);
+      req.session.userId = user.id;
+      req.session.user = sessionUser;
+      return res.json({ success: true, user: sessionUser });
+    }
+  } catch (e) {
+    console.error('Login error:', e);
+    res.status(500).json({ error: 'Login failed. Please try again.' });
+  }
+});
+
+app.post('/api/auth/demo-login', async (req, res) => {
+  const { name, email, role } = req.body;
+  let user = await db.getUserByEmail(email || 'sarah@demo.com');
+  if (!user) {
+    user = await db.createUser({ email, name: name || 'Demo Teacher', role: role || 'teacher', auth_provider: 'demo' });
+    // If teacher, create a class for them
+    if ((role || 'teacher') === 'teacher') {
+      const cls = await db.createClass(`${name || 'Demo Teacher'}'s Class`, '4th', user.id);
+      user.classId = cls.id;
+      user.classCode = cls.class_code;
+    }
+  }
+  const sessionUser = await buildSessionUser(user);
   req.session.userId = user.id;
-  req.session.user = user;
-  res.json({ success: true, user });
+  req.session.user = sessionUser;
+  res.json({ success: true, user: sessionUser });
 });
 
 app.post('/api/auth/google', async (req, res) => {
@@ -59,10 +134,15 @@ app.post('/api/auth/google', async (req, res) => {
     let user = await db.getUserByEmail(email);
     if (!user) {
       user = await db.createUser({ email, name, role: 'teacher', auth_provider: 'google', auth_id: sub, avatar_url: picture });
+      // Create class for new teacher
+      const cls = await db.createClass(`${name}'s Class`, '4th', user.id);
+      user.classId = cls.id;
+      user.classCode = cls.class_code;
     }
+    const sessionUser = await buildSessionUser(user);
     req.session.userId = user.id;
-    req.session.user = user;
-    res.json({ success: true, user });
+    req.session.user = sessionUser;
+    res.json({ success: true, user: sessionUser });
   } catch (e) {
     console.error('Google auth error:', e);
     res.status(400).json({ error: 'Invalid Google credential' });
@@ -101,9 +181,13 @@ app.post('/api/auth/clever', async (req, res) => {
     }
     // Demo Clever login
     let user = await db.getUserByEmail('sarah@demo.com');
+    if (!user) {
+      user = await db.createUser({ email: 'sarah@demo.com', name: 'Sarah Johnson', role: 'teacher', auth_provider: 'demo' });
+    }
+    const sessionUser = await buildSessionUser(user);
     req.session.userId = user.id;
-    req.session.user = user;
-    res.json({ success: true, user, demo: true });
+    req.session.user = sessionUser;
+    res.json({ success: true, user: sessionUser, demo: true });
   } catch (e) {
     console.error('Clever auth error:', e);
     res.status(400).json({ error: 'Clever authentication failed' });

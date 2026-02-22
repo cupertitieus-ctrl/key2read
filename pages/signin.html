@@ -219,7 +219,6 @@ function showError(msg) {
 // Form submit
 document.querySelector('.auth-form').addEventListener('submit', async function(e) {
   e.preventDefault();
-  const password = document.getElementById('password').value;
 
   if (selectedRole === 'student') {
     const name = document.getElementById('student-name').value.trim();
@@ -227,16 +226,16 @@ document.querySelector('.auth-form').addEventListener('submit', async function(e
     if (!name) return showError('Please enter your name');
     if (!classCode) return showError('Please enter your class code');
     try {
-      await API.demoLogin(name, classCode + '@student', 'student');
+      await API.login({ name, classCode, role: 'student' });
       window.location.href = 'dashboard.html';
-    } catch(e) { showError('Login failed. Check your name and class code.'); }
+    } catch(e) { showError(e.message || 'Login failed. Check your name and class code.'); }
   } else {
-    const email = document.getElementById('email').value;
+    const email = document.getElementById('email').value.trim();
     if (!email) return showError('Please enter your email');
     try {
-      await API.demoLogin('User', email, selectedRole);
+      await API.login({ email, role: selectedRole });
       window.location.href = 'dashboard.html';
-    } catch(e) { showError('Login failed. Try the demo button.'); }
+    } catch(e) { showError(e.message || 'Login failed. Check your email.'); }
   }
 });
 
@@ -275,7 +274,10 @@ async function handleCleverLogin() {
 
 async function handleDemoLogin() {
   try {
-    await API.demoLogin('Sarah Johnson', 'sarah@demo.com', 'teacher');
+    const demoRole = selectedRole || 'teacher';
+    const demoName = demoRole === 'student' ? 'Demo Student' : demoRole === 'principal' ? 'Demo Principal' : 'Sarah Johnson';
+    const demoEmail = demoRole === 'student' ? 'demo-student@demo.com' : demoRole === 'principal' ? 'demo-principal@demo.com' : 'sarah@demo.com';
+    await API.demoLogin(demoName, demoEmail, demoRole);
     window.location.href = 'dashboard.html';
   } catch(e) { showError('Demo login failed. Is the server running?'); }
 }
