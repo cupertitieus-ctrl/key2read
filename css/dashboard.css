@@ -2409,3 +2409,71 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ===== OWNER DASHBOARD CHARTS ===== */
+
+.chart-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 140px;
+}
+
+.chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  color: var(--g600);
+}
+
+.chart-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.bar-chart-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.bar-chart-label {
+  width: 70px;
+  font-size: 0.8125rem;
+  color: var(--g600);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.bar-chart-track {
+  flex: 1;
+  height: 20px;
+  background: var(--g100);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.bar-chart-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2563EB, #60A5FA);
+  border-radius: 6px;
+  transition: width 0.5s ease;
+}
+
+.bar-chart-value {
+  width: 30px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--navy);
+  text-align: right;
+}
+
+@media (max-width: 900px) {
+  .chart-legend {
+    margin-top: 12px;
+  }
+}

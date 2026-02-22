@@ -14,3 +14,7 @@ services:
         generateValue: true
       - key: NODE_ENV
         value: production
+      - key: OWNER_EMAIL
+        sync: false
+      - key: OWNER_PASSWORD_HASH
+        sync: false

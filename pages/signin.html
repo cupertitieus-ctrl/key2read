@@ -80,7 +80,7 @@
       <p>Select your role and enter your credentials.</p>
 
       <!-- Role Selector -->
-      <div class="role-selector" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="role-selector" id="role-selector" style="grid-template-columns:1fr 1fr 1fr">
         <div class="role-card" onclick="selectRole(this, 'principal')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-4h6v4"/><path d="M9 9h.01"/><path d="M15 9h.01"/><path d="M9 13h.01"/><path d="M15 13h.01"/></svg>
           <span>Principal</span>
@@ -92,6 +92,10 @@
         <div class="role-card" onclick="selectRole(this, 'student')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           <span>Student</span>
+        </div>
+        <div class="role-card" id="owner-role-card" onclick="selectRole(this, 'owner')" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span>Owner</span>
         </div>
       </div>
 
@@ -151,11 +155,12 @@
         Don't have an account? <a href="signup.html">Sign up free</a>
       </div>
 
-      <div class="auth-back-link">
+      <div class="auth-back-link" style="display:flex;justify-content:space-between;align-items:center">
         <a href="../index.html">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
           Back to key2read.com
         </a>
+        <a href="#" id="admin-login-link" onclick="showAdminLogin(); return false;" style="font-size:0.75rem;color:var(--g400)">Admin login</a>
       </div>
     </div>
   </div>
@@ -176,7 +181,6 @@ function selectRole(el, role) {
   const emailGroup = document.getElementById('field-email');
   const nameGroup = document.getElementById('field-name');
   const codeGroup = document.getElementById('field-classcode');
-
   const passwordGroup = document.getElementById('field-password');
   const extrasGroup = document.getElementById('field-extras');
 
@@ -186,6 +190,12 @@ function selectRole(el, role) {
     if (codeGroup) codeGroup.style.display = '';
     if (passwordGroup) passwordGroup.style.display = 'none';
     if (extrasGroup) extrasGroup.style.display = 'none';
+  } else if (selectedRole === 'owner') {
+    if (emailGroup) emailGroup.style.display = '';
+    if (nameGroup) nameGroup.style.display = 'none';
+    if (codeGroup) codeGroup.style.display = 'none';
+    if (passwordGroup) passwordGroup.style.display = '';
+    if (extrasGroup) extrasGroup.style.display = 'none';
   } else {
     if (emailGroup) emailGroup.style.display = '';
     if (nameGroup) nameGroup.style.display = 'none';
@@ -193,6 +203,18 @@ function selectRole(el, role) {
     if (passwordGroup) passwordGroup.style.display = '';
     if (extrasGroup) extrasGroup.style.display = '';
   }
+}
+
+function showAdminLogin() {
+  const ownerCard = document.getElementById('owner-role-card');
+  const selector = document.getElementById('role-selector');
+  if (ownerCard) {
+    ownerCard.style.display = '';
+    selector.style.gridTemplateColumns = '1fr 1fr 1fr 1fr';
+  }
+  // Hide the admin link
+  const adminLink = document.getElementById('admin-login-link');
+  if (adminLink) adminLink.style.display = 'none';
 }
 
 function showError(msg) {
@@ -218,6 +240,22 @@ function showError(msg) {
   } catch(e) { /* Server may not be running, demo mode still works */ }
 })();
 
+// Auto-signin for students (localStorage)
+(async function() {
+  const savedName = localStorage.getItem('k2r_student_name');
+  const savedCode = localStorage.getItem('k2r_student_classcode');
+  if (savedName && savedCode) {
+    try {
+      await API.login({ name: savedName, classCode: savedCode, role: 'student' });
+      window.location.href = 'dashboard.html';
+    } catch(e) {
+      // Auto-signin failed (maybe student was removed) — clear saved data
+      localStorage.removeItem('k2r_student_name');
+      localStorage.removeItem('k2r_student_classcode');
+    }
+  }
+})();
+
 // Form submit
 document.querySelector('.auth-form').addEventListener('submit', async function(e) {
   e.preventDefault();
@@ -229,8 +267,20 @@ document.querySelector('.auth-form').addEventListener('submit', async function(e
     if (!classCode) return showError('Please enter your class code');
     try {
       await API.login({ name, classCode, role: 'student' });
+      // Save to localStorage for auto-signin next time
+      localStorage.setItem('k2r_student_name', name);
+      localStorage.setItem('k2r_student_classcode', classCode);
       window.location.href = 'dashboard.html';
     } catch(e) { showError(e.message || 'Login failed. Check your name and class code.'); }
+  } else if (selectedRole === 'owner') {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    if (!email) return showError('Please enter your email');
+    if (!password) return showError('Please enter your password');
+    try {
+      await API.login({ email, password, role: 'owner' });
+      window.location.href = 'dashboard.html';
+    } catch(e) { showError(e.message || 'Login failed. Check your credentials.'); }
   } else {
     const email = document.getElementById('email').value.trim();
     if (!email) return showError('Please enter your email');

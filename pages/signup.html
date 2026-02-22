@@ -321,6 +321,9 @@ document.getElementById('signup-form').addEventListener('submit', async function
 
     try {
       await API.post('/api/auth/signup', { name, password: password || null, role: 'student', classCode });
+      // Save to localStorage for auto-signin next time
+      localStorage.setItem('k2r_student_name', name);
+      localStorage.setItem('k2r_student_classcode', classCode);
       window.location.href = 'dashboard.html';
     } catch (err) {
       showError(err.message || 'Signup failed. Please try again.');

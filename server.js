@@ -3,6 +3,7 @@ const express = require('express');
 const session = require('express-session');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const bcrypt = require('bcrypt');
 const db = require('./server/db');
 const claude = require('./server/claude');
 
@@ -58,7 +59,7 @@ async function buildSessionUser(user) {
 
 // ─── AUTH ROUTES ───
 app.post('/api/auth/login', async (req, res) => {
-  const { email, name, classCode, role } = req.body;
+  const { email, name, classCode, role, password } = req.body;
 
   try {
     if (role === 'student') {
@@ -86,6 +87,36 @@ app.post('/api/auth/login', async (req, res) => {
 
       const sessionUser = await buildSessionUser(user);
       req.session.userId = user.id;
+      req.session.user = sessionUser;
+      return res.json({ success: true, user: sessionUser });
+
+    } else if (role === 'owner') {
+      // Owner login: verify email + password
+      if (!email) return res.status(400).json({ error: 'Please enter your email.' });
+      if (!password) return res.status(400).json({ error: 'Please enter your password.' });
+
+      const ownerEmail = process.env.OWNER_EMAIL;
+      const ownerHash = process.env.OWNER_PASSWORD_HASH;
+      if (!ownerEmail || !ownerHash) {
+        return res.status(400).json({ error: 'Owner account is not configured.' });
+      }
+      if (email.toLowerCase() !== ownerEmail.toLowerCase()) {
+        return res.status(400).json({ error: 'Invalid owner credentials.' });
+      }
+
+      const passwordMatch = await bcrypt.compare(password, ownerHash);
+      if (!passwordMatch) {
+        return res.status(400).json({ error: 'Invalid owner credentials.' });
+      }
+
+      // Owner is authenticated
+      const sessionUser = {
+        id: 0,
+        name: 'Owner',
+        email: ownerEmail,
+        role: 'owner',
+      };
+      req.session.userId = 0;
       req.session.user = sessionUser;
       return res.json({ success: true, user: sessionUser });
 
@@ -489,6 +520,54 @@ app.get('/api/class/validate/:code', async (req, res) => {
   const cls = await db.getClassByCode(req.params.code);
   if (!cls) return res.json({ valid: false });
   res.json({ valid: true, className: cls.name, teacherName: cls.teacher_name, grade: cls.grade });
+});
+
+// ─── OWNER ROUTES ───
+function requireOwner(req, res, next) {
+  if (req.session.user?.role !== 'owner') {
+    return res.status(403).json({ error: 'Owner access required' });
+  }
+  next();
+}
+
+app.get('/api/owner/stats', requireOwner, async (req, res) => {
+  try {
+    const stats = await db.getOwnerStats();
+    res.json(stats);
+  } catch (e) {
+    console.error('Owner stats error:', e);
+    res.status(500).json({ error: 'Failed to load stats' });
+  }
+});
+
+app.get('/api/owner/genres', requireOwner, async (req, res) => {
+  try {
+    const genres = await db.getGenreDistribution();
+    res.json(genres);
+  } catch (e) {
+    console.error('Owner genres error:', e);
+    res.status(500).json({ error: 'Failed to load genre data' });
+  }
+});
+
+app.get('/api/owner/teachers', requireOwner, async (req, res) => {
+  try {
+    const teachers = await db.getAllTeachers();
+    res.json(teachers);
+  } catch (e) {
+    console.error('Owner teachers error:', e);
+    res.status(500).json({ error: 'Failed to load teachers' });
+  }
+});
+
+app.get('/api/owner/students', requireOwner, async (req, res) => {
+  try {
+    const students = await db.getAllStudentsForOwner();
+    res.json(students);
+  } catch (e) {
+    console.error('Owner students error:', e);
+    res.status(500).json({ error: 'Failed to load students' });
+  }
 });
 
 // ─── STATUS ───

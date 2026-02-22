@@ -120,8 +120,14 @@ let onboardingStudent = null;
 let selectedInterests = [];
 let selectedReadingStyle = 'detailed';
 let reportStudentId = null;
-let currentUser = null; // { role: 'teacher'|'student'|'principal', name, ... }
+let currentUser = null; // { role: 'teacher'|'student'|'principal'|'owner', name, ... }
 let userRole = 'teacher'; // Default role
+
+// Owner dashboard data (loaded from API for owner role)
+let ownerStats = { totalStudents: 0, totalTeachers: 0, totalClasses: 0, totalQuizzes: 0 };
+let ownerGenres = [];
+let ownerTeachers = [];
+let ownerStudents = [];
 
 // ---- Helpers ----
 function scoreBadge(acc) {
@@ -338,6 +344,16 @@ function renderSidebar() {
       { id: 'store',             icon: IC.bag,    label: 'Class Store', badge: storeItems.length > 0 ? String(storeItems.length) : '', badgeCls: 'gold' },
       { id: 'student-badges',    icon: IC.star,   label: 'My Badges' },
     ];
+  } else if (userRole === 'owner') {
+    items = [
+      { section: 'Platform Overview' },
+      { id: 'owner-dashboard',  icon: IC.target,   label: 'Dashboard' },
+      { id: 'owner-teachers',   icon: IC.user,     label: 'Teachers', badge: ownerStats.totalTeachers > 0 ? String(ownerStats.totalTeachers) : '', badgeCls: 'blue' },
+      { id: 'owner-students',   icon: IC.users,    label: 'Students', badge: ownerStats.totalStudents > 0 ? String(ownerStats.totalStudents) : '', badgeCls: 'green' },
+      { section: 'Tools' },
+      { id: 'library',          icon: IC.book,     label: 'Book Library' },
+      { id: 'owner-settings',   icon: IC.gear,     label: 'Settings' },
+    ];
   } else if (userRole === 'principal') {
     items = [
       { section: 'School Overview' },
@@ -370,6 +386,7 @@ function renderSidebar() {
   const userName = currentUser?.name || 'Sarah Johnson';
   const userInitials = userName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   const roleLabel = userRole === 'student' ? (currentUser?.grade || '4th') + ' Grade Student' :
+                    userRole === 'owner' ? 'Platform Owner' :
                     userRole === 'principal' ? 'School Principal' :
                     (currentUser?.grade || '4th') + ' Grade Teacher';
 
@@ -422,6 +439,9 @@ function renderHeader() {
 // ---- Logout ----
 async function handleLogout() {
   try { await API.logout(); } catch(e) { /* ignore */ }
+  // Clear student auto-signin localStorage
+  localStorage.removeItem('k2r_student_name');
+  localStorage.removeItem('k2r_student_classcode');
   window.location.href = 'signin.html';
 }
 
@@ -471,8 +491,14 @@ function renderMain() {
     case 'principal-classes':   el.innerHTML = renderPrincipalClasses(); break;
     case 'principal-teachers':  el.innerHTML = renderPrincipalTeachers(); break;
     case 'principal-settings':  el.innerHTML = renderPrincipalSettings(); break;
+    // Owner pages
+    case 'owner-dashboard': el.innerHTML = renderOwnerDashboard(); break;
+    case 'owner-teachers':  el.innerHTML = renderOwnerTeachers(); break;
+    case 'owner-students':  el.innerHTML = renderOwnerStudents(); break;
+    case 'owner-settings':  el.innerHTML = renderOwnerSettings(); break;
     default:
       if (userRole === 'student') el.innerHTML = renderStudentDashboard();
+      else if (userRole === 'owner') el.innerHTML = renderOwnerDashboard();
       else if (userRole === 'principal') el.innerHTML = renderPrincipalDashboard();
       else el.innerHTML = renderQuizzes();
   }
@@ -1587,6 +1613,9 @@ async function saveOnboarding() {
     } catch(e) { console.log('Survey save (offline mode):', e.message); }
   }
 
+  // Mark current user as onboarded so the wizard won't re-trigger
+  if (currentUser) currentUser.onboarded = 1;
+
   // Clean up
   onboardingStep = 0;
   onboardingStudent = null;
@@ -2440,6 +2469,185 @@ function renderPrincipalSettings() {
   `;
 }
 
+// ---- Owner Dashboard ----
+function renderOwnerDashboard() {
+  // SVG Pie Chart for genre distribution
+  const genreColors = ['#2563EB', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#6366F1', '#14B8A6'];
+  const totalGenreCount = ownerGenres.reduce((sum, g) => sum + g.count, 0) || 1;
+
+  let pieSlices = '';
+  let pieLegend = '';
+  let cumulativePercent = 0;
+
+  ownerGenres.filter(g => g.genre && g.genre !== 'Not Set').slice(0, 8).forEach((g, i) => {
+    const percent = g.count / totalGenreCount;
+    const startAngle = cumulativePercent * 2 * Math.PI - Math.PI / 2;
+    const endAngle = (cumulativePercent + percent) * 2 * Math.PI - Math.PI / 2;
+    const largeArc = percent > 0.5 ? 1 : 0;
+    const x1 = 100 + 80 * Math.cos(startAngle);
+    const y1 = 100 + 80 * Math.sin(startAngle);
+    const x2 = 100 + 80 * Math.cos(endAngle);
+    const y2 = 100 + 80 * Math.sin(endAngle);
+    const color = genreColors[i % genreColors.length];
+
+    if (percent > 0.001) {
+      pieSlices += `<path d="M100,100 L${x1},${y1} A80,80 0 ${largeArc},1 ${x2},${y2} Z" fill="${color}" opacity="0.85"/>`;
+    }
+    pieLegend += `<div class="chart-legend-item"><span class="chart-legend-dot" style="background:${color}"></span>${g.genre} <span style="color:var(--g400);margin-left:auto">${g.count}</span></div>`;
+    cumulativePercent += percent;
+  });
+
+  // If no data, show a full circle placeholder
+  if (ownerGenres.filter(g => g.genre && g.genre !== 'Not Set').length === 0) {
+    pieSlices = `<circle cx="100" cy="100" r="80" fill="var(--g100)"/>`;
+    pieLegend = '<div style="color:var(--g400);font-size:0.875rem;text-align:center;padding:20px">No genre data yet. Students will set their favorite genres during onboarding.</div>';
+  }
+
+  // Bar chart: students per teacher
+  const maxStudents = Math.max(...ownerTeachers.map(t => t.studentCount), 1);
+  const barChartRows = ownerTeachers.slice(0, 10).map(t => {
+    const barWidth = Math.round((t.studentCount / maxStudents) * 100);
+    return `<div class="bar-chart-row">
+      <span class="bar-chart-label">${t.name.split(' ')[0]}</span>
+      <div class="bar-chart-track"><div class="bar-chart-fill" style="width:${barWidth}%"></div></div>
+      <span class="bar-chart-value">${t.studentCount}</span>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="page-header">
+      <h1>Platform Dashboard</h1>
+    </div>
+
+    <div class="stat-cards">
+      <div class="stat-card">
+        <div class="stat-card-label">Total Students</div>
+        <div class="stat-card-value">${ownerStats.totalStudents}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Total Teachers</div>
+        <div class="stat-card-value">${ownerStats.totalTeachers}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Total Quizzes Taken</div>
+        <div class="stat-card-value">${ownerStats.totalQuizzes}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Total Classes</div>
+        <div class="stat-card-value">${ownerStats.totalClasses}</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px">
+      <div class="list-card" style="padding:24px">
+        <h3 style="margin-bottom:16px">Favorite Genres</h3>
+        <div style="display:flex;align-items:flex-start;gap:24px">
+          <svg viewBox="0 0 200 200" width="180" height="180" style="flex-shrink:0">${pieSlices}</svg>
+          <div class="chart-legend">${pieLegend}</div>
+        </div>
+      </div>
+      <div class="list-card" style="padding:24px">
+        <h3 style="margin-bottom:16px">Students per Teacher</h3>
+        ${barChartRows || '<div style="color:var(--g400);font-size:0.875rem;text-align:center;padding:20px">No teachers yet.</div>'}
+      </div>
+    </div>
+  `;
+}
+
+function renderOwnerTeachers() {
+  if (ownerTeachers.length === 0) {
+    return `
+      <div class="page-header"><h1>Teachers</h1></div>
+      <div class="empty-state">
+        <div class="empty-state-icon">${IC.user}</div>
+        <h3>No Teachers Yet</h3>
+        <p>Teachers will appear here when they sign up.</p>
+      </div>`;
+  }
+
+  return `
+    <div class="page-header"><h1>Teachers <span class="badge badge-blue">${ownerTeachers.length}</span></h1></div>
+    <div class="list-card">
+      <table class="data-table">
+        <thead><tr><th>TEACHER</th><th>EMAIL</th><th>GRADE</th><th>STUDENTS</th><th>CLASS CODE</th><th>JOINED</th></tr></thead>
+        <tbody>
+          ${ownerTeachers.map(t => {
+            const initials = t.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+            const joined = t.created_at ? new Date(t.created_at).toLocaleDateString() : '-';
+            return `<tr>
+              <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar-sm" style="background:#2563EB">${initials}</div><strong>${t.name}</strong></div></td>
+              <td style="color:var(--g500)">${t.email || '-'}</td>
+              <td>${t.grade} Grade</td>
+              <td>${t.studentCount}</td>
+              <td><code style="background:var(--g50);padding:2px 8px;border-radius:4px;font-size:0.8125rem">${t.classCode}</code></td>
+              <td style="color:var(--g400);font-size:0.8125rem">${joined}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderOwnerStudents() {
+  if (ownerStudents.length === 0) {
+    return `
+      <div class="page-header"><h1>Students</h1></div>
+      <div class="empty-state">
+        <div class="empty-state-icon">${IC.users}</div>
+        <h3>No Students Yet</h3>
+        <p>Students will appear here when they join a class.</p>
+      </div>`;
+  }
+
+  return `
+    <div class="page-header"><h1>Students <span class="badge badge-green">${ownerStudents.length}</span></h1></div>
+    <div class="list-card">
+      <table class="data-table">
+        <thead><tr><th>STUDENT</th><th>CLASS</th><th>TEACHER</th><th>READING SCORE</th><th>ACCURACY</th><th>QUIZZES</th><th>GENRE</th></tr></thead>
+        <tbody>
+          ${ownerStudents.map(s => {
+            const initials = s.initials || s.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+            const scoreLabel = s.reading_score >= 700 ? 'green' : s.reading_score >= 500 ? 'blue' : 'red';
+            return `<tr>
+              <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar-sm" style="background:${s.color || '#2563EB'}">${initials}</div><strong>${s.name}</strong></div></td>
+              <td>${s.className || '-'}</td>
+              <td>${s.teacherName || '-'}</td>
+              <td><span class="badge badge-${scoreLabel}">${s.reading_score}</span></td>
+              <td>${s.accuracy}%</td>
+              <td>${s.quizzes_completed}</td>
+              <td>${s.favorite_genre || '<span style="color:var(--g300)">-</span>'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderOwnerSettings() {
+  return `
+    <div class="page-header"><h1>Settings</h1></div>
+    <div class="list-card" style="padding:24px;max-width:600px">
+      <h3 style="margin-bottom:20px">Owner Account</h3>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div>
+          <span style="font-weight:600;color:var(--navy)">Email</span>
+          <p style="color:var(--g500);margin-top:2px">${currentUser?.email || '-'}</p>
+        </div>
+        <div>
+          <span style="font-weight:600;color:var(--navy)">Role</span>
+          <p style="color:var(--g500);margin-top:2px">Platform Owner</p>
+        </div>
+        <div>
+          <span style="font-weight:600;color:var(--navy)">Platform Stats</span>
+          <p style="color:var(--g500);margin-top:2px">${ownerStats.totalTeachers} teachers, ${ownerStats.totalStudents} students, ${ownerStats.totalClasses} classes</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 // ---- Boot ----
 document.addEventListener('DOMContentLoaded', async () => {
   // Detect user role from session
@@ -2484,6 +2692,47 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Set default page based on role
   if (userRole === 'student') {
     page = 'student-dashboard';
+
+    // Auto-launch onboarding wizard for new students (onboarded === 0)
+    if (currentUser && currentUser.onboarded === 0) {
+      // Push current student into students array so the onboarding modal can find them
+      students = [{
+        id: currentUser.studentId,
+        name: currentUser.name,
+        initials: currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2),
+        color: '#2563EB',
+        reading_score: currentUser.reading_score || 500,
+        accuracy: currentUser.accuracy || 0,
+        keys_earned: currentUser.keys_earned || 0,
+        quizzes_completed: currentUser.quizzes_completed || 0,
+        streak_days: currentUser.streak_days || 0,
+        interests: { tags: [], readingStyle: 'detailed', favoriteGenre: '', onboarded: false },
+      }];
+      onboardingStudent = currentUser.studentId;
+      onboardingStep = 0;
+      selectedInterests = [];
+      renderSidebar();
+      renderHeader();
+      renderMain();
+      openModal('onboarding', currentUser.studentId);
+      return;
+    }
+  } else if (userRole === 'owner') {
+    page = 'owner-dashboard';
+
+    // Load owner analytics data
+    try {
+      const [stats, genres, teachers, students_data] = await Promise.all([
+        API.getOwnerStats(),
+        API.getOwnerGenres(),
+        API.getOwnerTeachers(),
+        API.getOwnerStudents(),
+      ]);
+      ownerStats = stats;
+      ownerGenres = genres;
+      ownerTeachers = teachers;
+      ownerStudents = students_data;
+    } catch(e) { console.warn('Could not load owner data:', e); }
   } else if (userRole === 'principal') {
     page = 'principal-dashboard';
   }

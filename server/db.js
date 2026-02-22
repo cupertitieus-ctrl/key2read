@@ -381,6 +381,99 @@ async function getTeacherClass(teacherId) {
   return data;
 }
 
+// ─── OWNER ANALYTICS QUERIES ───
+
+async function getOwnerStats() {
+  const [teacherRes, studentRes, classRes, quizRes] = await Promise.all([
+    supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', 'teacher'),
+    supabase.from('students').select('id', { count: 'exact', head: true }),
+    supabase.from('classes').select('id', { count: 'exact', head: true }),
+    supabase.from('quiz_results').select('id', { count: 'exact', head: true }),
+  ]);
+  return {
+    totalTeachers: teacherRes.count || 0,
+    totalStudents: studentRes.count || 0,
+    totalClasses: classRes.count || 0,
+    totalQuizzes: quizRes.count || 0,
+  };
+}
+
+async function getGenreDistribution() {
+  const { data } = await supabase
+    .from('student_surveys')
+    .select('favorite_genre');
+  if (!data) return [];
+
+  // Count genres
+  const counts = {};
+  for (const row of data) {
+    const genre = row.favorite_genre || 'Not Set';
+    counts[genre] = (counts[genre] || 0) + 1;
+  }
+  return Object.entries(counts)
+    .map(([genre, count]) => ({ genre, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+async function getAllTeachers() {
+  const { data } = await supabase
+    .from('users')
+    .select('id, name, email, created_at')
+    .eq('role', 'teacher')
+    .order('created_at', { ascending: false });
+
+  if (!data) return [];
+
+  // For each teacher, get their class info and student count
+  const teachers = [];
+  for (const t of data) {
+    const { data: cls } = await supabase.from('classes').select('id, name, grade, class_code').eq('teacher_id', t.id).single();
+    let studentCount = 0;
+    if (cls) {
+      const { count } = await supabase.from('students').select('id', { count: 'exact', head: true }).eq('class_id', cls.id);
+      studentCount = count || 0;
+    }
+    teachers.push({
+      ...t,
+      className: cls?.name || 'No class',
+      grade: cls?.grade || '-',
+      classCode: cls?.class_code || '-',
+      studentCount,
+    });
+  }
+  return teachers;
+}
+
+async function getAllStudentsForOwner() {
+  const { data } = await supabase
+    .from('students')
+    .select(`
+      id, name, initials, color, grade, reading_score, accuracy, keys_earned, quizzes_completed, onboarded, class_id,
+      student_surveys (favorite_genre, interest_tags, reading_style),
+      classes!class_id (name, class_code, users!teacher_id (name))
+    `)
+    .order('name');
+
+  if (!data) return [];
+  return data.map(s => ({
+    id: s.id,
+    name: s.name,
+    initials: s.initials,
+    color: s.color,
+    grade: s.grade,
+    reading_score: s.reading_score || 500,
+    accuracy: s.accuracy || 0,
+    keys_earned: s.keys_earned || 0,
+    quizzes_completed: s.quizzes_completed || 0,
+    onboarded: s.onboarded || 0,
+    favorite_genre: s.student_surveys?.[0]?.favorite_genre || s.student_surveys?.favorite_genre || '',
+    interest_tags: s.student_surveys?.[0]?.interest_tags || s.student_surveys?.interest_tags || '[]',
+    className: s.classes?.name || '',
+    classCode: s.classes?.class_code || '',
+    teacherName: s.classes?.users?.name || '',
+  }));
+}
+
 // Export everything
 module.exports = {
   supabase,
@@ -409,5 +502,9 @@ module.exports = {
   insertQuizQuestion,
   getBookById,
   updateStudentStats,
-  getTeacherClass
+  getTeacherClass,
+  getOwnerStats,
+  getGenreDistribution,
+  getAllTeachers,
+  getAllStudentsForOwner
 };

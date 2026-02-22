@@ -61,6 +61,12 @@ const API = {
   createAssignment: (data) => API.post('/api/assignments', data),
   getAssignments: (classId) => API.get(`/api/assignments?classId=${classId}`),
 
+  // Owner
+  getOwnerStats: () => API.get('/api/owner/stats'),
+  getOwnerGenres: () => API.get('/api/owner/genres'),
+  getOwnerTeachers: () => API.get('/api/owner/teachers'),
+  getOwnerStudents: () => API.get('/api/owner/students'),
+
   // Status
   getStatus: () => API.get('/api/status')
 };
