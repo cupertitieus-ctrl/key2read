@@ -665,6 +665,8 @@ function renderQuizzes() {
     <div class="list-card" style="padding:32px;text-align:center;color:var(--g400)">
       <p>No quizzes assigned yet. <a href="#" onclick="event.preventDefault();navigate('library')" style="color:var(--blue)">Browse the book library</a> to get started.</p>
     </div>`}`;
+
+  return html;
 }
 
 // ---- Page: Assignment Detail ----
