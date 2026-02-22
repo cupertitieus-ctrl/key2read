@@ -56,37 +56,9 @@ const interestCategories = [
   { id: 'cooking',     label: 'Food & Cooking',  icon: IC.bag,      color: 'red'    },
 ];
 
-// ---- Sample Data ----
-const students = [
-  { id: 0, name: 'Aaliyah Johnson',  initials: 'AJ', color: '#2E86C1', level: 4.2, score: 742, keys: 485, streak: '4 wks', accuracy: 89, struggling: false, quizzes: 18, grade: '4th', joined: 'Sep 2025',
-    interests: { tags: ['animals', 'adventure', 'friendship'], readingStyle: 'detailed', favoriteGenre: 'Realistic Fiction', onboarded: true }},
-  { id: 1, name: 'Ben Carter',       initials: 'BC', color: '#1E8449', level: 3.8, score: 698, keys: 410, streak: '3 wks', accuracy: 84, struggling: false, quizzes: 15, grade: '4th', joined: 'Sep 2025',
-    interests: { tags: ['sports', 'technology', 'humor'], readingStyle: 'fast', favoriteGenre: 'Sports Fiction', onboarded: true }},
-  { id: 2, name: 'Camila Reyes',     initials: 'CR', color: '#7C3AED', level: 5.1, score: 812, keys: 580, streak: '6 wks', accuracy: 96, struggling: false, quizzes: 22, grade: '5th', joined: 'Aug 2025',
-    interests: { tags: ['fantasy', 'art', 'mystery'], readingStyle: 'detailed', favoriteGenre: 'Fantasy', onboarded: true }},
-  { id: 3, name: 'David Kim',        initials: 'DK', color: '#D93B3B', level: 3.2, score: 485, keys: 175, streak: '\u2014',  accuracy: 58, struggling: true,  quizzes: 9,  grade: '3rd', joined: 'Oct 2025',
-    interests: { tags: [], readingStyle: null, favoriteGenre: null, onboarded: false }},
-  { id: 4, name: 'Elena Vasquez',    initials: 'EV', color: '#E5A100', level: 4.5, score: 721, keys: 445, streak: '3 wks', accuracy: 85, struggling: false, quizzes: 17, grade: '4th', joined: 'Sep 2025',
-    interests: { tags: ['science', 'animals', 'history'], readingStyle: 'visual', favoriteGenre: 'Non-Fiction', onboarded: true }},
-  { id: 5, name: 'Finn O\'Brien',    initials: 'FO', color: '#2E86C1', level: 4.0, score: 688, keys: 380, streak: '2 wks', accuracy: 80, struggling: false, quizzes: 14, grade: '4th', joined: 'Sep 2025',
-    interests: { tags: ['adventure', 'sports', 'humor'], readingStyle: 'fast', favoriteGenre: 'Adventure', onboarded: true }},
-  { id: 6, name: 'Grace Liu',        initials: 'GL', color: '#1E8449', level: 5.3, score: 835, keys: 610, streak: '7 wks', accuracy: 97, struggling: false, quizzes: 24, grade: '5th', joined: 'Aug 2025',
-    interests: { tags: ['fantasy', 'mystery', 'art'], readingStyle: 'detailed', favoriteGenre: 'Mystery', onboarded: true }},
-  { id: 7, name: 'Hassan Ali',       initials: 'HA', color: '#7C3AED', level: 3.5, score: 552, keys: 260, streak: '1 wk',  accuracy: 72, struggling: false, quizzes: 11, grade: '3rd', joined: 'Oct 2025',
-    interests: { tags: ['technology', 'science', 'adventure'], readingStyle: 'visual', favoriteGenre: 'Sci-Fi', onboarded: true }},
-  { id: 8, name: 'Isabella Martin',  initials: 'IM', color: '#E67E22', level: 4.8, score: 765, keys: 510, streak: '5 wks', accuracy: 91, struggling: false, quizzes: 20, grade: '5th', joined: 'Sep 2025',
-    interests: { tags: ['friendship', 'animals', 'art'], readingStyle: 'detailed', favoriteGenre: 'Realistic Fiction', onboarded: true }},
-  { id: 9, name: 'James Thompson',   initials: 'JT', color: '#D93B3B', level: 3.0, score: 445, keys: 145, streak: '\u2014',  accuracy: 55, struggling: true,  quizzes: 7,  grade: '3rd', joined: 'Oct 2025',
-    interests: { tags: [], readingStyle: null, favoriteGenre: null, onboarded: false }},
-];
-
-const assignments = [
-  { id: 'a1', date: '02/20/26', due: '02/21/26', type: 'quiz',       label: 'Book Quiz',            name: 'Charlotte\'s Web \u2014 Comprehension',  done: 0,  total: 23, status: 'pending',  keys: '\u2014',  dist: null },
-  { id: 'a2', date: '02/14/26', due: '\u2014',       type: 'assessment', label: 'Formative Assessment', name: 'Winter Reading Benchmark',           done: 23, total: 23, status: 'complete', keys: 1840, dist: { ex: 30, gd: 35, fr: 22, pr: 13, pn: 0 }},
-  { id: 'a3', date: '02/17/26', due: '02/19/26', type: 'quiz',       label: 'Book Quiz',            name: 'The One and Only Ivan \u2014 Quiz',     done: 18, total: 23, status: 'partial',  keys: 612,  dist: { ex: 25, gd: 30, fr: 20, pr: 5,  pn: 20 }},
-  { id: 'a4', date: '02/10/26', due: '02/14/26', type: 'challenge',  label: 'Reading Challenge',    name: 'February Mystery Genre Challenge',   done: 23, total: 23, status: 'complete', keys: 2300, dist: { ex: 40, gd: 35, fr: 15, pr: 10, pn: 0 }},
-  { id: 'a5', date: '02/05/26', due: '\u2014',       type: 'quiz',       label: 'Book Quiz',            name: 'Hatchet \u2014 Comprehension Quiz',     done: 21, total: 23, status: 'partial',  keys: 945,  dist: { ex: 20, gd: 40, fr: 25, pr: 5,  pn: 10 }},
-];
+// ---- Data (loaded from API on init) ----
+let students = [];
+let assignments = [];
 
 const templates = [
   { id: 't1', type: 'quiz',       name: 'Comprehension Quick Check', desc: 'A fast 10-question comprehension check for any book.', questions: 10, time: '15 min', level: 'Any' },
@@ -104,12 +76,14 @@ const goals = [
   { id: 'g4', title: 'Class earns 5,000 Keys',             current: 3247, target: 5000, due: '03/31/26', color: 'gold',   unit: 'Keys' },
 ];
 
-const storeItems = [
-  { name: 'Homework Pass',  stock: 12, price: 50 },
-  { name: 'Extra Recess',   stock: 8,  price: 75 },
-  { name: 'Class DJ',       stock: 5,  price: 30 },
-  { name: 'Sit With Friend', stock: 15, price: 20 },
-  { name: 'Candy Jar',      stock: 20, price: 15 },
+// Default store items (teacher can customize)
+let storeItems = [
+  { name: 'Homework Pass',    stock: 10, price: 50, icon: '📝' },
+  { name: 'Extra Recess',     stock: 5,  price: 75, icon: '⏰' },
+  { name: 'Class DJ',         stock: 3,  price: 30, icon: '🎵' },
+  { name: 'Sit With a Friend', stock: 10, price: 20, icon: '👫' },
+  { name: 'Candy Jar',        stock: 15, price: 15, icon: '🍬' },
+  { name: 'Sticker Pack',     stock: 20, price: 10, icon: '⭐' },
 ];
 
 // Books loaded from API (populated on init)
@@ -216,6 +190,60 @@ function streakDisp(s) {
 
 function pct(current, target) {
   return Math.min(Math.round((current / target) * 100), 100);
+}
+
+// ---- Data Mapping (API → Frontend) ----
+function mapStudentFromAPI(s) {
+  const tags = typeof s.interest_tags === 'string' ? JSON.parse(s.interest_tags || '[]') : (s.interest_tags || []);
+  const onboarded = !!s.onboarded;
+  return {
+    id: s.id,
+    name: s.name || 'Student',
+    initials: s.initials || s.name?.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) || '??',
+    color: s.color || '#2563EB',
+    grade: s.grade || '4th',
+    level: s.reading_level || 3.0,
+    score: s.reading_score || 500,
+    accuracy: s.accuracy || 0,
+    keys: s.keys_earned || 0,
+    quizzes: s.quizzes_completed || 0,
+    streak: s.streak_days || 0,
+    struggling: (s.reading_score || 500) < 500 || (s.accuracy || 0) < 60,
+    joined: s.created_at ? new Date(s.created_at).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) : '—',
+    interests: onboarded ? {
+      tags: tags,
+      readingStyle: s.reading_style || 'detailed',
+      favoriteGenre: s.favorite_genre || '',
+      onboarded: true
+    } : null,
+    onboarded: onboarded,
+    // Keep raw fields for edits
+    _raw: s
+  };
+}
+
+function mapAssignmentFromAPI(a) {
+  return {
+    id: a.id,
+    name: a.name || a.book_title || 'Assignment',
+    date: a.created_at ? new Date(a.created_at).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) : '—',
+    due_date: a.due_date ? new Date(a.due_date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) : '—',
+    due: a.due_date ? new Date(a.due_date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) : '—',
+    type: 'quiz',
+    label: 'Quiz',
+    status: a.status || 'pending',
+    done: 0,
+    total: students.length,
+    keys: a.keys_earned || '—',
+    keys_earned: a.keys_earned || 0,
+    book_id: a.book_id,
+    book_title: a.book_title || '',
+    book_author: a.book_author || '',
+    chapter_start: a.chapter_start || 1,
+    chapter_end: a.chapter_end || 1,
+    personalized: a.personalized,
+    dist: null
+  };
 }
 
 // ---- Personalization Helpers ----
@@ -346,13 +374,13 @@ function renderSidebar() {
   } else {
     items = [
       { section: 'Dashboard' },
-      { id: 'quizzes',    icon: IC.clip,  label: 'Quizzes & Assessments', badge: '3', badgeCls: 'red' },
-      { id: 'students',   icon: IC.users, label: 'Students',             badge: '10', badgeCls: 'blue' },
+      { id: 'quizzes',    icon: IC.clip,  label: 'Quizzes & Assessments', badge: assignments.length > 0 ? String(assignments.length) : '', badgeCls: 'red' },
+      { id: 'students',   icon: IC.users, label: 'Students',             badge: students.length > 0 ? String(students.length) : '', badgeCls: 'blue' },
       { id: 'goals',      icon: IC.trend, label: 'Class Goals' },
       { id: 'reports',    icon: IC.chart, label: 'Growth Reports' },
       { id: 'templates',  icon: IC.grid,  label: 'Quiz Templates' },
       { section: 'Management' },
-      { id: 'store',      icon: IC.bag,   label: 'Class Store',          badge: '5', badgeCls: 'gold' },
+      { id: 'store',      icon: IC.bag,   label: 'Class Store',          badge: String(storeItems.length), badgeCls: 'gold' },
       { id: 'library',    icon: IC.book,  label: 'Book Library' },
       { section: 'Tools' },
       { id: 'celebrate',  icon: IC.star,  label: 'Celebrate Students' },
@@ -400,7 +428,6 @@ function renderHeader() {
   document.getElementById('dash-header').innerHTML = `
     <div class="header-tabs">
       <button class="header-tab active">Reading</button>
-      <button class="header-tab">Vocabulary</button>
     </div>
     <div class="header-search">
       ${IC.search}
@@ -510,15 +537,15 @@ async function launchQuiz(bookId, chapterNum, sid, personalize) {
 
 // ---- Page: Quizzes & Assessments ----
 function renderQuizzes() {
-  const avgAcc = students.length > 0 ? Math.round(students.reduce((s, st) => s + st.accuracy, 0) / students.length) : 0;
-  const totalKeys = students.reduce((s, st) => s + st.keys, 0);
-  const totalBooks = books.length;
-  const onboardedCount = students.filter(s => s.interests && s.interests.onboarded).length;
-  const pctPersonalized = students.length > 0 ? Math.round((onboardedCount / students.length) * 100) : 0;
   const classCode = currentUser?.classCode || '';
+  const avgAcc = students.length > 0 ? Math.round(students.reduce((s, st) => s + (st.accuracy || 0), 0) / students.length) : 0;
+  const totalKeys = students.reduce((s, st) => s + (st.keys_earned || st.keys || 0), 0);
+  const avgScore = students.length > 0 ? Math.round(students.reduce((s, st) => s + (st.reading_score || st.score || 0), 0) / students.length) : 0;
 
-  return `
-    ${classCode ? `
+  // Class code banner (always show for teachers)
+  let html = '';
+  if (classCode) {
+    html += `
     <div class="class-code-banner">
       <div class="class-code-banner-left">
         <div class="class-code-banner-icon">${IC.users}</div>
@@ -531,8 +558,49 @@ function renderQuizzes() {
         <span class="class-code-value">${classCode}</span>
         <button class="btn btn-sm btn-outline" onclick="navigator.clipboard.writeText('${classCode}'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
       </div>
-    </div>` : ''}
+    </div>`;
+  }
 
+  // Empty state — no students yet
+  if (students.length === 0) {
+    html += `
+    <div class="empty-state">
+      <div class="empty-state-icon">${IC.users}</div>
+      <h2>Welcome to key2read!</h2>
+      <p>Your class is set up and ready to go. Here's how to get started:</p>
+      <div class="getting-started-steps">
+        <div class="gs-step">
+          <div class="gs-step-num">1</div>
+          <div>
+            <strong>Share your class code</strong>
+            <p>Give students the code <strong>${classCode}</strong> so they can join your class.</p>
+          </div>
+        </div>
+        <div class="gs-step">
+          <div class="gs-step-num">2</div>
+          <div>
+            <strong>Students sign up</strong>
+            <p>They go to the signup page, choose "Student", and enter the class code.</p>
+          </div>
+        </div>
+        <div class="gs-step">
+          <div class="gs-step-num">3</div>
+          <div>
+            <strong>Assign quizzes</strong>
+            <p>Browse ${books.length} books in the library and assign reading quizzes.</p>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:24px">
+        <button class="btn btn-primary" onclick="navigate('library')">${IC.book} Browse Book Library</button>
+        <button class="btn btn-outline" onclick="navigate('templates')">${IC.grid} Quiz Templates</button>
+      </div>
+    </div>`;
+    return html;
+  }
+
+  // Normal teacher dashboard with students
+  html += `
     <div class="page-header">
       <h1>Quizzes & Assessments <span class="badge badge-blue">${assignments.length}</span></h1>
       <div class="page-header-actions">
@@ -543,63 +611,48 @@ function renderQuizzes() {
 
     <div class="stat-cards stat-cards-5">
       <div class="stat-card">
-        <div class="stat-card-label">Class Reading Score</div>
-        <div class="stat-card-value">724 <span class="stat-card-trend up">${IC.arrowUp}12%</span></div>
+        <div class="stat-card-label">Students</div>
+        <div class="stat-card-value">${students.length}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Avg Reading Score</div>
+        <div class="stat-card-value">${avgScore}</div>
       </div>
       <div class="stat-card">
         <div class="stat-card-label">Avg Comprehension</div>
-        <div class="stat-card-value">${avgAcc}% <span class="stat-card-trend up">${IC.arrowUp}3 pts</span></div>
+        <div class="stat-card-value">${avgAcc}%</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-label">Keys This Week</div>
-        <div class="stat-card-value">${totalKeys.toLocaleString()} <span class="stat-card-trend down">${IC.arrowDown}5%</span></div>
+        <div class="stat-card-label">Total Keys Earned</div>
+        <div class="stat-card-value">${totalKeys.toLocaleString()}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-label">Books Completed</div>
-        <div class="stat-card-value">${totalBooks}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-label">Personalized</div>
-        <div class="stat-card-value">${pctPersonalized}% <span class="stat-card-trend up">${IC.sparkle}</span></div>
+        <div class="stat-card-label">Books Available</div>
+        <div class="stat-card-value">${books.length}</div>
       </div>
     </div>
 
+    ${assignments.length > 0 ? `
     <div class="data-table-wrap">
       <table class="data-table">
-        <thead>
-          <tr>
-            <th>Assigned</th>
-            <th>Due</th>
-            <th>Activity</th>
-            <th>Results</th>
-            <th>Keys</th>
-            <th></th>
-          </tr>
-        </thead>
+        <thead><tr><th>Assigned</th><th>Due</th><th>Activity</th><th>Results</th><th>Keys</th><th></th></tr></thead>
         <tbody>
           ${assignments.map(a => `
             <tr onclick="navigate('quizzes','${a.id}')">
-              <td>${a.date}</td>
-              <td>${a.due}</td>
-              <td>
-                <div class="activity-cell">
-                  <span class="type-label ${a.type}">${a.label}</span>
-                  <span class="activity-name">${a.name}</span>
-                </div>
-              </td>
-              <td>
-                <div class="results-cell">
-                  <span class="results-count">${a.done}/${a.total} completed</span>
-                  ${distBar(a.dist)}
-                </div>
-              </td>
-              <td>${keysDisp(a.keys)}</td>
+              <td>${a.date || '—'}</td>
+              <td>${a.due_date || '—'}</td>
+              <td><div class="activity-cell"><span class="type-label quiz">Quiz</span><span class="activity-name">${a.name}</span></div></td>
+              <td><span class="results-count">${a.status || 'pending'}</span></td>
+              <td>${keysDisp(a.keys_earned || '—')}</td>
               <td><button class="btn btn-sm btn-ghost">${IC.eye} View</button></td>
             </tr>
           `).join('')}
         </tbody>
       </table>
-    </div>`;
+    </div>` : `
+    <div class="list-card" style="padding:32px;text-align:center;color:var(--g400)">
+      <p>No quizzes assigned yet. <a href="#" onclick="event.preventDefault();navigate('library')" style="color:var(--blue)">Browse the book library</a> to get started.</p>
+    </div>`}`;
 }
 
 // ---- Page: Assignment Detail ----
@@ -679,6 +732,18 @@ function renderAssignmentDetail() {
 
 // ---- Page: Students ----
 function renderStudents() {
+  if (students.length === 0) {
+    const classCode = currentUser?.classCode || '';
+    return `
+      <div class="page-header"><h1>Students <span class="badge badge-blue">0</span></h1></div>
+      <div class="empty-state">
+        <div class="empty-state-icon">${IC.users}</div>
+        <h2>No Students Yet</h2>
+        <p>Share your class code <strong>${classCode}</strong> with students so they can sign up and join your class.</p>
+        <button class="btn btn-primary" onclick="navigate('quizzes')">${IC.arrowLeft} Go to Dashboard</button>
+      </div>`;
+  }
+
   const sorted = [...students].sort((a, b) => b.score - a.score);
   return `
     <div class="page-header">
@@ -738,7 +803,7 @@ function renderStudentProfile() {
       <div class="interest-profile-card">
         <div class="interest-profile-header">
           <h3>${IC.heart} Interest Profile ${personalizationBadge()}</h3>
-          <button class="btn btn-sm btn-ghost" onclick="onboardingStudent=${s.id}; onboardingStep=0; selectedInterests=[...students[${s.id}].interests.tags]; openModal('onboarding',${s.id})">Edit</button>
+          <button class="btn btn-sm btn-ghost" onclick="onboardingStudent=${s.id}; onboardingStep=0; selectedInterests=[...(students.find(x=>x.id===${s.id})?.interests?.tags||[])]; openModal('onboarding',${s.id})">Edit</button>
         </div>
         <div class="interest-profile-body">
           <div class="interest-profile-row">
@@ -932,28 +997,123 @@ function renderGoals() {
 }
 
 // ---- Page: Class Store ----
+let storeEditing = null; // index of item being edited, or null
+let storeAddingNew = false;
+
 function renderStore() {
   return `
     <div class="page-header">
       <h1>Class Store <span class="badge badge-gold">${storeItems.length}</span></h1>
       <div class="page-header-actions">
-        <button class="btn btn-primary btn-sm">${IC.plus} Add Reward</button>
+        <button class="btn btn-primary btn-sm" onclick="storeAddingNew=true; renderMain()">${IC.plus} Add Reward</button>
       </div>
     </div>
 
+    <div class="info-panel" style="margin-bottom:20px">
+      <h4>${IC.info} How the Class Store Works</h4>
+      <p>Students spend their earned Keys on rewards you create. Customize the rewards, prices, and stock levels below. Add new rewards or remove ones your class doesn't need.</p>
+    </div>
+
+    ${storeAddingNew ? `
+    <div class="store-edit-card" style="background:#fff;border:2px solid var(--blue);border-radius:var(--radius-md);padding:20px;margin-bottom:16px">
+      <h4 style="margin-bottom:12px;font-size:0.9375rem;font-weight:600;color:var(--g900)">New Reward</h4>
+      <div style="display:grid;grid-template-columns:auto 1fr 100px 100px auto;gap:12px;align-items:end">
+        <div>
+          <label style="font-size:0.75rem;font-weight:600;color:var(--g500);display:block;margin-bottom:4px">Icon</label>
+          <input id="store-new-icon" type="text" value="🎁" maxlength="4" style="width:48px;padding:8px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:1.25rem;text-align:center">
+        </div>
+        <div>
+          <label style="font-size:0.75rem;font-weight:600;color:var(--g500);display:block;margin-bottom:4px">Reward Name</label>
+          <input id="store-new-name" type="text" placeholder="e.g. Extra Recess" style="width:100%;padding:8px 12px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:0.875rem">
+        </div>
+        <div>
+          <label style="font-size:0.75rem;font-weight:600;color:var(--g500);display:block;margin-bottom:4px">Price (Keys)</label>
+          <input id="store-new-price" type="number" value="25" min="1" style="width:100%;padding:8px 12px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:0.875rem">
+        </div>
+        <div>
+          <label style="font-size:0.75rem;font-weight:600;color:var(--g500);display:block;margin-bottom:4px">Stock</label>
+          <input id="store-new-stock" type="number" value="10" min="0" style="width:100%;padding:8px 12px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:0.875rem">
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="storeAddItem()">Add</button>
+          <button class="btn btn-ghost btn-sm" onclick="storeAddingNew=false; renderMain()">Cancel</button>
+        </div>
+      </div>
+    </div>` : ''}
+
     <div class="list-card">
-      ${storeItems.map(item => `
+      ${storeItems.length === 0 ? `
+        <div style="padding:48px;text-align:center;color:var(--g400)">
+          <p>No rewards yet. Click "Add Reward" to create your first class store item!</p>
+        </div>` :
+      storeItems.map((item, idx) => {
+        if (storeEditing === idx) {
+          return `
+          <div class="list-item" style="background:var(--blue-p)">
+            <div style="display:flex;align-items:center;gap:12px;flex:1">
+              <input id="store-edit-icon" type="text" value="${item.icon}" maxlength="4" style="width:44px;padding:6px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:1.125rem;text-align:center">
+              <input id="store-edit-name" type="text" value="${item.name}" style="flex:1;padding:6px 12px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:0.875rem">
+              <div style="display:flex;align-items:center;gap:4px">
+                <span style="font-size:0.75rem;color:var(--g500)">Price:</span>
+                <input id="store-edit-price" type="number" value="${item.price}" min="1" style="width:70px;padding:6px 8px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:0.875rem">
+              </div>
+              <div style="display:flex;align-items:center;gap:4px">
+                <span style="font-size:0.75rem;color:var(--g500)">Stock:</span>
+                <input id="store-edit-stock" type="number" value="${item.stock}" min="0" style="width:70px;padding:6px 8px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:0.875rem">
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary btn-sm" onclick="storeSaveEdit(${idx})">Save</button>
+              <button class="btn btn-ghost btn-sm" onclick="storeEditing=null; renderMain()">Cancel</button>
+            </div>
+          </div>`;
+        }
+        return `
         <div class="list-item">
-          <div class="list-item-info">
-            <span class="list-item-name">${item.name}</span>
-            <span class="list-item-sub">${item.stock} in stock</span>
+          <div class="list-item-info" style="display:flex;align-items:center;gap:12px;flex-direction:row">
+            <span style="font-size:1.5rem">${item.icon}</span>
+            <div>
+              <span class="list-item-name">${item.name}</span>
+              <span class="list-item-sub">${item.stock} in stock</span>
+            </div>
           </div>
           <div class="list-item-right">
             ${keysDisp(item.price)}
+            <button class="btn btn-sm btn-ghost" onclick="storeEditing=${idx}; renderMain()" title="Edit">${IC.gear}</button>
+            <button class="btn btn-sm btn-ghost" onclick="storeRemoveItem(${idx})" title="Remove" style="color:var(--red)">${IC.x}</button>
           </div>
-        </div>
-      `).join('')}
+        </div>`;
+      }).join('')}
     </div>`;
+}
+
+function storeAddItem() {
+  const icon = document.getElementById('store-new-icon')?.value || '🎁';
+  const name = document.getElementById('store-new-name')?.value?.trim();
+  const price = parseInt(document.getElementById('store-new-price')?.value) || 25;
+  const stock = parseInt(document.getElementById('store-new-stock')?.value) || 10;
+  if (!name) { alert('Please enter a reward name.'); return; }
+  storeItems.push({ name, stock, price, icon });
+  storeAddingNew = false;
+  renderMain();
+}
+
+function storeSaveEdit(idx) {
+  const icon = document.getElementById('store-edit-icon')?.value || storeItems[idx].icon;
+  const name = document.getElementById('store-edit-name')?.value?.trim();
+  const price = parseInt(document.getElementById('store-edit-price')?.value) || storeItems[idx].price;
+  const stock = parseInt(document.getElementById('store-edit-stock')?.value) || 0;
+  if (!name) { alert('Please enter a reward name.'); return; }
+  storeItems[idx] = { name, stock, price, icon };
+  storeEditing = null;
+  renderMain();
+}
+
+function storeRemoveItem(idx) {
+  if (confirm(`Remove "${storeItems[idx].name}" from the store?`)) {
+    storeItems.splice(idx, 1);
+    renderMain();
+  }
 }
 
 // ---- Page: Book Library ----
@@ -1004,17 +1164,31 @@ function renderLibrary() {
 
 // ---- Page: Celebrate Students ----
 function renderCelebrate() {
+  if (students.length === 0) {
+    return `
+      <div class="page-header"><h1>Celebrate Students</h1></div>
+      <div class="empty-state">
+        <div class="empty-state-icon">${IC.star}</div>
+        <h2>No Students Yet</h2>
+        <p>Once students join your class and start taking quizzes, their achievements will appear here!</p>
+        <button class="btn btn-primary" onclick="navigate('quizzes')">${IC.arrowLeft} Go to Dashboard</button>
+      </div>`;
+  }
+
   const sorted = [...students].sort((a, b) => b.score - a.score);
+  const byStreak = [...students].sort((a, b) => (b.streak || 0) - (a.streak || 0));
+  const byQuizzes = [...students].sort((a, b) => (b.quizzes || 0) - (a.quizzes || 0));
+
   const topReader = sorted[0];
-  const mostImproved = students[0];
-  const longestStreak = students[6];
-  const mostQuizzes = students[6];
+  const mostImproved = sorted[Math.min(1, sorted.length - 1)];
+  const longestStreak = byStreak[0];
+  const mostQuizzes = byQuizzes[0];
 
   const awards = [
     { title: 'Top Reader',     icon: 'gold',   student: topReader,     stat: `Score: ${topReader.score}` },
-    { title: 'Most Improved',  icon: 'green',  student: mostImproved,  stat: `+12% this month` },
-    { title: 'Longest Streak', icon: 'orange', student: longestStreak, stat: longestStreak.streak },
-    { title: 'Most Quizzes',   icon: 'blue',   student: mostQuizzes,   stat: `${mostQuizzes.quizzes} quizzes` },
+    { title: 'Most Improved',  icon: 'green',  student: mostImproved,  stat: `+${Math.max(0, mostImproved.accuracy - 50)}% growth` },
+    { title: 'Longest Streak', icon: 'orange', student: longestStreak, stat: `${longestStreak.streak || 0} days` },
+    { title: 'Most Quizzes',   icon: 'blue',   student: mostQuizzes,   stat: `${mostQuizzes.quizzes || 0} quizzes` },
   ];
 
   return `
@@ -1069,17 +1243,37 @@ function renderAITools() {
 
 // ---- Page: Growth Reports (Class View) ----
 function renderReports() {
-  // Aggregate class data
-  const classScores = months.map((_, mi) => {
-    return Math.round(students.reduce((sum, s) => sum + growthData[s.id].scores[mi], 0) / students.length);
-  });
-  const classAccuracy = months.map((_, mi) => {
-    return Math.round(students.reduce((sum, s) => sum + growthData[s.id].accuracy[mi], 0) / students.length);
-  });
-  const totalKeysAll = students.reduce((s, st) => s + st.keys, 0);
+  if (students.length === 0) {
+    return `
+      <div class="page-header"><h1>${IC.chart} Growth Reports</h1></div>
+      <div class="empty-state">
+        <div class="empty-state-icon">${IC.chart}</div>
+        <h2>No Data Yet</h2>
+        <p>Growth reports will appear once students join your class and start taking quizzes. Share your class code to get started!</p>
+        <button class="btn btn-primary" onclick="navigate('quizzes')">${IC.arrowLeft} Go to Dashboard</button>
+      </div>`;
+  }
+
+  // Aggregate class data (use growthData if available, else use current student scores)
+  const hasGrowthData = students.some(s => growthData[s.id]);
+  const classScores = hasGrowthData
+    ? months.map((_, mi) => {
+        const validStudents = students.filter(s => growthData[s.id]);
+        if (validStudents.length === 0) return 0;
+        return Math.round(validStudents.reduce((sum, s) => sum + growthData[s.id].scores[mi], 0) / validStudents.length);
+      })
+    : months.map(() => Math.round(students.reduce((sum, s) => sum + s.score, 0) / students.length));
+  const classAccuracy = hasGrowthData
+    ? months.map((_, mi) => {
+        const validStudents = students.filter(s => growthData[s.id]);
+        if (validStudents.length === 0) return 0;
+        return Math.round(validStudents.reduce((sum, s) => sum + growthData[s.id].accuracy[mi], 0) / validStudents.length);
+      })
+    : months.map(() => Math.round(students.reduce((sum, s) => sum + s.accuracy, 0) / students.length));
+  const totalKeysAll = students.reduce((s, st) => s + (st.keys || 0), 0);
   const improvingCount = students.filter(s => {
     const gd = growthData[s.id];
-    return gd.scores[5] > gd.scores[0];
+    return gd ? gd.scores[5] > gd.scores[0] : false;
   }).length;
 
   return `
@@ -1098,7 +1292,7 @@ function renderReports() {
           <div>
             <h2>Class Growth Report</h2>
             <div class="report-meta">
-              <span>Sarah Johnson's 4th Grade Class</span>
+              <span>${currentUser?.name || 'Teacher'}'s Class</span>
               <span>${IC.calendar} Sep 2025 \u2014 Feb 2026</span>
               <span>${students.length} Students</span>
             </div>
@@ -1149,11 +1343,24 @@ function renderReports() {
         </thead>
         <tbody>
           ${[...students].sort((a, b) => {
-            const aGain = growthData[a.id].scores[5] - growthData[a.id].scores[0];
-            const bGain = growthData[b.id].scores[5] - growthData[b.id].scores[0];
+            const aGd = growthData[a.id];
+            const bGd = growthData[b.id];
+            const aGain = aGd ? aGd.scores[5] - aGd.scores[0] : 0;
+            const bGain = bGd ? bGd.scores[5] - bGd.scores[0] : 0;
             return bGain - aGain;
           }).map(s => {
             const gd = growthData[s.id];
+            if (!gd) {
+              return `
+              <tr onclick="reportStudentId=${s.id}; renderMain();" style="cursor:pointer">
+                <td><div class="student-cell">${avatar(s)} <span class="student-name">${s.name}</span> ${warnTag(s)}</div></td>
+                <td>${s.score}</td>
+                <td><strong>${s.score}</strong></td>
+                <td><span style="color:var(--g400)">New</span></td>
+                <td><span style="color:var(--g400)">\u2014</span></td>
+                <td><span class="badge badge-blue">New</span></td>
+              </tr>`;
+            }
             const gain = gd.scores[5] - gd.scores[0];
             const gainPct = Math.round((gain / gd.scores[0]) * 100);
             let statusCls = 'green', statusLabel = 'Improving';
@@ -1189,6 +1396,39 @@ function renderStudentReport() {
   const s = students.find(x => x.id === reportStudentId);
   if (!s) return '<p>Student not found.</p>';
   const gd = growthData[s.id];
+
+  // If no growth data exists for this student, show a simplified report
+  if (!gd) {
+    return `
+      <button class="back-btn" onclick="reportStudentId=null; renderMain()">${IC.arrowLeft} Back to Class Report</button>
+      <div class="report-header-card">
+        <div class="report-header-bar"></div>
+        <div class="report-header-body">
+          <div class="report-header-top">
+            <div style="display:flex;align-items:center;gap:16px">
+              ${avatar(s, 'lg')}
+              <div>
+                <h2>${s.name} ${warnTag(s)}</h2>
+                <div class="report-meta">
+                  <span>Grade: ${s.grade}</span>
+                  <span>Level ${s.level}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="stat-cards">
+        <div class="stat-card"><div class="stat-card-label">Reading Score</div><div class="stat-card-value">${s.score}</div></div>
+        <div class="stat-card"><div class="stat-card-label">Accuracy</div><div class="stat-card-value">${s.accuracy}%</div></div>
+        <div class="stat-card"><div class="stat-card-label">Keys Earned</div><div class="stat-card-value">${(s.keys || 0).toLocaleString()}</div></div>
+        <div class="stat-card"><div class="stat-card-label">Quizzes Taken</div><div class="stat-card-value">${s.quizzes || 0}</div></div>
+      </div>
+      <div class="info-panel" style="margin-top:24px">
+        <h4>${IC.info} Growth Data</h4>
+        <p>More detailed growth data will appear as ${s.name.split(' ')[0]} completes more quizzes over time.</p>
+      </div>`;
+  }
 
   return `
     <button class="back-btn" onclick="reportStudentId=null; renderMain()">${IC.arrowLeft} Back to Class Report</button>
@@ -1227,11 +1467,11 @@ function renderStudentReport() {
       </div>
       <div class="stat-card">
         <div class="stat-card-label">Keys Earned</div>
-        <div class="stat-card-value">${s.keys.toLocaleString()}</div>
+        <div class="stat-card-value">${(s.keys || 0).toLocaleString()}</div>
       </div>
       <div class="stat-card">
         <div class="stat-card-label">Quizzes Taken</div>
-        <div class="stat-card-value">${s.quizzes}</div>
+        <div class="stat-card-value">${s.quizzes || 0}</div>
       </div>
     </div>
 
@@ -1413,7 +1653,7 @@ function openModal(type, prefill) {
                     }
                   </div>
                 `).join('')}
-                <div class="personalization-more">+ ${students.length - 4} more students</div>
+                ${students.length > 4 ? `<div class="personalization-more">+ ${students.length - 4} more students</div>` : ''}
               </div>
             </div>
 
@@ -2012,9 +2252,9 @@ function renderStudentBadges() {
 
 function renderPrincipalDashboard() {
   const totalStudents = students.length;
-  const avgScore = Math.round(students.reduce((a, s) => a + s.score, 0) / totalStudents);
-  const avgAccuracy = Math.round(students.reduce((a, s) => a + s.accuracy, 0) / totalStudents);
-  const totalKeys = students.reduce((a, s) => a + s.keys, 0);
+  const avgScore = totalStudents > 0 ? Math.round(students.reduce((a, s) => a + (s.score || 0), 0) / totalStudents) : 0;
+  const avgAccuracy = totalStudents > 0 ? Math.round(students.reduce((a, s) => a + (s.accuracy || 0), 0) / totalStudents) : 0;
+  const totalKeys = students.reduce((a, s) => a + (s.keys || 0), 0);
 
   const classes = [
     { name: "Sarah Johnson's 4th Grade", teacher: 'Sarah Johnson', students: 10, avgScore: avgScore, code: 'SARAH4' },
@@ -2190,6 +2430,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentUser.className = codeData.className;
       }
     } catch(e) { /* no class yet */ }
+
+    // Load students for this teacher's class
+    if (currentUser.classId) {
+      try {
+        const rawStudents = await API.getStudents(currentUser.classId);
+        students = rawStudents.map(mapStudentFromAPI);
+      } catch(e) { console.warn('Could not load students:', e); }
+
+      // Load assignments for this teacher's class
+      try {
+        const rawAssignments = await API.getAssignments(currentUser.classId);
+        assignments = rawAssignments.map(mapAssignmentFromAPI);
+      } catch(e) { console.warn('Could not load assignments:', e); }
+    }
   }
 
   // Set default page based on role
