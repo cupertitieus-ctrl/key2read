@@ -5,8 +5,9 @@
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr;
   grid-template-rows: var(--header-h) 1fr;
-  min-height: 100vh;
+  height: 100vh;
   background: var(--g50);
+  overflow: hidden;
 }
 
 /* --- Sidebar --- */
@@ -15,7 +16,10 @@
   background: linear-gradient(180deg, var(--navy) 0%, var(--navy-deep) 100%);
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
+  height: 100vh;
+  position: sticky;
+  top: 0;
 }
 
 .sidebar-brand {
@@ -293,6 +297,7 @@
 .dash-main {
   padding: 28px 32px;
   overflow-y: auto;
+  max-height: calc(100vh - var(--header-h));
 }
 
 /* --- Page Header Row --- */
