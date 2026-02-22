@@ -87,25 +87,6 @@ let books = [];
 
 let quizHistory = [];
 
-// ---- Personalized Questions Demo ----
-const personalizedQuestions = {
-  original: "Why does Charlotte decide to help Wilbur? What does this tell us about friendship?",
-  personalized: {
-    sports:      "Think of Charlotte as a teammate who goes all-in to help Wilbur win. Why does she decide to help him? What does this tell us about being a great teammate?",
-    animals:     "Charlotte and Wilbur are very different animals. Why does Charlotte, a spider, decide to help Wilbur, a pig? What does their friendship teach us about caring for animals?",
-    science:     "Charlotte uses her web-spinning abilities in a creative way to save Wilbur. Why does she decide to help him? What does this tell us about using your unique skills for others?",
-    adventure:   "Wilbur faces a life-threatening danger and Charlotte embarks on a mission to save him. Why does she take on this challenge? What does this tell us about bravery in friendship?",
-    technology:  "Charlotte\u2019s web works like a message board that changes everyone\u2019s mind. Why does she use this \u2018technology\u2019 to help Wilbur? What does this show about creative problem-solving?",
-    humor:       "Charlotte has to come up with clever, catchy words for her web. Why does she go through all this effort for Wilbur? What makes their friendship so funny and special?",
-    fantasy:     "Charlotte\u2019s ability to write words in her web seems almost magical. Why does she use this talent to help Wilbur? What does their bond remind you of in fantasy stories?",
-    mystery:     "Charlotte hatches a secret plan that nobody sees coming. Why does she go to such lengths to help Wilbur? What clues does the author give us about her motives?",
-    friendship:  "Charlotte and Wilbur have one of the most famous friendships in literature. Why does Charlotte sacrifice so much? What does this teach us about true friendship?",
-    art:         "Charlotte\u2019s webs are described as beautiful works of art. Why does she use her creativity to help Wilbur? How does the author use Charlotte\u2019s art to tell the story?",
-    history:     "In the world of this farm, Charlotte changes history for Wilbur. Why does she decide to help? What does this story show about one individual making a difference?",
-    cooking:     "Charlotte helps save Wilbur from becoming someone\u2019s dinner! Why does she go to such lengths? What does this friendship teach us about protecting those we care about?",
-  }
-};
-
 // ---- Growth Data (6 months: Sep-Feb) ----
 const months = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb'];
 let growthData = {};
@@ -226,7 +207,6 @@ function mapAssignmentFromAPI(a) {
     book_author: a.book_author || '',
     chapter_start: a.chapter_start || 1,
     chapter_end: a.chapter_end || 1,
-    personalized: a.personalized,
     dist: null
   };
 }
@@ -254,10 +234,6 @@ function interestTagsCompact(s, max) {
   }).join('');
   if (extra > 0) html += `<span class="interest-tag-more">+${extra}</span>`;
   return html;
-}
-
-function personalizationBadge() {
-  return `<span class="personalization-badge">${IC.sparkle} AI Personalized</span>`;
 }
 
 function growthArrow(start, end) {
@@ -505,15 +481,14 @@ function renderMain() {
 }
 
 // ---- Launch Quiz Player ----
-async function launchQuiz(bookId, chapterNum, sid, personalize) {
+async function launchQuiz(bookId, chapterNum, sid) {
   const s = sid != null ? students.find(st => st.id === sid) : students[0];
   page = 'quiz-player';
   renderSidebar();
   renderMain();
 
   const playerRoot = document.getElementById('quiz-player-root');
-  const loadMsg = personalize ? 'Generating personalized questions with AI' : 'Loading chapter questions';
-  if (playerRoot) playerRoot.innerHTML = '<div style="text-align:center;padding:60px;color:var(--g400)"><div style="font-size:2rem;margin-bottom:12px">📖</div>Loading quiz...<br><small>' + loadMsg + '</small></div>';
+  if (playerRoot) playerRoot.innerHTML = '<div style="text-align:center;padding:60px;color:var(--g400)"><div style="font-size:2rem;margin-bottom:12px">📖</div>Loading quiz...<br><small>Loading chapter questions</small></div>';
 
   try {
     const quizData = await API.getChapterQuiz(bookId, chapterNum);
@@ -523,14 +498,6 @@ async function launchQuiz(bookId, chapterNum, sid, personalize) {
       try { const allBooks = await API.getBooks(); book = allBooks.find(b => b.id === bookId); } catch(e) {}
     }
     if (!book) book = { title: 'Book Quiz', author: '' };
-
-    // Only personalize for assessments (not book quizzes from library)
-    if (personalize && s && s.interests && s.interests.onboarded) {
-      try {
-        const personalized = await API.personalizeAll(quizData.chapter.id, s.id);
-        if (personalized.questions) quizData.questions = personalized.questions;
-      } catch(e) { /* Use standard questions */ }
-    }
 
     QuizEngine.start({ chapter: quizData.chapter, questions: quizData.questions, book }, s, (results) => {
       // Quiz completed callback — refresh student data
@@ -716,16 +683,12 @@ function renderAssignmentDetail() {
             <th>Level</th>
             <th>Reading Score</th>
             <th>Accuracy</th>
-            <th>Personalization</th>
             <th>Keys</th>
           </tr>
         </thead>
         <tbody>
           ${students.map(s => {
             const sb = scoreBadge(s.accuracy);
-            const pBadge = s.interests && s.interests.onboarded
-              ? `<div class="flex items-center gap-8">${personalizationBadge()}</div>`
-              : '<span class="interest-empty">Standard</span>';
             return `
             <tr onclick="navigate('students',null,${s.id})">
               <td><div class="student-cell">${avatar(s)} <span class="student-name">${s.name}</span> ${warnTag(s)}</div></td>
@@ -735,7 +698,6 @@ function renderAssignmentDetail() {
                 <span class="score-badge ${sb.cls}">${s.accuracy}% ${sb.label}</span>
                 <div class="mini-progress"><div class="mini-progress-bar" style="width:${s.accuracy}%;background:${sb.barColor}"></div></div>
               </td>
-              <td>${pBadge}</td>
               <td>${keysDisp(s.keys)}</td>
             </tr>`;
           }).join('')}
@@ -808,40 +770,6 @@ function renderStudentProfile() {
   if (!s) return '<p>Student not found.</p>';
   const sb = scoreBadge(s.accuracy);
   const gd = growthData[s.id];
-  const readingStyleLabels = { detailed: 'Detailed Reader', visual: 'Visual Learner', fast: 'Speed Reader' };
-
-  // Interest profile section
-  let interestSection = '';
-  if (s.interests && s.interests.onboarded) {
-    interestSection = `
-      <div class="interest-profile-card">
-        <div class="interest-profile-header">
-          <h3>${IC.heart} Interest Profile ${personalizationBadge()}</h3>
-          <button class="btn btn-sm btn-ghost" onclick="onboardingStudent=${s.id}; onboardingStep=0; selectedInterests=[...(students.find(x=>x.id===${s.id})?.interests?.tags||[])]; openModal('onboarding',${s.id})">Edit</button>
-        </div>
-        <div class="interest-profile-body">
-          <div class="interest-profile-row">
-            <span class="interest-profile-label">Interests</span>
-            <div class="interest-tags-wrap">${interestTags(s)}</div>
-          </div>
-          <div class="interest-profile-row">
-            <span class="interest-profile-label">Reading Style</span>
-            <span class="badge badge-blue">${readingStyleLabels[s.interests.readingStyle] || 'Not set'}</span>
-          </div>
-          <div class="interest-profile-row">
-            <span class="interest-profile-label">Fav Genre</span>
-            <span style="color:var(--g700);font-weight:500">${s.interests.favoriteGenre}</span>
-          </div>
-        </div>
-      </div>`;
-  } else {
-    interestSection = `
-      <div class="interest-cta-card">
-        <h3>${IC.sparkle} Personalize ${s.name.split(' ')[0]}'s Experience</h3>
-        <p>Set up their interest profile to enable AI-personalized quizzes and assessments that match topics they care about.</p>
-        <button class="btn btn-primary btn-sm" onclick="onboardingStudent=${s.id}; onboardingStep=0; selectedInterests=[]; openModal('onboarding',${s.id})">Start Setup</button>
-      </div>`;
-  }
 
   return `
     <button class="back-btn" onclick="navigate('students')">${IC.arrowLeft} Back to Students</button>
@@ -887,8 +815,6 @@ function renderStudentProfile() {
         <div class="profile-stat-label">Quizzes</div>
       </div>
     </div>
-
-    ${interestSection}
 
     ${quizHistory.length > 0 ? `
     <div class="data-table-wrap">
@@ -1538,16 +1464,7 @@ function renderStudentReport() {
       </table>
     </div>
 
-    ${s.interests && s.interests.onboarded ? `
-    <div class="info-panel" style="margin-top:24px">
-      <h4>${IC.sparkle} Personalization Impact</h4>
-      <p>${s.name.split(' ')[0]}'s assessments are personalized around their interests in <strong>${s.interests.tags.map(t => interestCategories.find(c => c.id === t)?.label).join(', ')}</strong>. Personalized questions have shown increased engagement and completion rates. Their preferred reading style is <strong>${s.interests.readingStyle}</strong> and favorite genre is <strong>${s.interests.favoriteGenre}</strong>.</p>
-    </div>` : `
-    <div class="interest-cta-card" style="margin-top:24px">
-      <h3>${IC.sparkle} Boost ${s.name.split(' ')[0]}'s Engagement</h3>
-      <p>Set up an interest profile to personalize assessments and potentially improve reading scores.</p>
-      <button class="btn btn-primary btn-sm" onclick="onboardingStudent=${s.id}; onboardingStep=0; selectedInterests=[]; openModal('onboarding',${s.id})">Set Up Interests</button>
-    </div>`}`;
+  `;
 }
 
 // ---- Onboarding Helpers ----
@@ -1634,10 +1551,9 @@ async function saveOnboarding() {
 // ---- Modal System ----
 function openModal(type, prefill) {
   let html = '';
-  const modalRoot = (type === 'personalization-preview') ? 'modal-root-2' : 'modal-root';
+  const modalRoot = 'modal-root';
 
   if (type === 'assign') {
-    const previewStudents = students.slice(0, 4);
     html = `
       <div class="modal-overlay" onclick="closeModal(event)">
         <div class="modal modal-lg" onclick="event.stopPropagation()">
@@ -1668,89 +1584,10 @@ function openModal(type, prefill) {
               <textarea class="form-input" placeholder="Add any special instructions for students..."></textarea>
             </div>
 
-            <div class="personalization-section">
-              <div class="personalization-header">
-                <h4>${IC.sparkle} AI Personalization</h4>
-                <span class="badge badge-green">Active</span>
-              </div>
-              <p class="personalization-desc">Questions will be automatically adapted to each student's interests and reading style.</p>
-              <div class="personalization-student-list">
-                ${previewStudents.map(s => `
-                  <div class="personalization-student-row">
-                    <div class="student-cell" style="min-width:140px">${avatar(s)} <span class="student-name">${s.name}</span></div>
-                    <div class="interest-tags-compact" style="flex:1">
-                      ${s.interests && s.interests.onboarded
-                        ? interestTagsCompact(s, 2)
-                        : '<span class="interest-empty-sm">Not set up</span>'
-                      }
-                    </div>
-                    ${s.interests && s.interests.onboarded
-                      ? `<button class="btn btn-sm btn-ghost" onclick="event.stopPropagation(); openModal('personalization-preview', ${s.id})">Preview</button>`
-                      : ''
-                    }
-                  </div>
-                `).join('')}
-                ${students.length > 4 ? `<div class="personalization-more">+ ${students.length - 4} more students</div>` : ''}
-              </div>
-            </div>
-
-            <div class="modal-info">
-              <strong>How it works:</strong> key2read's AI adapts question framing, examples, and context to match each student's interests. The core comprehension skills assessed stay the same \u2014 only the context changes to increase engagement.
-            </div>
           </div>
           <div class="modal-footer">
             <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
             <button class="btn btn-primary" onclick="closeModal()">Assign</button>
-          </div>
-        </div>
-      </div>`;
-  }
-
-  if (type === 'personalization-preview') {
-    const s = students.find(x => x.id === prefill);
-    if (!s) return;
-    const topInterest = s.interests.tags[0] || 'friendship';
-    const personalizedQ = personalizedQuestions.personalized[topInterest] || personalizedQuestions.personalized.friendship;
-    const matchScore = 82 + Math.floor(Math.random() * 15);
-
-    html = `
-      <div class="modal-overlay" onclick="closeModal2(event)">
-        <div class="modal modal-lg" onclick="event.stopPropagation()">
-          <div class="modal-header">
-            <h3>${IC.sparkle} Personalization Preview</h3>
-            <button class="modal-close" onclick="closeModal2()">${IC.x}</button>
-          </div>
-          <div class="modal-body">
-            <div class="preview-student-bar">
-              ${avatar(s, 'lg')}
-              <div>
-                <h4 style="font-size:1.125rem;font-weight:600">${s.name}</h4>
-                <div class="interest-tags-wrap" style="margin-top:6px">${interestTags(s)}</div>
-              </div>
-            </div>
-
-            <div class="question-comparison">
-              <div class="question-card standard">
-                <div class="question-card-label">Standard Question</div>
-                <p>${personalizedQuestions.original}</p>
-              </div>
-              <div class="question-card personalized">
-                <div class="question-card-label">${IC.sparkle} Personalized for ${s.name.split(' ')[0]}</div>
-                <p>${personalizedQ}</p>
-                <div class="question-card-match">
-                  <span>Interest Match</span>
-                  <div class="match-bar"><div class="match-fill" style="width:${matchScore}%"></div></div>
-                  <span class="match-pct">${matchScore}%</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="modal-info">
-              <strong>How it works:</strong> The AI adapts vocabulary, examples, and real-world connections to match ${s.name.split(' ')[0]}'s interest in <strong>${interestCategories.find(c => c.id === topInterest)?.label}</strong>. The comprehension skill being assessed stays the same \u2014 only the context changes.
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-ghost" onclick="closeModal2()">Close</button>
           </div>
         </div>
       </div>`;
@@ -1775,8 +1612,8 @@ function openModal(type, prefill) {
       stepContent = `
         <div class="onboarding-welcome">
           <div style="margin:0 auto 20px">${avatar(s, 'lg')}</div>
-          <h2 style="text-align:center;margin-bottom:8px">Let's personalize reading for ${s.name.split(' ')[0]}!</h2>
-          <p style="text-align:center;color:var(--g500);margin-bottom:24px">We'll ask a few fun questions about your interests so we can make quizzes more fun and help you learn better!</p>
+          <h2 style="text-align:center;margin-bottom:8px">Welcome, ${s.name.split(' ')[0]}!</h2>
+          <p style="text-align:center;color:var(--g500);margin-bottom:24px">We'd love to learn about you! Answer a few fun questions so your teacher can get to know you better.</p>
           <div style="text-align:center">
             <button class="btn btn-primary" onclick="nextOnboardingStep()">Let's Go! 🎉</button>
           </div>
@@ -1908,15 +1745,13 @@ function openModal(type, prefill) {
         </div>`;
     } else if (onboardingStep === 5) {
       // Done / Summary
-      const topInterest = selectedInterests[0] || 'friendship';
-      const personalizedQ = personalizedQuestions.personalized[topInterest] || personalizedQuestions.personalized.friendship;
       const hobbies = (window._surveyHobbies || []).slice(0, 4);
       const animals = (window._surveyAnimals || []).slice(0, 3);
       stepContent = `
         <div style="text-align:center;margin-bottom:20px">
           <div style="margin:0 auto 12px">${avatar(s, 'lg')}</div>
           <h2>You're all set, ${s.name.split(' ')[0]}! 🎉</h2>
-          <p style="color:var(--g500);margin-top:6px">Your quizzes will now be personalized to match your interests.</p>
+          <p style="color:var(--g500);margin-top:6px">Thanks for telling us about yourself!</p>
         </div>
         <div style="margin-bottom:16px">
           <span class="interest-profile-label" style="display:block;margin-bottom:6px">Your Interests</span>
@@ -1930,17 +1765,6 @@ function openModal(type, prefill) {
         ${hobbies.length > 0 ? `<div style="margin-bottom:12px"><span class="interest-profile-label" style="display:block;margin-bottom:4px">Hobbies</span><span style="color:var(--g600);font-size:0.85rem">${hobbies.join(', ')}</span></div>` : ''}
         ${animals.length > 0 ? `<div style="margin-bottom:12px"><span class="interest-profile-label" style="display:block;margin-bottom:4px">Favorite Animals</span><span style="color:var(--g600);font-size:0.85rem">${animals.join(', ')}</span></div>` : ''}
         ${window._surveyDreamJob ? `<div style="margin-bottom:12px"><span class="interest-profile-label" style="display:block;margin-bottom:4px">Dream Job</span><span style="color:var(--g600);font-size:0.85rem">${window._surveyDreamJob}</span></div>` : ''}
-
-        <div class="question-comparison" style="margin-top:16px">
-          <div class="question-card standard">
-            <div class="question-card-label">Standard Question</div>
-            <p style="font-size:0.8125rem">${personalizedQuestions.original}</p>
-          </div>
-          <div class="question-card personalized">
-            <div class="question-card-label">${IC.sparkle} Personalized for You</div>
-            <p style="font-size:0.8125rem">${personalizedQ}</p>
-          </div>
-        </div>
 
         <div style="display:flex;justify-content:space-between;margin-top:20px">
           <button class="btn btn-ghost" onclick="prevOnboardingStep()">Back</button>
