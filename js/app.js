@@ -38,6 +38,7 @@ const IC = {
   heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
   sparkle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/></svg>',
   chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 4-6"/></svg>',
+  logout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
 };
 
 // ---- Interest Categories ----
@@ -392,10 +393,11 @@ function renderSidebar() {
   html += `</nav>
     <div class="sidebar-footer">
       <div class="sidebar-avatar">${userInitials}</div>
-      <div>
+      <div style="flex:1;min-width:0">
         <div class="sidebar-user-name">${userName}</div>
         <div class="sidebar-user-role">${roleLabel}</div>
       </div>
+      <button class="sidebar-logout-btn" onclick="handleLogout()" title="Log out">${IC.logout}</button>
     </div>`;
 
   document.getElementById('sidebar').innerHTML = html;
@@ -415,6 +417,12 @@ function renderHeader() {
       <button class="header-icon-btn">${IC.bell}<span class="notif-dot"></span></button>
       <button class="header-icon-btn">${IC.gear}</button>
     </div>`;
+}
+
+// ---- Logout ----
+async function handleLogout() {
+  try { await API.logout(); } catch(e) { /* ignore */ }
+  window.location.href = 'signin.html';
 }
 
 // ---- Navigate ----

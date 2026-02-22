@@ -156,6 +156,22 @@
   font-size: 0.75rem;
 }
 
+.sidebar-logout-btn {
+  background: none;
+  border: none;
+  color: var(--g500);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color .15s, background .15s;
+  flex-shrink: 0;
+}
+.sidebar-logout-btn svg { width: 18px; height: 18px; }
+.sidebar-logout-btn:hover { color: #fff; background: rgba(255,255,255,.1); }
+
 /* --- Header --- */
 .dash-header {
   background: #fff;
