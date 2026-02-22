@@ -6,13 +6,13 @@ const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
-// Charlie Picasso book series
+// Charlie Picasso book series by Diane Alber
 const books = [
-  { title: 'And The Magic Pencil', author: 'Charlie Picasso', lexile_level: 500, grade_level: 'K-2', genre: 'Fiction', chapter_count: 10, description: 'Charlie discovers a magic pencil that brings his drawings to life.', cover_url: 'https://m.media-amazon.com/images/I/51zfQzUxd7L._SY445_SX342_FMwebp_.jpg' },
-  { title: "Don't Draw Robots", author: 'Charlie Picasso', lexile_level: 520, grade_level: 'K-2', genre: 'Fiction', chapter_count: 10, description: 'Charlie learns the hard way why some things are better left undrawn.', cover_url: 'https://m.media-amazon.com/images/I/41l1chUpgPL._SY300_.jpg' },
-  { title: 'Practice Makes Progress', author: 'Charlie Picasso', lexile_level: 510, grade_level: 'K-2', genre: 'Fiction', chapter_count: 10, description: 'Charlie discovers that getting better at art takes patience and practice.', cover_url: 'https://m.media-amazon.com/images/I/41CKhAo07kL._SY300_.jpg' },
-  { title: 'Turtle Trouble', author: 'Charlie Picasso', lexile_level: 490, grade_level: 'K-2', genre: 'Fiction', chapter_count: 10, description: 'Charlie accidentally draws a turtle that causes all kinds of trouble.', cover_url: 'https://m.media-amazon.com/images/I/41lDTfcis+L._SY300_.jpg' },
-  { title: 'Hamster Chaos', author: 'Charlie Picasso', lexile_level: 500, grade_level: 'K-2', genre: 'Fiction', chapter_count: 10, description: 'Charlie draws a hamster that creates hilarious chaos everywhere it goes.', cover_url: 'https://m.media-amazon.com/images/I/41ulXTwzlrL._SY300_.jpg' }
+  { title: 'Charlie Picasso: And The Magic Pencil', author: 'Diane Alber', lexile_level: 500, grade_level: 'K-2', genre: 'Fiction', chapter_count: 10, description: 'Charlie discovers a magic pencil that brings his drawings to life.', cover_url: 'https://m.media-amazon.com/images/I/51zfQzUxd7L._SY445_SX342_FMwebp_.jpg' },
+  { title: "Charlie Picasso: Don't Draw Robots", author: 'Diane Alber', lexile_level: 520, grade_level: 'K-2', genre: 'Fiction', chapter_count: 10, description: 'Charlie learns the hard way why some things are better left undrawn.', cover_url: 'https://m.media-amazon.com/images/I/41l1chUpgPL._SY300_.jpg' },
+  { title: 'Charlie Picasso: Practice Makes Progress', author: 'Diane Alber', lexile_level: 510, grade_level: 'K-2', genre: 'Fiction', chapter_count: 10, description: 'Charlie discovers that getting better at art takes patience and practice.', cover_url: 'https://m.media-amazon.com/images/I/41CKhAo07kL._SY300_.jpg' },
+  { title: 'Charlie Picasso: Turtle Trouble', author: 'Diane Alber', lexile_level: 490, grade_level: 'K-2', genre: 'Fiction', chapter_count: 10, description: 'Charlie accidentally draws a turtle that causes all kinds of trouble.', cover_url: 'https://m.media-amazon.com/images/I/41lDTfcis+L._SY300_.jpg' },
+  { title: 'Charlie Picasso: Hamster Chaos', author: 'Diane Alber', lexile_level: 500, grade_level: 'K-2', genre: 'Fiction', chapter_count: 10, description: 'Charlie draws a hamster that creates hilarious chaos everywhere it goes.', cover_url: 'https://m.media-amazon.com/images/I/41ulXTwzlrL._SY300_.jpg' }
 ];
 
 async function seed() {
