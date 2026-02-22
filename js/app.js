@@ -1952,7 +1952,7 @@ function openModal(type, prefill) {
       <div class="modal-overlay" onclick="closeModal(event)">
         <div class="modal modal-lg" onclick="event.stopPropagation()">
           <div class="modal-header">
-            <h3>${IC.heart} Student Interest Setup</h3>
+            <h3>Student Interest Setup</h3>
             <button class="modal-close" onclick="closeModal()">${IC.x}</button>
           </div>
           <div class="modal-body">
