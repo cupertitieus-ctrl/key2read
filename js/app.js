@@ -187,7 +187,7 @@ function mapStudentFromAPI(s) {
     keys: s.keys_earned || 0,
     quizzes: s.quizzes_completed || 0,
     streak: s.streak_days || 0,
-    struggling: (s.reading_score || 500) < 500 || (s.accuracy || 0) < 60,
+    struggling: (s.quizzes_completed || 0) > 0 && ((s.reading_score || 500) < 400 || (s.accuracy || 0) < 50),
     joined: s.created_at ? new Date(s.created_at).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) : '—',
     interests: onboarded ? {
       tags: tags,
@@ -331,11 +331,11 @@ function renderSidebar() {
     items = [
       { section: 'My Learning' },
       { id: 'student-dashboard', icon: IC.target, label: 'My Dashboard' },
-      { id: 'student-quizzes',   icon: IC.clip,   label: 'My Quizzes', badge: '2', badgeCls: 'red' },
+      { id: 'student-quizzes',   icon: IC.clip,   label: 'My Quizzes', badge: assignments.length > 0 ? String(assignments.length) : '', badgeCls: 'red' },
       { id: 'library',           icon: IC.book,   label: 'Book Library' },
       { id: 'student-progress',  icon: IC.chart,  label: 'My Progress' },
       { section: 'Fun' },
-      { id: 'store',             icon: IC.bag,    label: 'Class Store', badge: '5', badgeCls: 'gold' },
+      { id: 'store',             icon: IC.bag,    label: 'Class Store', badge: storeItems.length > 0 ? String(storeItems.length) : '', badgeCls: 'gold' },
       { id: 'student-badges',    icon: IC.star,   label: 'My Badges' },
     ];
   } else if (userRole === 'principal') {
@@ -2053,55 +2053,71 @@ function renderStudentDashboard() {
     interests: null,
     onboarded: currentUser?.onboarded || 0
   };
-  const lvlColor = s.accuracy >= 90 ? 'green' : s.accuracy >= 75 ? 'blue' : s.accuracy >= 60 ? 'gold' : 'red';
-  const lvlLabel = s.accuracy >= 90 ? 'Excellent' : s.accuracy >= 75 ? 'Good' : s.accuracy >= 60 ? 'Fair' : 'Needs Practice';
+  const hasQuizzes = s.quizzes > 0;
+  const lvlColor = !hasQuizzes ? 'blue' : s.accuracy >= 90 ? 'green' : s.accuracy >= 75 ? 'blue' : s.accuracy >= 60 ? 'gold' : 'red';
+  const lvlLabel = !hasQuizzes ? 'Get started!' : s.accuracy >= 90 ? 'Excellent' : s.accuracy >= 75 ? 'Good' : s.accuracy >= 60 ? 'Fair' : 'Keep practicing!';
+
+  // Show first 6 books with covers for the student to browse
+  const featuredBooks = books.slice(0, 6);
 
   return `
-    <div class="page-header"><h1>Welcome back, ${s.name.split(' ')[0]}!</h1></div>
+    <div class="page-header"><h1>Welcome${hasQuizzes ? ' back' : ''}, ${s.name.split(' ')[0]}!</h1></div>
     <div class="stat-cards stat-cards-5">
-      <div class="stat-card"><div class="stat-card-label">Reading Level</div><div class="stat-card-value">${s.level}</div><div class="stat-card-trend" style="color:var(--g500)">Grade ${s.level}</div></div>
+      <div class="stat-card"><div class="stat-card-label">Reading Level</div><div class="stat-card-value">${s.level}</div></div>
       <div class="stat-card"><div class="stat-card-label">Reading Score</div><div class="stat-card-value">${s.score}</div></div>
       <div class="stat-card"><div class="stat-card-label">Keys Earned</div><div class="stat-card-value"><span class="icon-sm" style="color:var(--gold)">${IC.key}</span> ${s.keys}</div></div>
       <div class="stat-card"><div class="stat-card-label">Quizzes Done</div><div class="stat-card-value">${s.quizzes}</div></div>
-      <div class="stat-card"><div class="stat-card-label">Accuracy</div><div class="stat-card-value">${s.accuracy}%</div><div class="stat-card-trend" style="color:var(--${lvlColor})">${lvlLabel}</div></div>
+      <div class="stat-card"><div class="stat-card-label">Accuracy</div><div class="stat-card-value">${hasQuizzes ? s.accuracy + '%' : '—'}</div><div class="stat-card-trend" style="color:var(--${lvlColor})">${lvlLabel}</div></div>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px">
       <div class="list-card" style="padding:24px">
-        <h3 style="margin-bottom:16px">Assigned Quizzes</h3>
-        <div class="list-item" style="cursor:pointer" onclick="page='student-quizzes'; renderSidebar(); renderMain()">
-          <div class="list-item-info">
-            <span class="list-item-name">Charlotte's Web — Ch. 1</span>
-            <span class="list-item-sub" style="color:var(--red)">Due tomorrow</span>
-          </div>
-          <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); launchQuiz(1, 1, ${s.id}, false)">Start Quiz</button>
-        </div>
-        <div class="list-item" style="cursor:pointer" onclick="page='student-quizzes'; renderSidebar(); renderMain()">
-          <div class="list-item-info">
-            <span class="list-item-name">Charlotte's Web — Ch. 2</span>
-            <span class="list-item-sub">Due in 3 days</span>
-          </div>
-          <button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); launchQuiz(1, 2, ${s.id}, false)">Start Quiz</button>
-        </div>
-        <div style="text-align:center;padding:12px 0">
-          <button class="btn btn-sm btn-ghost" onclick="navigate('student-quizzes')">View All Quizzes</button>
-        </div>
-      </div>
-
-      <div class="list-card" style="padding:24px">
-        <h3 style="margin-bottom:16px">Reading Streak</h3>
+        <h3 style="margin-bottom:16px">${IC.fire} Reading Streak</h3>
         <div style="text-align:center;padding:20px 0">
           <div style="width:48px;height:48px;margin:0 auto 4px;color:var(--orange,#F59E0B)">${IC.fire}</div>
-          <div style="font-size:2.5rem;font-weight:800;color:var(--navy)">${s.streak === '—' ? '0 days' : s.streak}</div>
-          <div style="color:var(--g500);margin-top:4px">Keep it going!</div>
+          <div style="font-size:2.5rem;font-weight:800;color:var(--navy)">${parseInt(s.streak) || 0}</div>
+          <div style="color:var(--g500);margin-top:4px">${parseInt(s.streak) > 0 ? 'Keep it going!' : 'Start reading to build your streak!'}</div>
         </div>
         <div style="display:flex;gap:6px;justify-content:center;margin-top:12px">
           ${['M','T','W','T','F','S','S'].map((d, i) => { const streakNum = parseInt(s.streak) || 0; return `<div style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:600;${i < Math.min(streakNum, 7) ? 'background:var(--gold-p);color:var(--gold);border:2px solid var(--gold)' : 'background:var(--g100);color:var(--g400);border:2px solid var(--g200)'}">${d}</div>`; }).join('')}
         </div>
       </div>
+
+      <div class="list-card" style="padding:24px">
+        <h3 style="margin-bottom:16px">${IC.bag} Class Store</h3>
+        <div style="text-align:center;padding:20px 0">
+          <div style="width:48px;height:48px;margin:0 auto 4px;color:var(--gold)">${IC.key}</div>
+          <div style="font-size:2.5rem;font-weight:800;color:var(--navy)">${s.keys}</div>
+          <div style="color:var(--g500);margin-top:4px">Keys to spend</div>
+        </div>
+        <div style="text-align:center">
+          <button class="btn btn-sm btn-outline" onclick="navigate('store')">${IC.bag} Visit Store</button>
+        </div>
+      </div>
     </div>
 
-    ${!s.interests || !s.interests.onboarded ? `
+    <div style="margin-top:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3>${IC.book} Book Library</h3>
+        <button class="btn btn-sm btn-ghost" onclick="navigate('library')">View All ${books.length} Books</button>
+      </div>
+      ${featuredBooks.length > 0 ? `
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px">
+        ${featuredBooks.map(b => `
+          <div class="book-card" onclick="navigate('library')" style="cursor:pointer;background:#fff;border-radius:var(--radius-md);border:1px solid var(--g200);overflow:hidden;transition:transform .15s,box-shadow .15s">
+            <div style="height:200px;background:var(--g100);display:flex;align-items:center;justify-content:center;overflow:hidden">
+              ${b.cover_url ? `<img src="${b.cover_url}" alt="${b.title}" style="width:100%;height:100%;object-fit:cover">` : `<div style="color:var(--g400);font-size:2rem">${IC.book}</div>`}
+            </div>
+            <div style="padding:10px">
+              <div style="font-weight:600;font-size:0.8125rem;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.title}</div>
+              <div style="font-size:0.75rem;color:var(--g500)">${b.author}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>` : `<p style="color:var(--g500)">No books available yet.</p>`}
+    </div>
+
+    ${!s.onboarded ? `
     <div class="interest-cta-card" style="margin-top:24px">
       <h3 style="margin-bottom:8px">${IC.heart} Personalize Your Experience!</h3>
       <p style="margin-bottom:16px">Tell us about your interests so we can make your quizzes more fun!</p>
@@ -2121,46 +2137,55 @@ function renderStudentQuizzes() {
     accuracy: currentUser?.accuracy || 0,
     streak: currentUser?.streak_days || 0
   };
+  const hasQuizzes = s.quizzes > 0;
 
   return `
     <div class="page-header"><h1>My Quizzes</h1></div>
     <div class="stat-cards">
       <div class="stat-card"><div class="stat-card-label">Quizzes Completed</div><div class="stat-card-value">${s.quizzes}</div></div>
-      <div class="stat-card"><div class="stat-card-label">Avg Accuracy</div><div class="stat-card-value">${s.accuracy}%</div></div>
+      <div class="stat-card"><div class="stat-card-label">Avg Accuracy</div><div class="stat-card-value">${hasQuizzes ? s.accuracy + '%' : '—'}</div></div>
       <div class="stat-card"><div class="stat-card-label">Keys Earned</div><div class="stat-card-value">${s.keys}</div></div>
     </div>
 
+    ${assignments.length > 0 ? `
     <div class="list-card" style="margin-top:24px">
       <div style="padding:16px 20px;border-bottom:1px solid var(--g150);font-weight:700;color:var(--navy)">Assigned To You</div>
-      ${books.slice(0, 3).map((b, i) => `
+      ${assignments.map(a => `
         <div class="list-item">
           <div class="list-item-info">
-            <span class="list-item-name">${b.title} — Chapter ${i + 1}</span>
-            <span class="list-item-sub">${i === 0 ? '<span style="color:var(--red)">Due tomorrow</span>' : i === 1 ? 'Due in 3 days' : 'Due next week'}</span>
+            <span class="list-item-name">${a.name}</span>
+            <span class="list-item-sub">Due: ${a.due || 'No due date'}</span>
           </div>
           <div class="list-item-right" style="display:flex;align-items:center;gap:12px">
-            <span class="badge badge-blue">5 questions</span>
-            <button class="btn btn-sm btn-primary" onclick="launchQuiz(${i + 1}, ${i + 1}, ${s.id}, false)">Start Quiz</button>
+            ${statusPill(a.status)}
           </div>
         </div>
       `).join('')}
-    </div>
+    </div>` : `
+    <div class="empty-state" style="margin-top:24px">
+      <div class="empty-state-icon">${IC.clip}</div>
+      <h2>No Quizzes Yet</h2>
+      <p>Your teacher hasn't assigned any quizzes yet. In the meantime, explore the book library!</p>
+      <button class="btn btn-primary" onclick="navigate('library')">${IC.book} Browse Books</button>
+    </div>`}
 
-    <div class="list-card" style="margin-top:20px">
-      <div style="padding:16px 20px;border-bottom:1px solid var(--g150);font-weight:700;color:var(--navy)">Completed</div>
-      ${books.slice(3, 8).map((b, i) => `
-        <div class="list-item" style="opacity:0.7">
-          <div class="list-item-info">
-            <span class="list-item-name">${b.title}</span>
-            <span class="list-item-sub" style="color:var(--green)">Completed ${5 - i} days ago</span>
+    ${books.length > 0 ? `
+    <div style="margin-top:24px">
+      <h3 style="margin-bottom:16px">${IC.book} Pick a Book to Read</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px">
+        ${books.slice(0, 8).map(b => `
+          <div class="book-card" onclick="navigate('library')" style="cursor:pointer;background:#fff;border-radius:var(--radius-md);border:1px solid var(--g200);overflow:hidden">
+            <div style="height:180px;background:var(--g100);display:flex;align-items:center;justify-content:center;overflow:hidden">
+              ${b.cover_url ? `<img src="${b.cover_url}" alt="${b.title}" style="width:100%;height:100%;object-fit:cover">` : `<div style="color:var(--g400);font-size:2rem">${IC.book}</div>`}
+            </div>
+            <div style="padding:8px 10px">
+              <div style="font-weight:600;font-size:0.8125rem;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.title}</div>
+              <div style="font-size:0.75rem;color:var(--g500)">${b.author}</div>
+            </div>
           </div>
-          <div class="list-item-right" style="display:flex;align-items:center;gap:12px">
-            <span class="badge badge-green">${75 + i * 5}%</span>
-            <span style="color:var(--gold);font-size:0.8125rem">${IC.key} ${20 + i * 10}</span>
-          </div>
-        </div>
-      `).join('')}
-    </div>
+        `).join('')}
+      </div>
+    </div>` : ''}
   `;
 }
 
@@ -2176,41 +2201,45 @@ function renderStudentProgress() {
     streak: currentUser?.streak_days || 0,
     interests: null
   };
-  const gd = growthData[s.id] || growthData[0];
-  const months = ['Sep','Oct','Nov','Dec','Jan','Feb'];
-  const scores = gd?.scores || [500, 520, 540, 560, 580, 600];
-  const minS = Math.min(...scores) - 30;
-  const maxS = Math.max(...scores) + 30;
-  const range = maxS - minS;
-  const pts = scores.map((v, i) => `${60 + i * 130},${180 - ((v - minS) / range) * 150}`).join(' ');
+  const hasQuizzes = s.quizzes > 0;
 
   return `
     <div class="page-header"><h1>My Reading Progress</h1></div>
     <div class="stat-cards">
       <div class="stat-card"><div class="stat-card-label">Current Level</div><div class="stat-card-value">${s.level}</div></div>
-      <div class="stat-card"><div class="stat-card-label">Reading Score</div><div class="stat-card-value">${s.score}</div><div class="stat-card-trend" style="color:var(--green)"><span class="icon-sm">${IC.arrowUp}</span> +${scores[scores.length - 1] - scores[0]} pts</div></div>
+      <div class="stat-card"><div class="stat-card-label">Reading Score</div><div class="stat-card-value">${s.score}</div></div>
       <div class="stat-card"><div class="stat-card-label">Total Keys</div><div class="stat-card-value">${s.keys}</div></div>
-      <div class="stat-card"><div class="stat-card-label">Accuracy</div><div class="stat-card-value">${s.accuracy}%</div></div>
+      <div class="stat-card"><div class="stat-card-label">Accuracy</div><div class="stat-card-value">${hasQuizzes ? s.accuracy + '%' : '—'}</div></div>
     </div>
 
+    ${hasQuizzes ? `
     <div class="list-card" style="margin-top:24px;padding:24px">
-      <h3 style="margin-bottom:16px">My Reading Score Over Time</h3>
-      <svg viewBox="0 0 760 220" style="width:100%;height:220px">
-        ${[0,1,2,3,4].map(i => `<line x1="60" y1="${30 + i * 37.5}" x2="740" y2="${30 + i * 37.5}" stroke="var(--g150)" stroke-dasharray="4"/><text x="50" y="${34 + i * 37.5}" text-anchor="end" fill="var(--g400)" font-size="11">${Math.round(maxS - (range * i / 4))}</text>`).join('')}
-        ${months.map((m, i) => `<text x="${60 + i * 130}" y="${210}" text-anchor="middle" fill="var(--g500)" font-size="12" font-weight="500">${m}</text>`).join('')}
-        <polyline points="${pts}" fill="none" stroke="var(--blue)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-        <polygon points="${pts} ${60 + (scores.length - 1) * 130},180 60,180" fill="url(#studentGrad)" opacity="0.15"/>
-        <defs><linearGradient id="studentGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--blue)"/><stop offset="100%" stop-color="var(--blue)" stop-opacity="0"/></linearGradient></defs>
-        ${scores.map((v, i) => `<circle cx="${60 + i * 130}" cy="${180 - ((v - minS) / range) * 150}" r="5" fill="var(--blue)" stroke="#fff" stroke-width="2"/><text x="${60 + i * 130}" y="${180 - ((v - minS) / range) * 150 - 12}" text-anchor="middle" fill="var(--navy)" font-size="12" font-weight="700">${v}</text>`).join('')}
-      </svg>
-    </div>
-
-    ${s.interests && s.interests.onboarded ? `
-    <div class="list-card" style="margin-top:20px;padding:24px">
-      <h3 style="margin-bottom:12px">My Interest Profile</h3>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">${s.interests.tags.map(t => { const c = interestCategories.find(cat => cat.id === t); return c ? `<span class="interest-tag ${c.color}">${c.label}</span>` : ''; }).join('')}</div>
-      <div style="margin-top:12px;color:var(--g500);font-size:0.875rem">Reading Style: <strong>${s.interests.readingStyle}</strong> | Favorite Genre: <strong>${s.interests.favoriteGenre}</strong></div>
-    </div>` : ''}
+      <h3 style="margin-bottom:16px">Your Stats</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div style="text-align:center;padding:20px;background:var(--g50);border-radius:var(--radius-md)">
+          <div style="font-size:2rem;font-weight:800;color:var(--blue)">${s.score}</div>
+          <div style="color:var(--g500);font-size:0.875rem;margin-top:4px">Reading Score</div>
+        </div>
+        <div style="text-align:center;padding:20px;background:var(--g50);border-radius:var(--radius-md)">
+          <div style="font-size:2rem;font-weight:800;color:var(--green)">${s.accuracy}%</div>
+          <div style="color:var(--g500);font-size:0.875rem;margin-top:4px">Accuracy</div>
+        </div>
+        <div style="text-align:center;padding:20px;background:var(--g50);border-radius:var(--radius-md)">
+          <div style="font-size:2rem;font-weight:800;color:var(--gold)">${s.keys}</div>
+          <div style="color:var(--g500);font-size:0.875rem;margin-top:4px">Keys Earned</div>
+        </div>
+        <div style="text-align:center;padding:20px;background:var(--g50);border-radius:var(--radius-md)">
+          <div style="font-size:2rem;font-weight:800;color:var(--orange)">${parseInt(s.streak) || 0}</div>
+          <div style="color:var(--g500);font-size:0.875rem;margin-top:4px">Day Streak</div>
+        </div>
+      </div>
+    </div>` : `
+    <div class="empty-state" style="margin-top:24px">
+      <div class="empty-state-icon">${IC.chart}</div>
+      <h2>No Progress Yet</h2>
+      <p>Complete your first quiz to start tracking your reading progress!</p>
+      <button class="btn btn-primary" onclick="navigate('library')">${IC.book} Browse Books</button>
+    </div>`}
   `;
 }
 

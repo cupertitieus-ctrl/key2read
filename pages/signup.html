@@ -249,18 +249,21 @@ function selectRole(el) {
   passwordHint.style.display   = 'none';
 
   // Show fields based on role
+  const fieldPassword = document.getElementById('field-password');
   if (role === 'teacher') {
     fieldEmail.style.display  = '';
     fieldSchool.style.display = '';
     fieldGrade.style.display  = '';
     fieldTerms.style.display  = '';
+    fieldPassword.style.display = '';
   } else if (role === 'principal') {
     fieldEmail.style.display    = '';
     fieldDistrict.style.display = '';
     fieldTerms.style.display    = '';
+    fieldPassword.style.display = '';
   } else if (role === 'student') {
     fieldClasscode.style.display = '';
-    passwordHint.style.display   = 'block';
+    fieldPassword.style.display  = 'none';
   }
 }
 
