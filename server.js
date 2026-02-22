@@ -268,7 +268,9 @@ app.post('/api/auth/signup', async (req, res) => {
 
 // ─── STUDENT ROUTES ───
 app.get('/api/students', async (req, res) => {
-  const students = await db.getStudents(req.query.classId || 1);
+  const classId = req.query.classId || req.session.user?.classId;
+  if (!classId) return res.json([]);
+  const students = await db.getStudents(classId);
   res.json(students);
 });
 
@@ -470,7 +472,9 @@ app.post('/api/assignments', async (req, res) => {
 });
 
 app.get('/api/assignments', async (req, res) => {
-  const assignments = await db.getAssignments(req.query.classId || 1);
+  const classId = req.query.classId || req.session.user?.classId;
+  if (!classId) return res.json([]);
+  const assignments = await db.getAssignments(classId);
   res.json(assignments);
 });
 
