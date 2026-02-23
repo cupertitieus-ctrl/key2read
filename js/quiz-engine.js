@@ -16,6 +16,9 @@ const QuizEngine = (function() {
   let definitionCache = {};      // word -> definition
   let onComplete = null;         // callback when quiz finishes
   let _nextChapter = null;       // { bookId, chapterNum, studentId } if a next chapter exists
+  let hintShown = [];            // per-question: true if hint was shown (auto or manual)
+  let attempts = [];             // per-question: number of attempts made
+  let wrongPicks = [];           // per-question: Set of wrong answer indices
 
   const STRATEGY_ICONS = {
     'finding-details': '🔍',
@@ -188,6 +191,9 @@ const QuizEngine = (function() {
     feedback = [];
     answered = false;
     showingStrategy = false;
+    hintShown = [];
+    attempts = [];
+    wrongPicks = [];
     quizResults = null;
     quizStartTime = Date.now();
     questionStartTime = Date.now();
@@ -279,11 +285,14 @@ const QuizEngine = (function() {
           <div class="quiz-options">
             ${(q.options || []).map((opt, i) => {
               const letter = String.fromCharCode(65 + i);
+              const wasWrong = wrongPicks[currentQuestion] && wrongPicks[currentQuestion].has(i);
               let cls = 'quiz-option';
-              if (answered && answerForThis === i) cls += fbForThis?.isCorrect ? ' correct' : ' incorrect';
+              if (answered && answerForThis === i) cls += ' correct';
               if (answered && i === q.correct_answer && answerForThis !== i) cls += ' correct-reveal';
-              if (!answered && answerForThis === i) cls += ' selected';
-              return `<button class="${cls}" onclick="QuizEngine.selectAnswer(${i})" ${answered ? 'disabled' : ''}>
+              if (!answered && wasWrong) cls += ' incorrect disabled-wrong';
+              if (!answered && !wasWrong && answerForThis === i) cls += ' selected';
+              const isDisabled = answered || wasWrong;
+              return `<button class="${cls}" onclick="QuizEngine.selectAnswer(${i})" ${isDisabled ? 'disabled' : ''}>
                 <span class="quiz-option-letter">${letter}</span>
                 <span class="quiz-option-text">${markContextualVocab(markExplicitVocab(escapeHtml(opt), vocabWords))}</span>
                 ${answered && i === q.correct_answer ? '<svg class="quiz-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
@@ -304,12 +313,12 @@ const QuizEngine = (function() {
             </div>
           ` : ''}
 
-          ${answered && fbForThis ? `
+          ${fbForThis ? `
             <div class="quiz-feedback ${fbForThis.isCorrect ? 'correct' : 'incorrect'}">
               <div class="quiz-feedback-header">
                 ${fbForThis.isCorrect
                   ? '<span class="quiz-feedback-icon">✅</span> Great Job!'
-                  : '<span class="quiz-feedback-icon">💪</span> Keep Trying!'}
+                  : '<span class="quiz-feedback-icon">💪</span> Try Again!'}
               </div>
               <p class="quiz-feedback-text">${escapeHtml(fbForThis.feedback || q.explanation || '')}</p>
             </div>
@@ -323,7 +332,7 @@ const QuizEngine = (function() {
             </button>
           ` : `
             <button class="btn btn-primary" onclick="QuizEngine.submitAnswer()" ${answerForThis === undefined ? 'disabled' : ''}>
-              Submit Answer
+              ${fbForThis && !fbForThis.isCorrect ? 'Try Again' : 'Submit Answer'}
             </button>
           `}
         </div>
@@ -478,34 +487,55 @@ const QuizEngine = (function() {
 
   function selectAnswer(idx) {
     if (answered) return;
+    if (wrongPicks[currentQuestion] && wrongPicks[currentQuestion].has(idx)) return;
     answers[currentQuestion] = idx;
     render();
   }
 
   async function submitAnswer() {
     if (answers[currentQuestion] === undefined || answered) return;
-    answered = true;
     const q = currentQuiz.questions[currentQuestion];
     const opts = q.options || [];
     const isCorrect = answers[currentQuestion] === q.correct_answer;
 
-    // Get AI feedback
-    try {
-      const fb = await API.getFeedback({
-        question: q.personalized_text || q.question_text,
-        studentAnswer: opts[answers[currentQuestion]] || '',
-        correctAnswer: opts[q.correct_answer] || '',
-        isCorrect,
-        strategyType: q.strategy_type,
-        gradeLevel: currentStudent?.grade || '4th'
-      });
-      feedback[currentQuestion] = fb;
-    } catch(e) {
+    // Track attempts
+    if (!attempts[currentQuestion]) attempts[currentQuestion] = 0;
+    attempts[currentQuestion]++;
+
+    if (isCorrect) {
+      // Correct — lock in the answer
+      answered = true;
+      try {
+        const fb = await API.getFeedback({
+          question: q.personalized_text || q.question_text,
+          studentAnswer: opts[answers[currentQuestion]] || '',
+          correctAnswer: opts[q.correct_answer] || '',
+          isCorrect: true,
+          strategyType: q.strategy_type,
+          gradeLevel: currentStudent?.grade || '4th'
+        });
+        feedback[currentQuestion] = fb;
+      } catch(e) {
+        const wasHinted = hintShown[currentQuestion];
+        feedback[currentQuestion] = {
+          isCorrect: true,
+          feedback: wasHinted
+            ? 'Nice work! The hint helped you figure it out! 🌟'
+            : 'Great job! You got it right! ⭐'
+        };
+      }
+    } else {
+      // Wrong — record the wrong pick, show hint, let them try again
+      if (!wrongPicks[currentQuestion]) wrongPicks[currentQuestion] = new Set();
+      wrongPicks[currentQuestion].add(answers[currentQuestion]);
+      hintShown[currentQuestion] = true;
+      showingStrategy = true;
       feedback[currentQuestion] = {
-        isCorrect,
-        feedback: isCorrect ? 'Great job! You got it right!' : (q.explanation || 'The correct answer was different. Try the strategy tip to understand why.'),
-        strategy_reminder: q.strategy_tip || ''
+        isCorrect: false,
+        feedback: 'Not quite — read the hint below and try again! You got this! 💪'
       };
+      // Clear selection so student must pick a new answer
+      delete answers[currentQuestion];
     }
     render();
   }
@@ -528,15 +558,22 @@ const QuizEngine = (function() {
       } catch(e) {
         // Fallback local scoring
         let correctCount = 0;
-        currentQuiz.questions.forEach((q, i) => { if (answers[i] === q.correct_answer) correctCount++; });
+        let keysEarned = 0;
+        currentQuiz.questions.forEach((q, i) => {
+          if (answers[i] === q.correct_answer) {
+            correctCount++;
+            // Full keys (5) for first-attempt correct, reduced (2) if hint was shown
+            keysEarned += hintShown[i] ? 2 : 5;
+          }
+        });
         const score = (correctCount / currentQuiz.questions.length) * 100;
         quizResults = {
           score, correctCount, totalQuestions: currentQuiz.questions.length,
           readingLevelChange: Math.round((score / 100 - 0.65) * 20),
           newReadingScore: (currentStudent?.reading_score || 500) + Math.round((score / 100 - 0.65) * 20),
           newReadingLevel: (((currentStudent?.reading_score || 500) + Math.round((score / 100 - 0.65) * 20)) / 160).toFixed(1),
-          keysEarned: correctCount * 5 + (score === 100 ? 10 : 0),
-          results: currentQuiz.questions.map((q, i) => ({ isCorrect: answers[i] === q.correct_answer, feedback: feedback[i]?.feedback || '' })),
+          keysEarned: keysEarned + (score === 100 ? 10 : 0),
+          results: currentQuiz.questions.map((q, i) => ({ isCorrect: answers[i] === q.correct_answer, feedback: feedback[i]?.feedback || '', hintUsed: !!hintShown[i] })),
           strategiesUsed: [...new Set(currentQuiz.questions.map(q => q.strategy_type))]
         };
       }
@@ -553,6 +590,7 @@ const QuizEngine = (function() {
 
   function toggleStrategy() {
     showingStrategy = !showingStrategy;
+    if (showingStrategy) hintShown[currentQuestion] = true;
     render();
   }
 

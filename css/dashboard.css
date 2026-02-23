@@ -1961,6 +1961,7 @@
 .quiz-option.incorrect { border-color: #EF4444; background: #FEF2F2; color: #991B1B; }
 .quiz-option.correct-reveal { border-color: #10B981; background: #ECFDF5; opacity: 0.7; }
 .quiz-option:disabled { cursor: default; }
+.quiz-option.disabled-wrong { opacity: 0.5; text-decoration: line-through; pointer-events: none; }
 .quiz-option-letter { width: 28px; height: 28px; border-radius: 50%; background: var(--g100); color: var(--g600); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; }
 .quiz-option.selected .quiz-option-letter { background: var(--blue); color: #fff; }
 .quiz-option.correct .quiz-option-letter { background: #10B981; color: #fff; }
