@@ -537,5 +537,24 @@ module.exports = {
   getGenreDistribution,
   getAllTeachers,
   getAllStudentsForOwner,
-  getCompletedChapters
+  getCompletedChapters,
+  getFullBookQuiz
 };
+
+async function getFullBookQuiz(bookId) {
+  // Get all chapters for this book
+  const chapters = await getBookChapters(bookId);
+  if (!chapters || chapters.length === 0) return { chapters: [], questions: [] };
+
+  // Get all questions for all chapters
+  const allQuestions = [];
+  for (const ch of chapters) {
+    const questions = await getChapterQuiz(ch.id);
+    questions.forEach(q => {
+      q._chapter = ch; // attach chapter info to each question
+    });
+    allQuestions.push(...questions);
+  }
+
+  return { chapters, allQuestions };
+}

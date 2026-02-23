@@ -86,8 +86,12 @@ const QuizEngine = (function() {
 
     const questionText = q.personalized_text || q.question_text;
 
-    // Mark vocabulary words in question text
-    const vocabWords = q.vocabulary_words || [];
+    // Merge vocabulary words from question + chapter key_vocabulary + per-question _chapterVocab
+    const questionVocab = q.vocabulary_words || [];
+    const chapterVocab = getChapterVocabWords();
+    const perQuestionVocab = q._chapterVocab ? parseVocabList(q._chapterVocab) : [];
+    const vocabWords = [...new Set([...questionVocab, ...chapterVocab, ...perQuestionVocab])];
+
     let markedText = escapeHtml(questionText);
     vocabWords.forEach(w => {
       const re = new RegExp(`\\b(${escapeRegex(w)})\\b`, 'gi');
@@ -116,7 +120,7 @@ const QuizEngine = (function() {
             </button>
             <div class="quiz-book-info">
               <div class="quiz-book-title">${escapeHtml(currentQuiz.book?.title || 'Book Quiz')}</div>
-              <div class="quiz-chapter-label">Chapter ${ch.chapter_number}: ${escapeHtml(ch.title)}</div>
+              <div class="quiz-chapter-label">${ch.chapter_number > 0 ? `Chapter ${ch.chapter_number}: ` : ''}${escapeHtml(ch.title)}</div>
             </div>
           </div>
           <div class="quiz-progress">
@@ -188,23 +192,25 @@ const QuizEngine = (function() {
 
   function renderIntro() {
     const ch = currentQuiz.chapter;
-    const strategies = [...new Set(currentQuiz.questions.map(q => q.strategy_type))];
+    const numQuestions = currentQuiz.questions.length;
+    const estMinutes = Math.max(5, Math.round(numQuestions * 2));
+    const maxKeys = numQuestions * 5 + (numQuestions >= 5 ? 10 : 0);
     return `
       <div class="quiz-player">
         <div class="quiz-intro">
           <div class="quiz-intro-icon">📖</div>
           <h2>${escapeHtml(currentQuiz.book?.title || 'Book Quiz')}</h2>
-          <p class="quiz-intro-chapter">Chapter ${ch.chapter_number}: ${escapeHtml(ch.title)}</p>
+          <p class="quiz-intro-chapter">${ch.chapter_number > 0 ? `Chapter ${ch.chapter_number}: ` : ''}${escapeHtml(ch.title)}</p>
           ${currentStudent ? `<p class="quiz-intro-student">Personalized for ${escapeHtml(currentStudent.name)}</p>` : ''}
           <div class="quiz-intro-info">
             <div class="quiz-intro-stat">
-              <strong>5</strong><span>Questions</span>
+              <strong>${numQuestions}</strong><span>Questions</span>
             </div>
             <div class="quiz-intro-stat">
-              <strong>~10</strong><span>Minutes</span>
+              <strong>~${estMinutes}</strong><span>Minutes</span>
             </div>
             <div class="quiz-intro-stat">
-              <strong>25</strong><span>Keys possible</span>
+              <strong>${maxKeys}</strong><span>Keys possible</span>
             </div>
           </div>
           <div class="quiz-intro-tip">
@@ -363,7 +369,7 @@ const QuizEngine = (function() {
     if (typeof openBook === 'function' && currentQuiz?.book?.id) {
       openBook(currentQuiz.book.id);
     } else if (typeof navigate === 'function') {
-      navigate('library');
+      navigate(typeof userRole !== 'undefined' && userRole === 'guest' ? 'guest-browse' : 'library');
     } else if (typeof renderMain === 'function') {
       renderMain();
     }
@@ -389,16 +395,46 @@ const QuizEngine = (function() {
       return;
     }
 
-    // Check chapter vocabulary first
-    if (currentQuiz?.chapter?.key_vocabulary) {
+    // Check chapter vocabulary first (handles both string arrays and object arrays)
+    const chapterVocab = currentQuiz?.chapter?.key_vocabulary;
+    if (chapterVocab) {
       try {
-        const vocabList = JSON.parse(currentQuiz.chapter.key_vocabulary);
-        const found = vocabList.find(v => v.word.toLowerCase() === word.toLowerCase());
-        if (found) {
-          const def = { word: found.word, definition: found.definition, part_of_speech: found.pos || '', example: '', tip: '' };
-          definitionCache[word.toLowerCase()] = def;
-          renderDefinitionTooltip(tooltip, def);
-          return;
+        let vocabList = typeof chapterVocab === 'string' ? JSON.parse(chapterVocab) : chapterVocab;
+        if (Array.isArray(vocabList)) {
+          for (const v of vocabList) {
+            const vWord = typeof v === 'string' ? v : v.word;
+            if (vWord && vWord.toLowerCase() === word.toLowerCase()) {
+              const def = typeof v === 'object'
+                ? { word: v.word, definition: v.definition || '', part_of_speech: v.pos || '', example: v.example || '', tip: v.tip || '' }
+                : { word: vWord, definition: '', part_of_speech: '', example: '', tip: '' };
+              // If we have a definition from the vocab data, use it
+              if (def.definition) {
+                definitionCache[word.toLowerCase()] = def;
+                renderDefinitionTooltip(tooltip, def);
+                return;
+              }
+              break; // Word found but no definition — fall through to API
+            }
+          }
+        }
+      } catch(e) {}
+    }
+
+    // Also check per-question chapter vocab (for full book quiz)
+    const q = currentQuiz?.questions?.[currentQuestion];
+    if (q?._chapterVocab) {
+      try {
+        let vocabList = typeof q._chapterVocab === 'string' ? JSON.parse(q._chapterVocab) : q._chapterVocab;
+        if (Array.isArray(vocabList)) {
+          for (const v of vocabList) {
+            const vWord = typeof v === 'string' ? v : v.word;
+            if (vWord && vWord.toLowerCase() === word.toLowerCase() && typeof v === 'object' && v.definition) {
+              const def = { word: v.word, definition: v.definition, part_of_speech: v.pos || '', example: v.example || '', tip: v.tip || '' };
+              definitionCache[word.toLowerCase()] = def;
+              renderDefinitionTooltip(tooltip, def);
+              return;
+            }
+          }
         }
       } catch(e) {}
     }
@@ -426,6 +462,21 @@ const QuizEngine = (function() {
   function hideDefinition(el) {
     const tooltip = document.getElementById('vocab-tooltip');
     if (tooltip) tooltip.style.display = 'none';
+  }
+
+  // ─── Vocab Helpers ───
+  function parseVocabList(vocab) {
+    if (!vocab) return [];
+    if (typeof vocab === 'string') {
+      try { vocab = JSON.parse(vocab); } catch(e) { return []; }
+    }
+    if (!Array.isArray(vocab)) return [];
+    return vocab.map(v => typeof v === 'string' ? v : (v.word || '')).filter(Boolean);
+  }
+
+  function getChapterVocabWords() {
+    const kv = currentQuiz?.chapter?.key_vocabulary;
+    return parseVocabList(kv);
   }
 
   // ─── Helpers ───

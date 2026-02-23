@@ -10,20 +10,32 @@ const chapters = [
     chapter_number: 1,
     title: 'Code Names',
     summary: 'Bear introduces himself and his code name, explains how his sister Sprinkles got her nickname, describes his golden retriever Fluff, and reveals his love for gardening.',
-    key_vocabulary: ['code name', 'document', 'obsessed', 'enclosure', 'extraordinary'],
+    key_vocabulary: [
+      { word: 'code name', definition: 'A secret name used to hide someone\'s real identity', pos: 'noun' },
+      { word: 'document', definition: 'To write down or record information about something', pos: 'verb' },
+      { word: 'obsessed', definition: 'Thinking about something ALL the time and not being able to stop', pos: 'adjective' },
+      { word: 'enclosure', definition: 'A fenced-in area that keeps things in or out', pos: 'noun' },
+      { word: 'extraordinary', definition: 'Way beyond normal — really amazing and special', pos: 'adjective' }
+    ],
     questions: [
-      { question_number: 1, question_type: 'multiple-choice', question_text: 'Why does Bear use a code name instead of his real name?', options: ['He thinks code names sound cool', 'He wants to protect his identity and his friend from NASA', 'His teacher told him to use one', 'He forgot his real name'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 6 — Bear tells you why he needs to hide!', explanation: 'Bear says he uses a code name because he does not want NASA asking questions or taking his little friend.' },
-      { question_number: 2, question_type: 'multiple-choice', question_text: 'How did Sprinkles get her code name?', options: ['She loves rainbow sprinkles on pancakes', 'She spilled sprinkle-covered ice cream on her face', 'Her mom named her that as a baby', 'She won a sprinkle-eating contest'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 7 — something funny happened with ice cream!', explanation: 'Sprinkles got her name when she spilled a bowl of sprinkle-covered ice cream on her face trying to impress her crush.' },
-      { question_number: 3, question_type: 'multiple-choice', question_text: 'What is special about Bear compared to most kids his age?', options: ['He is really tall for his age', 'He loves gardening and has a green thumb', 'He can run faster than anyone', 'He speaks three languages'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 10 — Bear talks about something he loves to do!', explanation: 'Bear says he has a green thumb, meaning he loves to garden, which he admits is unusual for a kid.' },
-      { question_number: 4, question_type: 'multiple-choice', question_text: 'What can you tell about Bear and Sprinkles from reading chapter 1?', options: ['They do not get along at all', 'They are close even though they are very different', 'They never talk to each other', 'They are exactly alike in every way'], correct_answer: 1, strategy_type: 'making-inferences', strategy_tip: 'Go to page 9 — Bear says something nice about how they agree on the big stuff!', explanation: 'Even though Bear and Sprinkles are opposites in many ways, Bear says they always agree on the big stuff, showing they are close.' },
-      { question_number: 5, question_type: 'multiple-choice', question_text: 'Why did Bear\'s mom build a fence around the garden?', options: ['To make the garden look pretty', 'To stop Fluff from burying things and keep the stray cat out', 'To protect the garden from rain', 'To give Bear a place to play'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 11 — Bear tells you about two animals causing trouble!', explanation: 'The enclosure was built to stop Fluff from burying things and to keep the stray cat from eating the blueberries.' }
+      { question_number: 1, question_type: 'multiple-choice', question_text: 'Why does Bear use a code name instead of his real name?', vocabulary_words: ['code name'], options: ['He thinks code names sound cool', 'He wants to protect his identity and his friend from NASA', 'His teacher told him to use one', 'He forgot his real name'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 6 — Bear tells you why he needs to hide!', explanation: 'Bear says he uses a code name because he does not want NASA asking questions or taking his little friend.' },
+      { question_number: 2, question_type: 'multiple-choice', question_text: 'How did Sprinkles get her code name?', vocabulary_words: ['code name'], options: ['She loves rainbow sprinkles on pancakes', 'She spilled sprinkle-covered ice cream on her face', 'Her mom named her that as a baby', 'She won a sprinkle-eating contest'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 7 — something funny happened with ice cream!', explanation: 'Sprinkles got her name when she spilled a bowl of sprinkle-covered ice cream on her face trying to impress her crush.' },
+      { question_number: 3, question_type: 'multiple-choice', question_text: 'What is special about Bear compared to most kids his age?', vocabulary_words: [], options: ['He is really tall for his age', 'He loves gardening and has a green thumb', 'He can run faster than anyone', 'He speaks three languages'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 10 — Bear talks about something he loves to do!', explanation: 'Bear says he has a green thumb, meaning he loves to garden, which he admits is unusual for a kid.' },
+      { question_number: 4, question_type: 'multiple-choice', question_text: 'What can you tell about Bear and Sprinkles from reading chapter 1?', vocabulary_words: [], options: ['They do not get along at all', 'They are close even though they are very different', 'They never talk to each other', 'They are exactly alike in every way'], correct_answer: 1, strategy_type: 'making-inferences', strategy_tip: 'Go to page 9 — Bear says something nice about how they agree on the big stuff!', explanation: 'Even though Bear and Sprinkles are opposites in many ways, Bear says they always agree on the big stuff, showing they are close.' },
+      { question_number: 5, question_type: 'multiple-choice', question_text: 'Why did Bear\'s mom build a fence around the garden?', vocabulary_words: [], options: ['To make the garden look pretty', 'To stop Fluff from burying things and keep the stray cat out', 'To protect the garden from rain', 'To give Bear a place to play'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 11 — Bear tells you about two animals causing trouble!', explanation: 'The enclosure was built to stop Fluff from burying things and to keep the stray cat from eating the blueberries.' }
     ]
   },
   {
     chapter_number: 2,
     title: 'Extraordinary Garden',
     summary: 'Bear finds a tiny purple chicken with a miniature astronaut helmet in his garden. He puts her in his backpack and names her Nugget.',
-    key_vocabulary: ['rustling', 'miniature', 'ironically', 'hesitated', 'astronaut'],
+    key_vocabulary: [
+      { word: 'rustling', definition: 'A soft, quiet sound like leaves or paper moving around', pos: 'noun' },
+      { word: 'miniature', definition: 'A super tiny version of something — much smaller than normal', pos: 'adjective' },
+      { word: 'ironically', definition: 'When something happens that is the opposite of what you would expect', pos: 'adverb' },
+      { word: 'hesitated', definition: 'Paused before doing something because you were unsure or scared', pos: 'verb' },
+      { word: 'astronaut', definition: 'A person who travels into outer space', pos: 'noun' }
+    ],
     questions: [
       { question_number: 1, question_type: 'multiple-choice', question_text: 'What was the first sign that something was wrong in the garden?', options: ['The plants were all dead', 'One of the cage doors was wide open', 'Fluff was barking at the fence', 'There was a strange noise from the sky'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 13 — Bear notices something about the cage!', explanation: 'Bear noticed that one of the cage doors on the garden enclosure was wide open.' },
       { question_number: 2, question_type: 'multiple-choice', question_text: 'How big was the chicken Bear found?', options: ['The size of a basketball', 'The size of a tennis ball', 'The size of a watermelon', 'The size of a golf ball'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 14 — Bear compares the chicken to a ball!', explanation: 'The chicken was the size of a tennis ball.' },
@@ -36,7 +48,13 @@ const chapters = [
     chapter_number: 3,
     title: 'Morning Walk',
     summary: 'Bear and Sprinkles walk to school. Sprinkles talks about her math test while Bear tries to keep Nugget hidden in his backpack.',
-    key_vocabulary: ['suspicion', 'skeptical', 'casual', 'frantically', 'doomed'],
+    key_vocabulary: [
+      { word: 'suspicion', definition: 'A feeling that something is wrong or that someone is hiding something', pos: 'noun' },
+      { word: 'skeptical', definition: 'Not really believing something — having doubts', pos: 'adjective' },
+      { word: 'casual', definition: 'Acting relaxed and normal, like nothing special is going on', pos: 'adjective' },
+      { word: 'frantically', definition: 'Doing something in a wild, panicked, and hurried way', pos: 'adverb' },
+      { word: 'doomed', definition: 'Feeling like something bad is definitely going to happen', pos: 'adjective' }
+    ],
     questions: [
       { question_number: 1, question_type: 'multiple-choice', question_text: 'What subject is Sprinkles worried about?', options: ['Science', 'English', 'Math', 'History'], correct_answer: 2, strategy_type: 'finding-details', strategy_tip: 'Go to page 24 — Sprinkles talks about fractions and decimals!', explanation: 'Sprinkles is worried about her math test, mentioning long division, fractions, and decimals.' },
       { question_number: 2, question_type: 'multiple-choice', question_text: 'How did Bear cover up the sound Nugget made?', options: ['He turned on loud music', 'He started coughing loudly', 'He told Sprinkles it was a bird outside', 'He pretended to sneeze'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 26 — Nugget chirps and Bear has to act fast!', explanation: 'Bear started coughing loudly to mask the sound of Nugget chirping.' },
@@ -49,7 +67,13 @@ const chapters = [
     chapter_number: 4,
     title: 'Nugget Goes to School',
     summary: 'At school, Nugget pokes her head out and Strawberry sees her. But Nugget puffs up and freezes like a toy! Strawberry thinks she is just a weird toy.',
-    key_vocabulary: ['obsession', 'crimson', 'suspicious', 'mechanism', 'convinced'],
+    key_vocabulary: [
+      { word: 'obsession', definition: 'When you can\'t stop thinking about something — you\'re totally hooked on it', pos: 'noun' },
+      { word: 'crimson', definition: 'A deep, dark red color', pos: 'adjective' },
+      { word: 'suspicious', definition: 'Feeling like something weird or sneaky is going on', pos: 'adjective' },
+      { word: 'mechanism', definition: 'The moving parts inside something that make it work', pos: 'noun' },
+      { word: 'convinced', definition: 'Totally believing something is true', pos: 'adjective' }
+    ],
     questions: [
       { question_number: 1, question_type: 'multiple-choice', question_text: 'Why is Red called Red?', options: ['He has red hair', 'He always wears red shoelaces', 'His favorite food is red apples', 'He blushes a lot'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 32 — it has to do with his shoes!', explanation: 'Red got his nickname because he is obsessed with red shoelaces and wears them on every pair of shoes.' },
       { question_number: 2, question_type: 'multiple-choice', question_text: 'What cool trick does Nugget do when Strawberry sees her?', options: ['She turns invisible', 'She puffs up and looks like a fluffy toy', 'She flies up to the ceiling', 'She starts talking'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 40 — Nugget does something amazing with her feathers!', explanation: 'When spotted, Nugget puffed up like a pufferfish and her feathers turned into cloud-like fuzz, making her look like a toy.' },
@@ -62,7 +86,12 @@ const chapters = [
     chapter_number: 5,
     title: 'Bathroom Stall',
     summary: 'Bear takes Nugget to the school bathroom to check on her. When he touches Nugget, purple light explodes and they teleport to a different bathroom!',
-    key_vocabulary: ['teleportation', 'weightless', 'vengeance', 'unmistakable'],
+    key_vocabulary: [
+      { word: 'teleportation', definition: 'Moving instantly from one place to another — like magic travel', pos: 'noun' },
+      { word: 'weightless', definition: 'Feeling like you have no weight at all, like floating in space', pos: 'adjective' },
+      { word: 'vengeance', definition: 'Getting back at someone for something they did — revenge', pos: 'noun' },
+      { word: 'unmistakable', definition: 'So clear and obvious that you cannot miss it or confuse it', pos: 'adjective' }
+    ],
     questions: [
       { question_number: 1, question_type: 'multiple-choice', question_text: 'Why did Bear pick the bathroom to check on Nugget?', options: ['It was the closest room', 'It was the only private place he could think of', 'He needed to wash his hands', 'His teacher told him to go there'], correct_answer: 1, strategy_type: 'making-inferences', strategy_tip: 'Go to pages 45-46 — Bear thinks about all the places he could go!', explanation: 'Bear ruled out the janitor\'s closet, classrooms, and the gym. The bathroom was the only place private enough.' },
       { question_number: 2, question_type: 'multiple-choice', question_text: 'What made the teleportation happen?', options: ['Bear said a magic word', 'Bear touched Nugget with both hands', 'Nugget pressed a button on her helmet', 'Bear flushed the toilet'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 49 — it happens the second Bear grabs her!', explanation: 'The teleportation happened the second Bear touched Nugget, causing an explosion of purple light.' },
@@ -75,7 +104,13 @@ const chapters = [
     chapter_number: 6,
     title: "Bob's Burger Barn",
     summary: 'Bear hides Nugget in his hoodie and orders a burger. He helps an old lady outside. Then he teleports back to school through the bathroom.',
-    key_vocabulary: ['circumstances', 'transaction', 'satisfaction', 'coincidence', 'polite'],
+    key_vocabulary: [
+      { word: 'circumstances', definition: 'The situation or conditions around something that happened', pos: 'noun' },
+      { word: 'transaction', definition: 'Buying or selling something — an exchange of money for goods', pos: 'noun' },
+      { word: 'satisfaction', definition: 'A happy, content feeling when something goes well', pos: 'noun' },
+      { word: 'coincidence', definition: 'When two things happen at the same time by chance — not planned', pos: 'noun' },
+      { word: 'polite', definition: 'Being kind, respectful, and using good manners', pos: 'adjective' }
+    ],
     questions: [
       { question_number: 1, question_type: 'multiple-choice', question_text: 'Where did Bear hide Nugget in the restaurant?', options: ['In his pants pocket', 'In the hood of his hoodie', 'Under a table', 'Inside a burger bag'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 56 — Bear puts Nugget somewhere cozy!', explanation: 'Bear placed Nugget in the hood of his hoodie so she would be hidden while he walked through the restaurant.' },
       { question_number: 2, question_type: 'multiple-choice', question_text: 'What nice thing did Bear do at the restaurant?', options: ['He cleaned up a spill', 'He helped an old lady step up onto the curb', 'He gave his food to a hungry kid', 'He picked up trash outside'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 60 — Bear sees someone who needs help outside!', explanation: 'Bear helped an elderly woman who was struggling to step up onto the curb outside the restaurant.' },
@@ -88,7 +123,13 @@ const chapters = [
     chapter_number: 7,
     title: 'Rescue Homework',
     summary: 'Bear forgot his homework at home! He tries to teleport with Nugget but it does not work at first. When he explains to Nugget how much it would help, she teleports them home and back!',
-    key_vocabulary: ['frantically', 'emphasizing', 'concentrating', 'beeline', 'grateful'],
+    key_vocabulary: [
+      { word: 'frantically', definition: 'Doing something in a wild, panicked, and hurried way', pos: 'adverb' },
+      { word: 'emphasizing', definition: 'Saying something extra strongly so people really understand it', pos: 'verb' },
+      { word: 'concentrating', definition: 'Focusing your mind really hard on one thing', pos: 'verb' },
+      { word: 'beeline', definition: 'Going straight to something as fast as possible without stopping', pos: 'noun' },
+      { word: 'grateful', definition: 'Feeling really thankful for something nice that happened', pos: 'adjective' }
+    ],
     questions: [
       { question_number: 1, question_type: 'multiple-choice', question_text: 'What did Bear forget at home?', options: ['His pencil', 'His homework', 'His lunch', 'Nugget\'s helmet'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 65 — Bear searches his backpack and panics!', explanation: 'Bear panicked because he realized his homework was still sitting on his desk at home.' },
       { question_number: 2, question_type: 'multiple-choice', question_text: 'Why did the first teleportation try not work?', options: ['Bear was not in a bathroom', 'Nugget was asleep', 'Bear did not explain how it would help him', 'The helmet was broken'], correct_answer: 2, strategy_type: 'making-inferences', strategy_tip: 'Go to page 72 — Bear figures out he needs to tell Nugget WHY it helps!', explanation: 'The first attempt failed because Bear just thought about the location. The second time he explained how getting his homework would really help him.' },
@@ -101,7 +142,13 @@ const chapters = [
     chapter_number: 8,
     title: 'The Spill',
     summary: 'In art class, Strawberry spills paint and borrows Bear\'s hoodie — with Nugget still in the pocket! Nugget freezes into toy mode again and Strawberry thinks it is that same weird toy.',
-    key_vocabulary: ['abstract', 'splatters', 'furiously', 'obsession', 'embarrassed'],
+    key_vocabulary: [
+      { word: 'abstract', definition: 'A type of art that uses shapes and colors instead of looking like real things', pos: 'adjective' },
+      { word: 'splatters', definition: 'Drops of liquid that splash and spread out in messy spots', pos: 'noun' },
+      { word: 'furiously', definition: 'Doing something with a lot of anger or energy — really intensely', pos: 'adverb' },
+      { word: 'obsession', definition: 'When you can\'t stop thinking about something — you\'re totally hooked on it', pos: 'noun' },
+      { word: 'embarrassed', definition: 'Feeling awkward, shy, or ashamed about something', pos: 'adjective' }
+    ],
     questions: [
       { question_number: 1, question_type: 'multiple-choice', question_text: 'Why did Bear take off his hoodie in art class?', options: ['He was too hot', 'He did not want to get paint on it', 'The teacher told him to', 'Nugget was making it move'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 83 — Bear is about to start painting!', explanation: 'Bear took off his hoodie so he would not get paint on it during art class.' },
       { question_number: 2, question_type: 'multiple-choice', question_text: 'What happened to Strawberry\'s sweatshirt?', options: ['She ripped it on a nail', 'Blue paint spilled all over it', 'She forgot it at home', 'Someone stole it from her chair'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 84 — Strawberry\'s elbow hits something!', explanation: 'Strawberry accidentally knocked over a cup of blue paint which splattered all over her favorite sweatshirt.' },
@@ -114,7 +161,13 @@ const chapters = [
     chapter_number: 9,
     title: 'How Will I Get Home?',
     summary: 'Bear spills green food coloring in science class and goes to wash his hands. Nugget accidentally teleports them — but this time they end up in the woods, not a bathroom!',
-    key_vocabulary: ['instinctively', 'sensation', 'substances', 'unbearable', 'teleport'],
+    key_vocabulary: [
+      { word: 'instinctively', definition: 'Doing something automatically without thinking — like a natural reaction', pos: 'adverb' },
+      { word: 'sensation', definition: 'A feeling in your body, like tingling, warmth, or dizziness', pos: 'noun' },
+      { word: 'substances', definition: 'Different types of materials or liquids — stuff that things are made of', pos: 'noun' },
+      { word: 'unbearable', definition: 'So bad or intense that you can hardly stand it', pos: 'adjective' },
+      { word: 'teleport', definition: 'To move instantly from one place to another — like magic travel', pos: 'verb' }
+    ],
     questions: [
       { question_number: 1, question_type: 'multiple-choice', question_text: 'What did Bear spill in science class?', options: ['A beaker of water', 'Green food coloring all over his hands', 'A cup of orange juice', 'His notebook in the experiment'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 99 — something bright green goes everywhere!', explanation: 'Bear accidentally tipped over his cup and spilled bright green food coloring all over his hands.' },
       { question_number: 2, question_type: 'multiple-choice', question_text: 'Why did Bear go to the bathroom instead of using the classroom sink?', options: ['The classroom sink was broken', 'The line for the sink was way too long', 'The teacher told him to', 'He wanted to check on Nugget'], correct_answer: 1, strategy_type: 'finding-details', strategy_tip: 'Go to page 100 — Bear sees the line and says no way!', explanation: 'The line for the classroom sink was moving too slowly so Bear decided to just go to the bathroom.' },

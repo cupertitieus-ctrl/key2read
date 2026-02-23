@@ -346,6 +346,10 @@ function renderSidebar() {
       { section: 'Tools' },
       { id: 'principal-settings',  icon: IC.gear,   label: 'School Settings' },
     ];
+  } else if (userRole === 'guest') {
+    items = [
+      { id: 'guest-browse', icon: IC.book, label: 'Browse Books' },
+    ];
   } else {
     items = [
       { section: 'Dashboard' },
@@ -363,7 +367,7 @@ function renderSidebar() {
     ];
   }
 
-  const userName = currentUser?.name || 'Sarah Johnson';
+  const userName = currentUser?.name || 'Student';
   const userInitials = userName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   const roleLabel = userRole === 'student' ? (currentUser?.grade || '4th') + ' Grade Student' :
                     userRole === 'owner' ? 'Platform Owner' :
@@ -371,9 +375,8 @@ function renderSidebar() {
                     (currentUser?.grade || '4th') + ' Grade Teacher';
 
   let html = `
-    <div class="sidebar-brand">
-      ${IC.key}
-      <span>key2read</span>
+    <div class="sidebar-brand" ${userRole === 'guest' ? 'onclick="navigate(\'guest-browse\')" style="cursor:pointer"' : ''}>
+      <img src="/public/logo.png" alt="key2read" style="height:40px;width:auto">
     </div>
     <nav class="sidebar-nav">`;
 
@@ -387,7 +390,16 @@ function renderSidebar() {
     html += `<button class="sidebar-item ${active}" onclick="navigate('${item.id}')">${item.icon}<span>${item.label}</span>${badge}</button>`;
   });
 
-  html += `</nav>
+  html += `</nav>`;
+
+  if (userRole === 'guest') {
+    html += `
+    <div class="sidebar-footer" style="flex-direction:column;gap:8px;padding:16px">
+      <a href="signin.html" class="btn btn-primary" style="width:100%;text-align:center;text-decoration:none">Sign In</a>
+      <a href="signup.html" class="btn btn-outline" style="width:100%;text-align:center;text-decoration:none">Create Account</a>
+    </div>`;
+  } else {
+    html += `
     <div class="sidebar-footer">
       <div class="sidebar-avatar">${userInitials}</div>
       <div style="flex:1;min-width:0">
@@ -396,12 +408,29 @@ function renderSidebar() {
       </div>
       <button class="sidebar-logout-btn" onclick="handleLogout()" title="Log out">${IC.logout}</button>
     </div>`;
+  }
 
   document.getElementById('sidebar').innerHTML = html;
 }
 
 // ---- Render Header ----
 function renderHeader() {
+  const header = document.getElementById('dash-header');
+  const main = document.querySelector('.dash-main');
+  const dashboard = document.querySelector('.dashboard');
+  if (userRole === 'guest') {
+    header.innerHTML = '';
+    header.style.display = 'none';
+    // Make main span both grid rows when header is hidden
+    dashboard.style.gridTemplateRows = '1fr';
+    main.style.gridRow = '1 / -1';
+    main.style.maxHeight = '100vh';
+    return;
+  }
+  header.style.display = '';
+  dashboard.style.gridTemplateRows = '';
+  main.style.gridRow = '';
+  main.style.maxHeight = '';
   document.getElementById('dash-header').innerHTML = `
     <div class="header-tabs">
       <button class="header-tab active">Reading</button>
@@ -451,7 +480,7 @@ function renderMain() {
     case 'templates':  el.innerHTML = renderTemplates(); break;
     case 'goals':      el.innerHTML = renderGoals(); break;
     case 'store':      el.innerHTML = renderStore(); break;
-    case 'library':    el.innerHTML = renderLibrary(); break;
+    case 'library':    el.innerHTML = renderLibrary(); initLibrarySearch(); break;
     case 'book-detail': el.innerHTML = renderBookDetail(); break;
     case 'celebrate':  el.innerHTML = renderCelebrate(); break;
     case 'aitools':    el.innerHTML = renderAITools(); break;
@@ -462,8 +491,13 @@ function renderMain() {
     case 'quiz-player':
       el.innerHTML = '<div id="quiz-player-root"></div>';
       break;
+    // Guest pages
+    case 'guest-browse':
+      el.innerHTML = renderGuestBrowse();
+      initBookSearch();
+      break;
     // Student pages
-    case 'student-dashboard':  el.innerHTML = renderStudentDashboard(); break;
+    case 'student-dashboard':  el.innerHTML = renderStudentDashboard(); initStudentBookSearch(); break;
     case 'student-quizzes':    el.innerHTML = renderStudentQuizzes(); break;
     case 'student-progress':   el.innerHTML = renderStudentProgress(); break;
     case 'student-badges':     el.innerHTML = renderStudentBadges(); break;
@@ -478,7 +512,8 @@ function renderMain() {
     case 'owner-students':  el.innerHTML = renderOwnerStudents(); break;
     case 'owner-settings':  el.innerHTML = renderOwnerSettings(); break;
     default:
-      if (userRole === 'student') el.innerHTML = renderStudentDashboard();
+      if (userRole === 'guest') { el.innerHTML = renderGuestBrowse(); initBookSearch(); }
+      else if (userRole === 'student') el.innerHTML = renderStudentDashboard();
       else if (userRole === 'owner') el.innerHTML = renderOwnerDashboard();
       else if (userRole === 'principal') el.innerHTML = renderPrincipalDashboard();
       else el.innerHTML = renderQuizzes();
@@ -487,7 +522,20 @@ function renderMain() {
 
 // ---- Launch Quiz Player ----
 async function launchQuiz(bookId, chapterNum, sid) {
-  const s = sid != null ? students.find(st => st.id === sid) : students[0];
+  // Find student — check students array first, then fall back to currentUser for student role
+  let s = sid != null ? students.find(st => st.id === sid) : students[0];
+  if (!s && userRole === 'student' && currentUser) {
+    s = {
+      id: currentUser.studentId,
+      name: currentUser.name,
+      grade: currentUser.grade || '4th',
+      reading_score: currentUser.reading_score || 500,
+      accuracy: currentUser.accuracy || 0,
+      keys: currentUser.keys_earned || 0,
+      quizzes: currentUser.quizzes_completed || 0
+    };
+  }
+  // Guests get no student object — quiz uses local scoring
   page = 'quiz-player';
   renderSidebar();
   renderMain();
@@ -516,14 +564,30 @@ async function launchQuiz(bookId, chapterNum, sid) {
         s.keys = (s.keys || 0) + (results.keysEarned || 0);
         s.quizzes = (s.quizzes || 0) + 1;
       }
+      // Update currentUser so dashboard shows new scores immediately
+      if (currentUser && userRole === 'student') {
+        currentUser.reading_score = results.newReadingScore || currentUser.reading_score;
+        currentUser.reading_level = results.newReadingLevel || currentUser.reading_level;
+        currentUser.keys_earned = (currentUser.keys_earned || 0) + (results.keysEarned || 0);
+        currentUser.quizzes_completed = (currentUser.quizzes_completed || 0) + 1;
+        if (results.score != null) {
+          const oldAcc = currentUser.accuracy || 0;
+          const oldQuizzes = (currentUser.quizzes_completed || 1) - 1;
+          currentUser.accuracy = oldQuizzes > 0 ? Math.round((oldAcc * oldQuizzes + results.score) / currentUser.quizzes_completed) : Math.round(results.score);
+        }
+      }
       // Update completed chapters so next chapter unlocks
       if (!completedChapters.includes(chapterNum)) {
         completedChapters.push(chapterNum);
       }
+      // Guest paywall: show save progress prompt
+      if (userRole === 'guest') {
+        showGuestPaywall(results);
+      }
     }, nextChapterInfo);
     QuizEngine.render();
   } catch(e) {
-    playerRoot.innerHTML = '<div style="text-align:center;padding:60px;color:var(--g400)"><div style="font-size:2rem;margin-bottom:12px">⚠️</div>Could not load quiz.<br><small>' + (e.message || 'Check that the server is running') + '</small><br><br><button class="btn btn-outline" onclick="navigate(\'quizzes\')">Back to Dashboard</button></div>';
+    playerRoot.innerHTML = '<div style="text-align:center;padding:60px;color:var(--g400)"><div style="font-size:2rem;margin-bottom:12px">⚠️</div>Could not load quiz.<br><small>' + (e.message || 'Check that the server is running') + '</small><br><br><button class="btn btn-outline" onclick="navigate(\'guest-browse\')">Back to Books</button></div>';
   }
 }
 
@@ -1090,6 +1154,173 @@ function storeRemoveItem(idx) {
 }
 
 // ---- Page: Book Library ----
+// ---- Guest Browse Page ----
+function renderGuestBrowse() {
+  return `
+    <div style="padding:8px 0 24px">
+      <div style="text-align:center;margin-bottom:28px">
+        <img src="/public/logo.png" alt="key2read" style="height:56px;width:auto;margin-bottom:12px">
+        <h2 style="margin:0 0 4px;color:var(--navy);font-size:1.5rem">Browse Books & Take Quizzes</h2>
+        <p style="color:var(--g500);margin:0;font-size:0.9375rem">No account needed — pick a book and start reading!</p>
+      </div>
+
+      <div style="max-width:480px;margin:0 auto 24px;position:relative">
+        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:20px;height:20px;color:var(--g400);pointer-events:none">${IC.search}</span>
+        <input type="text" id="book-search-input" placeholder="Search books by title, author, or genre..."
+          style="width:100%;padding:12px 16px 12px 42px;border:2px solid var(--g200);border-radius:var(--radius-lg);font-size:1rem;outline:none;transition:border-color .2s"
+          onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--g200)'">
+      </div>
+
+      <div id="guest-book-count" style="margin-bottom:16px;color:var(--g500);font-size:0.875rem">
+        ${books.length} book${books.length !== 1 ? 's' : ''} available
+      </div>
+
+      <div class="book-grid" id="guest-book-grid">
+        ${books.length === 0 ? `
+          <div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--g400)">
+            <p>Loading books...</p>
+          </div>
+        ` : books.map(b => renderGuestBookCard(b)).join('')}
+      </div>
+    </div>`;
+}
+
+function renderGuestBookCard(b) {
+  const coverUrl = b.cover_url || '';
+  const level = b.grade_level || b.lexile_level || '';
+  const genre = b.genre || '';
+  return `
+    <div class="book-card" onclick="openBook(${b.id})">
+      <div class="book-card-cover">
+        ${coverUrl
+          ? `<img src="${coverUrl}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+          : ''}
+        <div class="book-card-cover-fallback" ${coverUrl ? 'style="display:none"' : ''}>
+          <span style="font-size:0.875rem;font-weight:600;color:var(--g500);padding:12px;text-align:center;line-height:1.4">${b.title}</span>
+        </div>
+      </div>
+      <div class="book-card-info">
+        <h4 class="book-card-title">${b.title}</h4>
+        <p class="book-card-author">${b.author || ''}</p>
+        <div class="book-card-meta">
+          ${level ? `<span class="badge badge-blue">${level}</span>` : ''}
+          ${genre ? `<span class="badge badge-outline">${genre}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+function initBookSearch() {
+  const input = document.getElementById('book-search-input');
+  if (!input) return;
+  input.addEventListener('input', () => {
+    const q = input.value.toLowerCase().trim();
+    const grid = document.getElementById('guest-book-grid');
+    const countEl = document.getElementById('guest-book-count');
+    if (!grid) return;
+    const filtered = q
+      ? books.filter(b =>
+          (b.title || '').toLowerCase().includes(q) ||
+          (b.author || '').toLowerCase().includes(q) ||
+          (b.genre || '').toLowerCase().includes(q) ||
+          (b.grade_level || '').toLowerCase().includes(q)
+        )
+      : books;
+    grid.innerHTML = filtered.length === 0
+      ? `<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--g400)">
+           <p style="font-size:1.125rem;margin-bottom:4px">No books found</p>
+           <p style="font-size:0.875rem">Try a different search term</p>
+         </div>`
+      : filtered.map(b => renderGuestBookCard(b)).join('');
+    if (countEl) countEl.textContent = `${filtered.length} book${filtered.length !== 1 ? 's' : ''} available`;
+  });
+}
+
+function initLibrarySearch() {
+  const input = document.getElementById('library-search-input');
+  if (!input) return;
+  input.addEventListener('input', () => {
+    const q = input.value.toLowerCase().trim();
+    const grid = document.getElementById('library-book-grid');
+    const countEl = document.getElementById('library-book-count');
+    if (!grid) return;
+    const filtered = q
+      ? books.filter(b =>
+          (b.title || '').toLowerCase().includes(q) ||
+          (b.author || '').toLowerCase().includes(q) ||
+          (b.genre || '').toLowerCase().includes(q) ||
+          (b.grade_level || '').toLowerCase().includes(q)
+        )
+      : books;
+    grid.innerHTML = filtered.length === 0
+      ? `<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--g400)">
+           <p style="font-size:1.125rem;margin-bottom:4px">No books found</p>
+           <p style="font-size:0.875rem">Try a different search term</p>
+         </div>`
+      : filtered.map(b => {
+          const coverUrl = b.cover_url || '';
+          const level = b.grade_level || b.lexile_level || '';
+          const genre = b.genre || '';
+          return `<div class="book-card" onclick="openBook(${b.id})">
+            <div class="book-card-cover">${coverUrl ? `<img src="${coverUrl}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}<div class="book-card-cover-fallback" ${coverUrl ? 'style="display:none"' : ''}><span style="font-size:0.875rem;font-weight:600;color:var(--g500);padding:12px;text-align:center;line-height:1.4">${b.title}</span></div></div>
+            <div class="book-card-info"><h4 class="book-card-title">${b.title}</h4><p class="book-card-author">${b.author || ''}</p><div class="book-card-meta">${level ? `<span class="badge badge-blue">${level}</span>` : ''}${genre ? `<span class="badge badge-outline">${genre}</span>` : ''}</div></div>
+          </div>`;
+        }).join('');
+    if (countEl) countEl.textContent = filtered.length;
+  });
+}
+
+function renderStudentBookCard(b) {
+  const coverUrl = b.cover_url || '';
+  const level = b.grade_level || b.lexile_level || '';
+  const genre = b.genre || '';
+  return `
+    <div class="book-card" onclick="openBook(${b.id})" style="cursor:pointer">
+      <div class="book-card-cover" style="height:200px">
+        ${coverUrl
+          ? `<img src="${coverUrl}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+          : ''}
+        <div class="book-card-cover-fallback" ${coverUrl ? 'style="display:none"' : ''}>
+          <span style="font-size:0.8125rem;font-weight:600;color:var(--g500);padding:12px;text-align:center;line-height:1.4">${b.title}</span>
+        </div>
+      </div>
+      <div class="book-card-info" style="padding:10px 12px 12px">
+        <h4 class="book-card-title" style="font-size:0.8125rem">${b.title}</h4>
+        <p class="book-card-author">${b.author || ''}</p>
+        <div class="book-card-meta">
+          ${level ? `<span class="badge badge-blue" style="font-size:0.6875rem">${level}</span>` : ''}
+          ${genre ? `<span class="badge badge-outline" style="font-size:0.6875rem">${genre}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+function initStudentBookSearch() {
+  const input = document.getElementById('student-book-search');
+  if (!input) return;
+  input.addEventListener('input', () => {
+    const q = input.value.toLowerCase().trim();
+    const grid = document.getElementById('student-book-grid');
+    const countEl = document.getElementById('student-book-count');
+    if (!grid) return;
+    const filtered = q
+      ? books.filter(b =>
+          (b.title || '').toLowerCase().includes(q) ||
+          (b.author || '').toLowerCase().includes(q) ||
+          (b.genre || '').toLowerCase().includes(q) ||
+          (b.grade_level || '').toLowerCase().includes(q)
+        )
+      : books;
+    grid.innerHTML = filtered.length === 0
+      ? `<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--g400)">
+           <p style="font-size:1rem;margin-bottom:4px">No books found</p>
+           <p style="font-size:0.8125rem">Try a different search term</p>
+         </div>`
+      : filtered.map(b => renderStudentBookCard(b)).join('');
+    if (countEl) countEl.textContent = `${filtered.length} books`;
+  });
+}
+
 function renderLibrary() {
   if (books.length === 0) {
     return `
@@ -1103,10 +1334,17 @@ function renderLibrary() {
 
   return `
     <div class="page-header">
-      <h1>Book Library <span class="badge badge-blue">${books.length}</span></h1>
+      <h1>Book Library <span class="badge badge-blue" id="library-book-count">${books.length}</span></h1>
     </div>
 
-    <div class="book-grid">
+    <div style="position:relative;margin-bottom:20px;max-width:480px">
+      <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--g400);pointer-events:none">${IC.search}</span>
+      <input type="text" id="library-search-input" placeholder="Search books by title, author, or genre..."
+        style="width:100%;padding:10px 14px 10px 38px;border:1.5px solid var(--g200);border-radius:var(--radius-md);font-size:0.875rem;outline:none;transition:border-color .2s"
+        onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--g200)'">
+    </div>
+
+    <div class="book-grid" id="library-book-grid">
       ${books.map(b => {
         const coverUrl = b.cover_url || '';
         const level = b.grade_level || b.lexile_level || '';
@@ -1136,10 +1374,13 @@ function renderLibrary() {
 
 // ---- Open Book Detail ----
 async function openBook(bookId) {
+  // Preserve in-memory completed chapters if re-opening the same book
+  const prevCompleted = selectedBookId === bookId ? [...completedChapters] : [];
   selectedBookId = bookId;
   bookChapters = [];
-  completedChapters = [];
+  completedChapters = prevCompleted;
   page = 'book-detail';
+  renderSidebar();
   renderMain();
   // Load chapters and completed progress in parallel
   try {
@@ -1149,10 +1390,13 @@ async function openBook(bookId) {
       sid ? API.getCompletedChapters(sid, bookId).catch(() => ({ completed: [] })) : Promise.resolve({ completed: [] })
     ]);
     bookChapters = chapters;
-    completedChapters = progress.completed || [];
+    // Merge server-side completed with in-memory completed (in case submit was slow)
+    const serverCompleted = progress.completed || [];
+    completedChapters = [...new Set([...prevCompleted, ...serverCompleted])];
   } catch(e) {
-    bookChapters = [];
-    completedChapters = [];
+    if (bookChapters.length === 0) bookChapters = [];
+    // Keep prevCompleted if fetch fails
+    if (prevCompleted.length > 0) completedChapters = prevCompleted;
   }
   renderMain();
 }
@@ -1165,7 +1409,7 @@ function renderBookDetail() {
   const chapCount = bookChapters.length || b.chapter_count || 0;
 
   return `
-    <button class="back-btn" onclick="navigate('library')">${IC.arrowLeft} Back to Library</button>
+    <button class="back-btn" onclick="navigate('${userRole === 'guest' ? 'guest-browse' : userRole === 'student' ? 'student-dashboard' : 'library'}')">${IC.arrowLeft} Back to ${userRole === 'guest' ? 'Books' : userRole === 'student' ? 'Dashboard' : 'Library'}</button>
 
     <div style="display:flex;gap:32px;margin-top:16px;flex-wrap:wrap">
       <div style="flex-shrink:0;width:200px">
@@ -1196,7 +1440,7 @@ function renderBookDetail() {
         <div class="list-card">
           ${bookChapters.map((ch, i) => {
             const isCompleted = completedChapters.includes(ch.chapter_number);
-            const isUnlocked = ch.chapter_number === 1 || completedChapters.includes(ch.chapter_number - 1);
+            const isUnlocked = userRole === 'guest' || ch.chapter_number === 1 || completedChapters.includes(ch.chapter_number - 1);
             const isLocked = !isUnlocked && !isCompleted;
 
             if (isLocked) {
@@ -1239,9 +1483,116 @@ function renderBookDetail() {
 }
 
 async function launchFullBookQuiz(bookId, sid) {
-  // Launch chapter 1 — when completed, it could chain to next chapters
-  // For now, start with chapter 1
-  launchQuiz(bookId, 1, sid);
+  // Find student
+  let s = sid != null ? students.find(st => st.id === sid) : students[0];
+  if (!s && userRole === 'student' && currentUser) {
+    s = {
+      id: currentUser.studentId,
+      name: currentUser.name,
+      grade: currentUser.grade || '4th',
+      reading_score: currentUser.reading_score || 500,
+      accuracy: currentUser.accuracy || 0,
+      keys: currentUser.keys_earned || 0,
+      quizzes: currentUser.quizzes_completed || 0
+    };
+  }
+
+  page = 'quiz-player';
+  renderSidebar();
+  renderMain();
+
+  const playerRoot = document.getElementById('quiz-player-root');
+  if (playerRoot) playerRoot.innerHTML = '<div style="text-align:center;padding:60px;color:var(--g400)"><div style="font-size:2rem;margin-bottom:12px">📖</div>Loading full book quiz...<br><small>Gathering 20 questions from all chapters</small></div>';
+
+  try {
+    const quizData = await API.getFullBookQuiz(bookId);
+    let book = books.find(b => b.id === bookId);
+    if (!book) {
+      try { const allBooks = await API.getBooks(); book = allBooks.find(b => b.id === bookId); } catch(e) {}
+    }
+    if (!book) book = { title: 'Book Quiz', author: '' };
+
+    // Build a synthetic chapter for the full book quiz
+    const fullChapter = {
+      id: null,
+      chapter_number: 0,
+      title: 'Full Book Quiz',
+      key_vocabulary: []
+    };
+
+    // Merge all chapter vocabularies
+    if (quizData.chapters) {
+      const allVocab = [];
+      quizData.chapters.forEach(ch => {
+        if (ch.key_vocabulary) {
+          const vocab = typeof ch.key_vocabulary === 'string' ? (() => { try { return JSON.parse(ch.key_vocabulary); } catch(e) { return ch.key_vocabulary; } })() : ch.key_vocabulary;
+          if (Array.isArray(vocab)) allVocab.push(...vocab);
+        }
+      });
+      fullChapter.key_vocabulary = allVocab;
+    }
+
+    QuizEngine.start({ chapter: fullChapter, questions: quizData.questions, book }, s, async (results) => {
+      if (s) {
+        s.score = results.newReadingScore || s.score;
+        s.reading_level = results.newReadingLevel || s.reading_level;
+        s.keys = (s.keys || 0) + (results.keysEarned || 0);
+        s.quizzes = (s.quizzes || 0) + 1;
+      }
+      if (currentUser && userRole === 'student') {
+        currentUser.reading_score = results.newReadingScore || currentUser.reading_score;
+        currentUser.reading_level = results.newReadingLevel || currentUser.reading_level;
+        currentUser.keys_earned = (currentUser.keys_earned || 0) + (results.keysEarned || 0);
+        currentUser.quizzes_completed = (currentUser.quizzes_completed || 0) + 1;
+        if (results.score != null) {
+          const oldAcc = currentUser.accuracy || 0;
+          const oldQuizzes = (currentUser.quizzes_completed || 1) - 1;
+          currentUser.accuracy = oldQuizzes > 0 ? Math.round((oldAcc * oldQuizzes + results.score) / currentUser.quizzes_completed) : Math.round(results.score);
+        }
+      }
+      if (userRole === 'guest') {
+        showGuestPaywall(results);
+      }
+    }, null);
+    QuizEngine.render();
+  } catch(e) {
+    playerRoot.innerHTML = '<div style="text-align:center;padding:60px;color:var(--g400)"><div style="font-size:2rem;margin-bottom:12px">⚠️</div>Could not load full book quiz.<br><small>' + (e.message || 'Check that the server is running') + '</small><br><br><button class="btn btn-outline" onclick="openBook(' + bookId + ')">Back to Book</button></div>';
+  }
+}
+
+// ---- Guest Paywall (show after quiz completion) ----
+function showGuestPaywall(results) {
+  const modal = document.getElementById('modal-root-2');
+  if (!modal) return;
+  const score = Math.round(results.score || 0);
+  const keys = results.keysEarned || 0;
+  modal.innerHTML = `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)this.innerHTML=''">
+      <div style="background:#fff;border-radius:20px;max-width:420px;width:100%;padding:36px 32px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2);position:relative">
+        <img src="/public/logo.png" alt="key2read" style="height:48px;width:auto;margin-bottom:16px">
+        <h2 style="margin:0 0 8px;color:var(--navy);font-size:1.375rem">Great Job! You scored ${score}%</h2>
+        <p style="color:var(--g500);margin:0 0 20px;font-size:0.9375rem">You earned <strong style="color:#F59E0B">${keys} keys</strong> this quiz!</p>
+        <div style="background:var(--blue-p, #eff6ff);border-radius:12px;padding:20px;margin-bottom:24px;text-align:left">
+          <p style="margin:0 0 12px;font-weight:700;color:var(--navy);font-size:1rem">Create an account to:</p>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px;font-size:0.9375rem;color:var(--g700)">
+              <span style="color:#10B981;font-size:1.125rem">✓</span> Save your quiz scores and progress
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:0.9375rem;color:var(--g700)">
+              <span style="color:#10B981;font-size:1.125rem">✓</span> Earn and keep your keys
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:0.9375rem;color:var(--g700)">
+              <span style="color:#10B981;font-size:1.125rem">✓</span> Track your reading level growth
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:0.9375rem;color:var(--g700)">
+              <span style="color:#10B981;font-size:1.125rem">✓</span> Unlock badges and rewards
+            </div>
+          </div>
+        </div>
+        <a href="signup.html" class="btn btn-primary" style="width:100%;text-align:center;text-decoration:none;font-size:1rem;padding:14px 24px;margin-bottom:12px;display:block">Create Free Account</a>
+        <button onclick="document.getElementById('modal-root-2').innerHTML=''" style="background:none;border:none;color:var(--g400);cursor:pointer;font-size:0.875rem;padding:8px">Continue browsing</button>
+      </div>
+    </div>`;
 }
 
 // ---- Page: Celebrate Students ----
@@ -2050,7 +2401,7 @@ function renderStudentDashboard() {
     <div class="stat-cards stat-cards-5">
       <div class="stat-card"><div class="stat-card-label">Reading Level</div><div class="stat-card-value">${s.level}</div></div>
       <div class="stat-card"><div class="stat-card-label">Reading Score</div><div class="stat-card-value">${s.score}</div></div>
-      <div class="stat-card"><div class="stat-card-label">Keys Earned</div><div class="stat-card-value"><span class="icon-sm" style="color:var(--gold)">${IC.key}</span> ${s.keys}</div></div>
+      <div class="stat-card"><div class="stat-card-label">Keys Earned</div><div class="stat-card-value">${s.keys}</div></div>
       <div class="stat-card"><div class="stat-card-label">Quizzes Done</div><div class="stat-card-value">${s.quizzes}</div></div>
       <div class="stat-card"><div class="stat-card-label">Accuracy</div><div class="stat-card-value">${hasQuizzes ? s.accuracy + '%' : '—'}</div><div class="stat-card-trend" style="color:var(--${lvlColor})">${lvlLabel}</div></div>
     </div>
@@ -2080,26 +2431,19 @@ function renderStudentDashboard() {
     </div>
 
     <div style="margin-top:24px">
-      <h3 style="margin-bottom:16px;font-size:1rem;font-weight:700">Book Library</h3>
-      ${featuredBooks.length > 0 ? `
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px">
-        ${featuredBooks.map(b => `
-          <div class="book-card" onclick="openBook(${b.id})" style="cursor:pointer;background:#fff;border-radius:var(--radius-md);border:1px solid var(--g200);overflow:hidden;transition:transform .15s,box-shadow .15s">
-            <div style="height:200px;background:var(--g100);display:flex;align-items:center;justify-content:center;overflow:hidden">
-              ${b.cover_url ? `<img src="${b.cover_url}" alt="${b.title}" style="width:100%;height:100%;object-fit:contain">` : `<div style="color:var(--g500);font-size:0.875rem;font-weight:600;padding:12px;text-align:center;line-height:1.4">${b.title}</div>`}
-            </div>
-            <div style="padding:10px">
-              <div style="font-weight:600;font-size:0.8125rem;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.title}</div>
-              <div style="font-size:0.75rem;color:var(--g500)">${b.author}</div>
-            </div>
-          </div>
-        `).join('')}
-        <div onclick="navigate('library')" style="cursor:pointer;background:#fff;border-radius:var(--radius-md);border:2px dashed var(--g200);overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:260px;transition:border-color .2s,background .2s" onmouseover="this.style.borderColor='var(--blue)';this.style.background='var(--blue-p)'" onmouseout="this.style.borderColor='var(--g200)';this.style.background='#fff'">
-          <div style="width:40px;height:40px;border-radius:50%;background:var(--g100);display:flex;align-items:center;justify-content:center;color:var(--g500);margin-bottom:8px">${IC.arrowRight}</div>
-          <div style="font-weight:600;font-size:0.8125rem;color:var(--g600)">View All</div>
-          <div style="font-size:0.75rem;color:var(--g400)">${books.length} Books</div>
-        </div>
-      </div>` : `<p style="color:var(--g500)">No books available yet.</p>`}
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h3 style="margin:0;font-size:1rem;font-weight:700">Browse Books</h3>
+        <span style="color:var(--g500);font-size:0.8125rem" id="student-book-count">${books.length} books</span>
+      </div>
+      <div style="position:relative;margin-bottom:16px">
+        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--g400);pointer-events:none">${IC.search}</span>
+        <input type="text" id="student-book-search" placeholder="Search books by title, author, or genre..."
+          style="width:100%;padding:10px 14px 10px 38px;border:1.5px solid var(--g200);border-radius:var(--radius-md);font-size:0.875rem;outline:none;transition:border-color .2s"
+          onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--g200)'">
+      </div>
+      <div class="book-grid" id="student-book-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+        ${books.length > 0 ? books.map(b => renderStudentBookCard(b)).join('') : `<p style="grid-column:1/-1;color:var(--g500);text-align:center;padding:24px">No books available yet.</p>`}
+      </div>
     </div>
 
     ${!s.onboarded ? `
@@ -2148,15 +2492,15 @@ function renderStudentQuizzes() {
       `).join('')}
     </div>` : `
     <div class="empty-state" style="margin-top:24px">
-      <div class="empty-state-icon">${IC.clip}</div>
+      <div class="empty-state-icon" style="font-size:2rem">📋</div>
       <h2>No Quizzes Yet</h2>
       <p>Your teacher hasn't assigned any quizzes yet. In the meantime, explore the book library!</p>
-      <button class="btn btn-primary" onclick="navigate('library')">${IC.book} Browse Books</button>
+      <button class="btn btn-primary" onclick="navigate('library')">Browse Books</button>
     </div>`}
 
     ${books.length > 0 ? `
     <div style="margin-top:24px">
-      <h3 style="margin-bottom:16px">${IC.book} Pick a Book to Read</h3>
+      <h3 style="margin-bottom:16px">Pick a Book to Read</h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px">
         ${books.slice(0, 8).map(b => `
           <div class="book-card" onclick="openBook(${b.id})" style="cursor:pointer;background:#fff;border-radius:var(--radius-md);border:1px solid var(--g200);overflow:hidden">
@@ -2220,10 +2564,10 @@ function renderStudentProgress() {
       </div>
     </div>` : `
     <div class="empty-state" style="margin-top:24px">
-      <div class="empty-state-icon">${IC.chart}</div>
+      <div class="empty-state-icon" style="font-size:2rem">📊</div>
       <h2>No Progress Yet</h2>
       <p>Complete your first quiz to start tracking your reading progress!</p>
-      <button class="btn btn-primary" onclick="navigate('library')">${IC.book} Browse Books</button>
+      <button class="btn btn-primary" onclick="navigate('library')">Browse Books</button>
     </div>`}
   `;
 }
@@ -2241,14 +2585,14 @@ function renderStudentBadges() {
     interests: null
   };
   const badges = [
-    { icon: IC.fire,   name: 'Reading Streak',    desc: `${s.streak} day streak!`, earned: s.streak >= 3, color: 'orange' },
-    { icon: IC.star,   name: 'Quiz Champion',     desc: 'Complete 10 quizzes',     earned: s.quizzes >= 10, color: 'gold' },
-    { icon: IC.target, name: 'Sharp Shooter',     desc: '90%+ accuracy',           earned: s.accuracy >= 90, color: 'green' },
-    { icon: IC.book,   name: 'Bookworm',          desc: 'Read 5 books',            earned: s.quizzes >= 15, color: 'blue' },
-    { icon: IC.key,    name: 'Key Collector',      desc: 'Earn 500 keys',           earned: s.keys >= 500, color: 'purple' },
-    { icon: IC.trend,  name: 'Level Up',           desc: 'Improve reading level',   earned: true, color: 'blue' },
-    { icon: IC.heart,  name: 'Personalized',       desc: 'Set up your profile',     earned: !!(s.interests && s.interests.onboarded), color: 'red' },
-    { icon: IC.check,  name: 'Perfect Score',      desc: 'Get 100% on a quiz',      earned: s.accuracy >= 95, color: 'green' },
+    { icon: '🔥', name: 'Reading Streak',    desc: `${s.streak} day streak!`, earned: s.streak >= 3, color: 'orange' },
+    { icon: '⭐', name: 'Quiz Champion',     desc: 'Complete 10 quizzes',     earned: s.quizzes >= 10, color: 'gold' },
+    { icon: '🎯', name: 'Sharp Shooter',     desc: '90%+ accuracy',           earned: s.accuracy >= 90, color: 'green' },
+    { icon: '📚', name: 'Bookworm',          desc: 'Read 5 books',            earned: s.quizzes >= 15, color: 'blue' },
+    { icon: '🔑', name: 'Key Collector',      desc: 'Earn 500 keys',           earned: s.keys >= 500, color: 'purple' },
+    { icon: '📈', name: 'Level Up',           desc: 'Improve reading level',   earned: true, color: 'blue' },
+    { icon: '❤️', name: 'Personalized',       desc: 'Set up your profile',     earned: !!(s.interests && s.interests.onboarded), color: 'red' },
+    { icon: '✅', name: 'Perfect Score',      desc: 'Get 100% on a quiz',      earned: s.accuracy >= 95, color: 'green' },
   ];
 
   return `
@@ -2612,13 +2956,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (me.user) {
       currentUser = me.user;
       userRole = me.user.role || 'teacher';
+    } else {
+      // Not logged in — guest mode
+      userRole = 'guest';
+      currentUser = null;
     }
-  } catch(e) { /* Not logged in — default teacher demo */ }
+  } catch(e) {
+    // API error — guest mode
+    userRole = 'guest';
+    currentUser = null;
+  }
 
   // Load books from API
   try {
     books = await API.getBooks();
   } catch(e) { console.warn('Could not load books:', e); }
+
+  // Guest mode — skip teacher/student data loading
+  if (userRole === 'guest') {
+    page = 'guest-browse';
+    renderSidebar();
+    renderHeader();
+    renderMain();
+    return;
+  }
 
   // Load class code for teachers
   if (userRole === 'teacher' && currentUser) {

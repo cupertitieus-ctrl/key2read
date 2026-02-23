@@ -398,6 +398,66 @@ app.get('/api/books/:bookId/chapters/:num/quiz', async (req, res) => {
   res.json({ chapter, questions });
 });
 
+// ─── Full Book Quiz (20 questions across all chapters) ───
+app.get('/api/books/:bookId/full-quiz', async (req, res) => {
+  const bookId = parseInt(req.params.bookId);
+  try {
+    const { chapters, allQuestions } = await db.getFullBookQuiz(bookId);
+    if (!chapters.length || !allQuestions.length) return res.status(404).json({ error: 'No quiz data found' });
+
+    // Parse JSON fields
+    const parsed = allQuestions.map(q => ({
+      ...q,
+      options: typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []),
+      vocabulary_words: typeof q.vocabulary_words === 'string' ? JSON.parse(q.vocabulary_words) : (q.vocabulary_words || [])
+    }));
+
+    // Select 20 questions spread across chapters
+    const perChapter = Math.max(1, Math.floor(20 / chapters.length));
+    const extra = 20 - perChapter * chapters.length;
+    let selected = [];
+
+    chapters.forEach((ch, idx) => {
+      const chQuestions = parsed.filter(q => q.chapter_id === ch.id);
+      // Shuffle
+      for (let i = chQuestions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [chQuestions[i], chQuestions[j]] = [chQuestions[j], chQuestions[i]];
+      }
+      const take = idx < extra ? perChapter + 1 : perChapter;
+      selected.push(...chQuestions.slice(0, Math.min(take, chQuestions.length)));
+    });
+
+    // If we still have fewer than 20, grab more from any chapter
+    if (selected.length < 20) {
+      const selectedIds = new Set(selected.map(q => q.id));
+      const remaining = parsed.filter(q => !selectedIds.has(q.id));
+      for (let i = remaining.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
+      }
+      selected.push(...remaining.slice(0, 20 - selected.length));
+    }
+
+    // Cap at 20
+    selected = selected.slice(0, 20);
+
+    // Attach chapter info to each question for vocab lookup
+    selected.forEach(q => {
+      const ch = chapters.find(c => c.id === q.chapter_id);
+      if (ch) q._chapterVocab = ch.key_vocabulary;
+    });
+
+    res.json({
+      chapter: { id: null, chapter_number: 0, title: 'Full Book Quiz', key_vocabulary: [] },
+      questions: selected,
+      chapters
+    });
+  } catch(e) {
+    res.status(500).json({ error: 'Failed to load full book quiz' });
+  }
+});
+
 // ─── QUIZ / AI ROUTES ───
 app.post('/api/quiz/personalize', async (req, res) => {
   const { questionId, studentId } = req.body;
