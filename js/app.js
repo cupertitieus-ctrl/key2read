@@ -85,6 +85,8 @@ let storeItems = [
 
 // Books loaded from API (populated on init)
 let books = [];
+let selectedBookId = null; // For book detail view
+let bookChapters = []; // Chapters for selected book
 
 let quizHistory = [];
 
@@ -449,6 +451,7 @@ function renderMain() {
     case 'goals':      el.innerHTML = renderGoals(); break;
     case 'store':      el.innerHTML = renderStore(); break;
     case 'library':    el.innerHTML = renderLibrary(); break;
+    case 'book-detail': el.innerHTML = renderBookDetail(); break;
     case 'celebrate':  el.innerHTML = renderCelebrate(); break;
     case 'aitools':    el.innerHTML = renderAITools(); break;
     case 'reports':
@@ -1100,7 +1103,7 @@ function renderLibrary() {
         const level = b.grade_level || b.lexile_level || '';
         const genre = b.genre || '';
         return `
-        <div class="book-card" onclick="launchQuiz(${b.id}, 1, ${currentUser?.studentId || 0}, false)">
+        <div class="book-card" onclick="openBook(${b.id})">
           <div class="book-card-cover">
             ${coverUrl
               ? `<img src="${coverUrl}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
@@ -1120,6 +1123,83 @@ function renderLibrary() {
         </div>`;
       }).join('')}
     </div>`;
+}
+
+// ---- Open Book Detail ----
+async function openBook(bookId) {
+  selectedBookId = bookId;
+  bookChapters = [];
+  page = 'book-detail';
+  renderMain();
+  // Load chapters
+  try {
+    bookChapters = await API.getChapters(bookId);
+  } catch(e) {
+    bookChapters = [];
+  }
+  renderMain();
+}
+
+function renderBookDetail() {
+  const b = books.find(x => x.id === selectedBookId);
+  if (!b) return '<p>Book not found.</p>';
+  const coverUrl = b.cover_url || '';
+  const sid = currentUser?.studentId || 0;
+  const chapCount = bookChapters.length || b.chapter_count || 0;
+
+  return `
+    <button class="back-btn" onclick="navigate('library')">${IC.arrowLeft} Back to Library</button>
+
+    <div style="display:flex;gap:32px;margin-top:16px;flex-wrap:wrap">
+      <div style="flex-shrink:0;width:200px">
+        <div style="width:200px;height:280px;background:var(--g100);border-radius:var(--radius-md);overflow:hidden;display:flex;align-items:center;justify-content:center">
+          ${coverUrl ? `<img src="${coverUrl}" alt="${b.title}" style="width:100%;height:100%;object-fit:contain">` : `<div style="color:var(--g500);font-size:0.875rem;font-weight:600;padding:12px;text-align:center">${b.title}</div>`}
+        </div>
+      </div>
+      <div style="flex:1;min-width:280px">
+        <h2 style="margin-bottom:4px;color:var(--navy)">${b.title}</h2>
+        <p style="color:var(--g500);margin-bottom:12px">by ${b.author || 'Unknown'}</p>
+        ${b.description ? `<p style="color:var(--g600);margin-bottom:16px;line-height:1.6">${b.description}</p>` : ''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+          ${b.grade_level ? `<span class="badge badge-blue">${b.grade_level}</span>` : ''}
+          ${b.genre ? `<span class="badge badge-outline">${b.genre}</span>` : ''}
+          <span class="badge badge-outline">${chapCount} Chapters</span>
+        </div>
+        ${chapCount > 1 ? `<button class="btn btn-primary" onclick="launchFullBookQuiz(${b.id}, ${sid})">Take Full Book Quiz (All ${chapCount} Chapters)</button>` : ''}
+      </div>
+    </div>
+
+    <div style="margin-top:28px">
+      <h3 style="margin-bottom:16px;font-size:1rem;font-weight:700">Chapters</h3>
+      ${bookChapters.length === 0 ? `
+        <div class="list-card" style="padding:32px;text-align:center;color:var(--g400)">
+          <p>Loading chapters...</p>
+        </div>
+      ` : `
+        <div class="list-card">
+          ${bookChapters.map((ch, i) => `
+            <div class="list-item" style="cursor:pointer" onclick="launchQuiz(${b.id}, ${ch.chapter_number}, ${sid})">
+              <div class="list-item-info" style="display:flex;align-items:center;gap:12px;flex-direction:row">
+                <div style="width:36px;height:36px;border-radius:50%;background:var(--blue-p);color:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.875rem;flex-shrink:0">${ch.chapter_number}</div>
+                <div>
+                  <span class="list-item-name">${ch.title}</span>
+                  <span class="list-item-sub">${ch.summary ? ch.summary.substring(0, 80) + '...' : '5 questions'}</span>
+                </div>
+              </div>
+              <div class="list-item-right">
+                <span class="btn btn-sm btn-outline">Take Quiz</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `}
+    </div>`;
+}
+
+async function launchFullBookQuiz(bookId, sid) {
+  // Launch chapter 1 — when completed, it could chain to next chapters
+  // For now, start with chapter 1
+  launchQuiz(bookId, 1, sid);
 }
 
 // ---- Page: Celebrate Students ----
@@ -1962,7 +2042,7 @@ function renderStudentDashboard() {
       ${featuredBooks.length > 0 ? `
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px">
         ${featuredBooks.map(b => `
-          <div class="book-card" onclick="navigate('library')" style="cursor:pointer;background:#fff;border-radius:var(--radius-md);border:1px solid var(--g200);overflow:hidden;transition:transform .15s,box-shadow .15s">
+          <div class="book-card" onclick="openBook(${b.id})" style="cursor:pointer;background:#fff;border-radius:var(--radius-md);border:1px solid var(--g200);overflow:hidden;transition:transform .15s,box-shadow .15s">
             <div style="height:200px;background:var(--g100);display:flex;align-items:center;justify-content:center;overflow:hidden">
               ${b.cover_url ? `<img src="${b.cover_url}" alt="${b.title}" style="width:100%;height:100%;object-fit:contain">` : `<div style="color:var(--g500);font-size:0.875rem;font-weight:600;padding:12px;text-align:center;line-height:1.4">${b.title}</div>`}
             </div>
@@ -2037,7 +2117,7 @@ function renderStudentQuizzes() {
       <h3 style="margin-bottom:16px">${IC.book} Pick a Book to Read</h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px">
         ${books.slice(0, 8).map(b => `
-          <div class="book-card" onclick="navigate('library')" style="cursor:pointer;background:#fff;border-radius:var(--radius-md);border:1px solid var(--g200);overflow:hidden">
+          <div class="book-card" onclick="openBook(${b.id})" style="cursor:pointer;background:#fff;border-radius:var(--radius-md);border:1px solid var(--g200);overflow:hidden">
             <div style="height:180px;background:var(--g100);display:flex;align-items:center;justify-content:center;overflow:hidden">
               ${b.cover_url ? `<img src="${b.cover_url}" alt="${b.title}" style="width:100%;height:100%;object-fit:contain">` : `<div style="color:var(--g500);font-size:0.875rem;font-weight:600;padding:12px;text-align:center;line-height:1.4">${b.title}</div>`}
             </div>
