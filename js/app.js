@@ -597,7 +597,7 @@ async function launchQuiz(bookId, chapterNum, sid) {
       }
       // Check if ALL chapters for this book are now completed
       if (completedChapters.length >= bookChapters.length && bookChapters.length > 0) {
-        setTimeout(() => showBookCompletionCelebration(book, results), 600);
+        try { setTimeout(() => showBookCompletionCelebration(book, results), 600); } catch(err) { console.error('Celebration error:', err); }
       }
     }, nextChapterInfo);
     QuizEngine.render();
@@ -1511,6 +1511,7 @@ async function launchFullBookQuiz(bookId, sid) {
     };
   }
 
+  selectedBookId = bookId; // Ensure selectedBookId is set for certificate PDF
   page = 'quiz-player';
   renderSidebar();
   renderMain();
@@ -1565,7 +1566,7 @@ async function launchFullBookQuiz(bookId, sid) {
         }
       }
       // Full book quiz = book is complete
-      setTimeout(() => showBookCompletionCelebration(book, results), 600);
+      try { setTimeout(() => showBookCompletionCelebration(book, results), 600); } catch(err) { console.error('Celebration error:', err); }
     }, null);
     QuizEngine.render();
   } catch(e) {

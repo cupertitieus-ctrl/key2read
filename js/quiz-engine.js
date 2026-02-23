@@ -432,7 +432,7 @@ const QuizEngine = (function() {
           <div class="quiz-results-breakdown">
             <div class="quiz-results-summary">
               <span class="quiz-results-summary-correct">✅ ${r.correctCount} correct</span>
-              <span class="quiz-results-summary-wrong">❌ ${r.totalQuestions - r.correctCount} wrong</span>
+              <span class="quiz-results-summary-wrong">❌ ${r.totalQuestions - r.correctCount} incorrect</span>
             </div>
             ${(r.totalQuestions - r.correctCount) > 0 ? `
             <button class="quiz-results-expand-btn" onclick="this.parentElement.classList.toggle('expanded');this.textContent=this.parentElement.classList.contains('expanded')?'Hide Details':'See Which Ones'">See Which Ones</button>
@@ -453,6 +453,7 @@ const QuizEngine = (function() {
 
           <div class="quiz-results-actions" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
             <button class="btn btn-outline" onclick="QuizEngine.exit()">Back to Book</button>
+            ${r.score < 100 ? `<button class="btn btn-outline" onclick="QuizEngine.retake()">Retake Quiz</button>` : ''}
             ${QuizEngine._nextChapter ? `<button class="btn btn-primary" onclick="QuizEngine.nextChapter()">Next Chapter →</button>` : ''}
           </div>
         </div>
@@ -842,9 +843,21 @@ const QuizEngine = (function() {
     }
   }
 
+  function retake() {
+    const bookId = currentQuiz?.book?.id;
+    const chapterNum = currentQuiz?.chapter?.chapter_number;
+    const sid = currentStudent?.id || null;
+    if (!bookId) return;
+    if (chapterNum === 0 && typeof launchFullBookQuiz === 'function') {
+      launchFullBookQuiz(bookId, sid);
+    } else if (typeof launchQuiz === 'function') {
+      launchQuiz(bookId, chapterNum, sid);
+    }
+  }
+
   return {
     start, render, beginQuiz, selectAnswer, submitAnswer, nextQuestion,
-    toggleStrategy, dismissRetryModal, exit, nextChapter, showDefinition, hideDefinition, toggleDefinition,
+    toggleStrategy, dismissRetryModal, exit, nextChapter, retake, showDefinition, hideDefinition, toggleDefinition,
     formatReadingLevel, getLexileGrade, getReadingLevelColor,
     STRATEGY_ICONS, STRATEGY_NAMES, QUESTION_TYPE_LABELS,
     get _nextChapter() { return _nextChapter; }
