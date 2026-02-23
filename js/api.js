@@ -47,6 +47,7 @@ const API = {
   getBooks: () => API.get('/api/books'),
   getChapters: (bookId) => API.get(`/api/books/${bookId}/chapters`),
   getChapterQuiz: (bookId, chapterNum) => API.get(`/api/books/${bookId}/chapters/${chapterNum}/quiz`),
+  getCompletedChapters: (studentId, bookId) => API.get(`/api/students/${studentId}/completed-chapters/${bookId}`),
 
   // Quiz
   personalizeAll: (chapterId, studentId) => API.post('/api/quiz/personalize-all', { chapterId, studentId }),

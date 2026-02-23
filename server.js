@@ -328,6 +328,19 @@ app.get('/api/students/:id/quiz-results', async (req, res) => {
   res.json(results);
 });
 
+// ─── CHAPTER PROGRESS ───
+app.get('/api/students/:id/completed-chapters/:bookId', async (req, res) => {
+  const studentId = parseInt(req.params.id);
+  const bookId = parseInt(req.params.bookId);
+  try {
+    const completed = await db.getCompletedChapters(studentId, bookId);
+    res.json({ completed });
+  } catch (e) {
+    console.error('Completed chapters error:', e);
+    res.status(500).json({ error: 'Failed to load progress' });
+  }
+});
+
 // ─── BOOK ROUTES ───
 app.get('/api/books', async (req, res) => {
   const books = await db.getBooks();

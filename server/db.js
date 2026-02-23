@@ -474,6 +474,36 @@ async function getAllStudentsForOwner() {
   }));
 }
 
+// ─── CHAPTER PROGRESS ───
+
+async function getCompletedChapters(studentId, bookId) {
+  // Get all chapter IDs for this book
+  const { data: chapters } = await supabase
+    .from('chapters')
+    .select('id, chapter_number')
+    .eq('book_id', bookId)
+    .order('chapter_number');
+
+  if (!chapters || chapters.length === 0) return [];
+
+  const chapterIds = chapters.map(c => c.id);
+
+  // Get quiz results for these chapters by this student
+  const { data: results } = await supabase
+    .from('quiz_results')
+    .select('chapter_id, score')
+    .eq('student_id', studentId)
+    .in('chapter_id', chapterIds);
+
+  if (!results) return [];
+
+  // A chapter is completed if there's at least one quiz result for it
+  const completedIds = new Set(results.map(r => r.chapter_id));
+  return chapters
+    .filter(c => completedIds.has(c.id))
+    .map(c => c.chapter_number);
+}
+
 // Export everything
 module.exports = {
   supabase,
@@ -506,5 +536,6 @@ module.exports = {
   getOwnerStats,
   getGenreDistribution,
   getAllTeachers,
-  getAllStudentsForOwner
+  getAllStudentsForOwner,
+  getCompletedChapters
 };

@@ -87,6 +87,7 @@ let storeItems = [
 let books = [];
 let selectedBookId = null; // For book detail view
 let bookChapters = []; // Chapters for selected book
+let completedChapters = []; // Chapter numbers the student has completed for current book
 
 let quizHistory = [];
 
@@ -503,7 +504,11 @@ async function launchQuiz(bookId, chapterNum, sid) {
     }
     if (!book) book = { title: 'Book Quiz', author: '' };
 
-    QuizEngine.start({ chapter: quizData.chapter, questions: quizData.questions, book }, s, (results) => {
+    // Determine if there's a next chapter
+    const totalChapters = book.chapter_count || bookChapters.length || 0;
+    const nextChapterInfo = chapterNum < totalChapters ? { bookId, chapterNum: chapterNum + 1, studentId: sid } : null;
+
+    QuizEngine.start({ chapter: quizData.chapter, questions: quizData.questions, book }, s, async (results) => {
       // Quiz completed callback — refresh student data
       if (s) {
         s.score = results.newReadingScore || s.score;
@@ -511,7 +516,11 @@ async function launchQuiz(bookId, chapterNum, sid) {
         s.keys = (s.keys || 0) + (results.keysEarned || 0);
         s.quizzes = (s.quizzes || 0) + 1;
       }
-    });
+      // Update completed chapters so next chapter unlocks
+      if (!completedChapters.includes(chapterNum)) {
+        completedChapters.push(chapterNum);
+      }
+    }, nextChapterInfo);
     QuizEngine.render();
   } catch(e) {
     playerRoot.innerHTML = '<div style="text-align:center;padding:60px;color:var(--g400)"><div style="font-size:2rem;margin-bottom:12px">⚠️</div>Could not load quiz.<br><small>' + (e.message || 'Check that the server is running') + '</small><br><br><button class="btn btn-outline" onclick="navigate(\'quizzes\')">Back to Dashboard</button></div>';
@@ -1129,13 +1138,21 @@ function renderLibrary() {
 async function openBook(bookId) {
   selectedBookId = bookId;
   bookChapters = [];
+  completedChapters = [];
   page = 'book-detail';
   renderMain();
-  // Load chapters
+  // Load chapters and completed progress in parallel
   try {
-    bookChapters = await API.getChapters(bookId);
+    const sid = currentUser?.studentId || 0;
+    const [chapters, progress] = await Promise.all([
+      API.getChapters(bookId),
+      sid ? API.getCompletedChapters(sid, bookId).catch(() => ({ completed: [] })) : Promise.resolve({ completed: [] })
+    ]);
+    bookChapters = chapters;
+    completedChapters = progress.completed || [];
   } catch(e) {
     bookChapters = [];
+    completedChapters = [];
   }
   renderMain();
 }
@@ -1177,20 +1194,45 @@ function renderBookDetail() {
         </div>
       ` : `
         <div class="list-card">
-          ${bookChapters.map((ch, i) => `
+          ${bookChapters.map((ch, i) => {
+            const isCompleted = completedChapters.includes(ch.chapter_number);
+            const isUnlocked = ch.chapter_number === 1 || completedChapters.includes(ch.chapter_number - 1);
+            const isLocked = !isUnlocked && !isCompleted;
+
+            if (isLocked) {
+              return `
+              <div class="list-item" style="cursor:not-allowed;opacity:0.5">
+                <div class="list-item-info" style="display:flex;align-items:center;gap:12px;flex-direction:row">
+                  <div style="width:36px;height:36px;border-radius:50%;background:var(--g200);color:var(--g400);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.875rem;flex-shrink:0">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                  </div>
+                  <div>
+                    <span class="list-item-name" style="color:var(--g400)">Chapter ${ch.chapter_number}: ${ch.title}</span>
+                    <span class="list-item-sub">Complete Chapter ${ch.chapter_number - 1} first!</span>
+                  </div>
+                </div>
+                <div class="list-item-right">
+                  <span class="btn btn-sm btn-outline" style="opacity:0.4;pointer-events:none">🔒 Locked</span>
+                </div>
+              </div>`;
+            }
+
+            return `
             <div class="list-item" style="cursor:pointer" onclick="launchQuiz(${b.id}, ${ch.chapter_number}, ${sid})">
               <div class="list-item-info" style="display:flex;align-items:center;gap:12px;flex-direction:row">
-                <div style="width:36px;height:36px;border-radius:50%;background:var(--blue-p);color:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.875rem;flex-shrink:0">${ch.chapter_number}</div>
+                <div style="width:36px;height:36px;border-radius:50%;background:${isCompleted ? 'var(--green-p, #dcfce7)' : 'var(--blue-p)'};color:${isCompleted ? 'var(--green, #16a34a)' : 'var(--blue)'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.875rem;flex-shrink:0">
+                  ${isCompleted ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ch.chapter_number}
+                </div>
                 <div>
-                  <span class="list-item-name">${ch.title}</span>
-                  <span class="list-item-sub">${ch.summary ? ch.summary.substring(0, 80) + '...' : '5 questions'}</span>
+                  <span class="list-item-name">Chapter ${ch.chapter_number}: ${ch.title}</span>
+                  <span class="list-item-sub">${isCompleted ? '✅ Completed!' : (ch.summary ? ch.summary.substring(0, 80) + '...' : '5 questions')}</span>
                 </div>
               </div>
               <div class="list-item-right">
-                <span class="btn btn-sm btn-outline">Take Quiz</span>
+                <span class="btn btn-sm ${isCompleted ? 'btn-outline' : 'btn-primary'}">${isCompleted ? 'Retake Quiz' : 'Take Quiz'}</span>
               </div>
-            </div>
-          `).join('')}
+            </div>`;
+          }).join('')}
         </div>
       `}
     </div>`;

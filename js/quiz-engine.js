@@ -15,6 +15,7 @@ const QuizEngine = (function() {
   let quizResults = null;        // final results after submission
   let definitionCache = {};      // word -> definition
   let onComplete = null;         // callback when quiz finishes
+  let _nextChapter = null;       // { bookId, chapterNum, studentId } if a next chapter exists
 
   const STRATEGY_ICONS = {
     'finding-details': '🔍',
@@ -45,7 +46,7 @@ const QuizEngine = (function() {
   };
 
   // ─── Start a quiz ───
-  function start(quizData, student, callback) {
+  function start(quizData, student, callback, nextChapterInfo) {
     currentQuiz = quizData;
     currentStudent = student;
     currentQuestion = 0;
@@ -57,6 +58,7 @@ const QuizEngine = (function() {
     quizStartTime = Date.now();
     questionStartTime = Date.now();
     onComplete = callback;
+    _nextChapter = nextChapterInfo || null;
     render();
   }
 
@@ -124,19 +126,6 @@ const QuizEngine = (function() {
         </div>
 
         <div class="quiz-body">
-          <div class="quiz-strategy-badge">
-            <span class="quiz-strategy-icon">${stratIcon}</span>
-            <span class="quiz-strategy-label">Strategy: ${stratName}</span>
-          </div>
-
-          <div class="quiz-question-type-badge">${qTypeLabel}</div>
-
-          ${q.passage_excerpt ? `
-            <div class="quiz-passage">
-              <div class="quiz-passage-label">From the text:</div>
-              <blockquote>${markedPassage}</blockquote>
-            </div>
-          ` : ''}
 
           <div class="quiz-question-text">${markedText}</div>
 
@@ -158,14 +147,11 @@ const QuizEngine = (function() {
           ${!answered ? `
             <div class="quiz-hint-area">
               <button class="quiz-hint-btn" onclick="QuizEngine.toggleStrategy()">
-                ${showingStrategy ? 'Hide Strategy Tip' : '💡 Need a Hint? Learn the Strategy'}
+                ${showingStrategy ? 'Hide Hint' : '💡 Need a Hint?'}
               </button>
               ${showingStrategy ? `
                 <div class="quiz-strategy-card">
-                  <div class="quiz-strategy-card-header">
-                    <span>${stratIcon}</span> ${stratName}
-                  </div>
-                  <p class="quiz-strategy-tip">${escapeHtml(q.strategy_tip || 'Think carefully about the text.')}</p>
+                  <p class="quiz-strategy-tip">${escapeHtml(q.strategy_tip || 'Think carefully about the story!')}</p>
                 </div>
               ` : ''}
             </div>
@@ -179,11 +165,6 @@ const QuizEngine = (function() {
                   : '<span class="quiz-feedback-icon">💪</span> Keep Trying!'}
               </div>
               <p class="quiz-feedback-text">${escapeHtml(fbForThis.feedback || q.explanation || '')}</p>
-              ${fbForThis.strategy_reminder ? `
-                <div class="quiz-feedback-strategy">
-                  <span>${stratIcon}</span> <strong>Strategy Reminder:</strong> ${escapeHtml(fbForThis.strategy_reminder)}
-                </div>
-              ` : ''}
             </div>
           ` : ''}
         </div>
@@ -226,18 +207,8 @@ const QuizEngine = (function() {
               <strong>25</strong><span>Keys possible</span>
             </div>
           </div>
-          <div class="quiz-intro-strategies">
-            <h4>Strategies You'll Practice</h4>
-            <div class="quiz-intro-strategy-list">
-              ${strategies.map(s => `
-                <div class="quiz-intro-strategy-item">
-                  <span>${STRATEGY_ICONS[s] || '📖'}</span> ${STRATEGY_NAMES[s] || s}
-                </div>
-              `).join('')}
-            </div>
-          </div>
           <div class="quiz-intro-tip">
-            <strong>💡 Tip:</strong> Hover over <span class="vocab-word-demo">highlighted words</span> to see their definitions!
+            <strong>💡 Tip:</strong> If you get stuck, click "Need a Hint?" for help!
           </div>
           <button class="btn btn-primary btn-lg" onclick="QuizEngine.beginQuiz()">Start Quiz</button>
         </div>
@@ -278,15 +249,6 @@ const QuizEngine = (function() {
             </div>
           </div>
 
-          <div class="quiz-results-strategies">
-            <h4>Strategies Practiced</h4>
-            ${strategiesUsed.map(s => `
-              <div class="quiz-results-strategy">
-                <span>${STRATEGY_ICONS[s] || '📖'}</span> ${STRATEGY_NAMES[s] || s}
-              </div>
-            `).join('')}
-          </div>
-
           <div class="quiz-results-breakdown">
             <h4>Question Breakdown</h4>
             ${r.results.map((res, i) => {
@@ -295,17 +257,16 @@ const QuizEngine = (function() {
                 <div class="quiz-result-item ${res.isCorrect ? 'correct' : 'incorrect'}">
                   <div class="quiz-result-icon">${res.isCorrect ? '✅' : '❌'}</div>
                   <div class="quiz-result-info">
-                    <div class="quiz-result-type">${QUESTION_TYPE_LABELS[q.question_type] || ''}</div>
                     <div class="quiz-result-text">${escapeHtml((q.personalized_text || q.question_text).substring(0, 80))}...</div>
                   </div>
-                  <div class="quiz-result-strategy">${STRATEGY_ICONS[q.strategy_type] || ''}</div>
                 </div>
               `;
             }).join('')}
           </div>
 
-          <div class="quiz-results-actions">
-            <button class="btn btn-primary" onclick="QuizEngine.exit()">Back to Dashboard</button>
+          <div class="quiz-results-actions" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+            <button class="btn btn-outline" onclick="QuizEngine.exit()">Back to Book</button>
+            ${QuizEngine._nextChapter ? `<button class="btn btn-primary" onclick="QuizEngine.nextChapter()">Next Chapter →</button>` : ''}
           </div>
         </div>
       </div>
@@ -398,7 +359,14 @@ const QuizEngine = (function() {
   function exit() {
     const container = document.getElementById('quiz-player-root');
     if (container) container.innerHTML = '';
-    if (typeof renderMain === 'function') renderMain();
+    // Navigate back to book detail page if we have a book
+    if (typeof openBook === 'function' && currentQuiz?.book?.id) {
+      openBook(currentQuiz.book.id);
+    } else if (typeof navigate === 'function') {
+      navigate('library');
+    } else if (typeof renderMain === 'function') {
+      renderMain();
+    }
   }
 
   // ─── Hover Definitions ───
@@ -498,10 +466,17 @@ const QuizEngine = (function() {
   }
 
   // Public API
+  function nextChapter() {
+    if (_nextChapter && typeof launchQuiz === 'function') {
+      launchQuiz(_nextChapter.bookId, _nextChapter.chapterNum, _nextChapter.studentId);
+    }
+  }
+
   return {
     start, render, beginQuiz, selectAnswer, submitAnswer, nextQuestion,
-    toggleStrategy, exit, showDefinition, hideDefinition,
+    toggleStrategy, exit, nextChapter, showDefinition, hideDefinition,
     formatReadingLevel, getLexileGrade, getReadingLevelColor,
-    STRATEGY_ICONS, STRATEGY_NAMES, QUESTION_TYPE_LABELS
+    STRATEGY_ICONS, STRATEGY_NAMES, QUESTION_TYPE_LABELS,
+    get _nextChapter() { return _nextChapter; }
   };
 })();
