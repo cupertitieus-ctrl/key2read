@@ -1934,26 +1934,24 @@ function renderStudentDashboard() {
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px">
       <div class="list-card" style="padding:24px">
-        <h3 style="margin-bottom:16px">${IC.fire} Reading Streak</h3>
-        <div style="text-align:center;padding:20px 0">
-          <div style="width:48px;height:48px;margin:0 auto 4px;color:var(--orange,#F59E0B)">${IC.fire}</div>
-          <div style="font-size:2.5rem;font-weight:800;color:var(--navy)">${parseInt(s.streak) || 0}</div>
-          <div style="color:var(--g500);margin-top:4px">${parseInt(s.streak) > 0 ? 'Keep it going!' : 'Start reading to build your streak!'}</div>
+        <h3 style="margin-bottom:16px;font-size:1rem;font-weight:700">Reading Streak</h3>
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+          <div style="font-size:2.25rem;font-weight:800;color:var(--navy)">${parseInt(s.streak) || 0}</div>
+          <div style="color:var(--g500);font-size:0.875rem">${parseInt(s.streak) > 0 ? 'day streak! Keep it going!' : 'days. Start reading to build your streak!'}</div>
         </div>
-        <div style="display:flex;gap:6px;justify-content:center;margin-top:12px">
+        <div style="display:flex;gap:6px;justify-content:center">
           ${['M','T','W','T','F','S','S'].map((d, i) => { const streakNum = parseInt(s.streak) || 0; return `<div style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:600;${i < Math.min(streakNum, 7) ? 'background:var(--gold-p);color:var(--gold);border:2px solid var(--gold)' : 'background:var(--g100);color:var(--g400);border:2px solid var(--g200)'}">${d}</div>`; }).join('')}
         </div>
       </div>
 
       <div class="list-card" style="padding:24px">
-        <h3 style="margin-bottom:16px">${IC.bag} Class Store</h3>
-        <div style="text-align:center;padding:20px 0">
-          <div style="width:48px;height:48px;margin:0 auto 4px;color:var(--gold)">${IC.key}</div>
-          <div style="font-size:2.5rem;font-weight:800;color:var(--navy)">${s.keys}</div>
-          <div style="color:var(--g500);margin-top:4px">Keys to spend</div>
+        <h3 style="margin-bottom:16px;font-size:1rem;font-weight:700">Class Store</h3>
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+          <div style="font-size:2.25rem;font-weight:800;color:var(--navy)">${s.keys}</div>
+          <div style="color:var(--g500);font-size:0.875rem">Keys to spend</div>
         </div>
-        <div style="text-align:center">
-          <button class="btn btn-sm btn-outline" onclick="navigate('store')">${IC.bag} Visit Store</button>
+        <div>
+          <button class="btn btn-sm btn-outline" onclick="navigate('store')">Visit Store</button>
         </div>
       </div>
     </div>
@@ -1981,7 +1979,7 @@ function renderStudentDashboard() {
 
     ${!s.onboarded ? `
     <div class="interest-cta-card" style="margin-top:24px">
-      <h3 style="margin-bottom:8px">${IC.heart} Personalize Your Experience!</h3>
+      <h3 style="margin-bottom:8px">Personalize Your Experience!</h3>
       <p style="margin-bottom:16px">Tell us about your interests so we can make your quizzes more fun!</p>
       <button class="btn btn-primary" onclick="onboardingStudent=${s.id}; onboardingStep=0; openModal('onboarding')">Set Up My Profile</button>
     </div>` : ''}
