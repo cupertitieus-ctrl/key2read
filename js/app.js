@@ -375,10 +375,7 @@ function renderSidebar() {
                     (currentUser?.grade || '4th') + ' Grade Teacher';
 
   let html = `
-    <div class="sidebar-brand" ${userRole === 'guest' ? 'onclick="navigate(\'guest-browse\')" style="cursor:pointer"' : ''}>
-      <img src="/public/logo.png" alt="key2read" style="height:40px;width:auto;background:#fff;border-radius:8px;padding:4px 10px">
-    </div>
-    <nav class="sidebar-nav">`;
+    <nav class="sidebar-nav" style="margin-top:12px">`;
 
   items.forEach(item => {
     if (item.section) {
@@ -420,12 +417,16 @@ function renderHeader() {
   const main = document.querySelector('.dash-main');
   const dashboard = document.querySelector('.dashboard');
   if (userRole === 'guest') {
-    header.innerHTML = '';
-    header.style.display = 'none';
-    // Make main span both grid rows when header is hidden
-    dashboard.style.gridTemplateRows = '1fr';
-    main.style.gridRow = '1 / -1';
-    main.style.maxHeight = '100vh';
+    header.style.display = '';
+    dashboard.style.gridTemplateRows = '';
+    main.style.gridRow = '';
+    main.style.maxHeight = '';
+    header.innerHTML = `
+      <div style="display:flex;align-items:center;padding-left:8px">
+        <img src="/public/logo.png" alt="key2read" style="height:36px;width:auto;cursor:pointer" onclick="navigate('guest-browse')">
+      </div>
+      <div></div>
+      <div></div>`;
     return;
   }
   header.style.display = '';
@@ -1160,7 +1161,6 @@ function renderGuestBrowse() {
   return `
     <div style="padding:8px 0 24px">
       <div style="text-align:center;margin-bottom:28px">
-        <img src="/public/logo.png" alt="key2read" style="height:56px;width:auto;margin-bottom:12px">
         <h2 style="margin:0 0 4px;color:var(--navy);font-size:1.5rem">Browse Books & Take Quizzes</h2>
         <p style="color:var(--g500);margin:0;font-size:0.9375rem">No account needed — pick a book and start reading!</p>
       </div>
