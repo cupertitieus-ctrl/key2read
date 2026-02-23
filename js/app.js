@@ -582,10 +582,6 @@ async function launchQuiz(bookId, chapterNum, sid) {
       if (!completedChapters.includes(chapterNum)) {
         completedChapters.push(chapterNum);
       }
-      // Guest paywall: show save progress prompt
-      if (userRole === 'guest') {
-        showGuestPaywall(results);
-      }
     }, nextChapterInfo);
     QuizEngine.render();
   } catch(e) {
@@ -1551,9 +1547,6 @@ async function launchFullBookQuiz(bookId, sid) {
           currentUser.accuracy = oldQuizzes > 0 ? Math.round((oldAcc * oldQuizzes + results.score) / currentUser.quizzes_completed) : Math.round(results.score);
         }
       }
-      if (userRole === 'guest') {
-        showGuestPaywall(results);
-      }
     }, null);
     QuizEngine.render();
   } catch(e) {
@@ -1561,37 +1554,45 @@ async function launchFullBookQuiz(bookId, sid) {
   }
 }
 
-// ---- Guest Paywall (show after quiz completion) ----
-function showGuestPaywall(results) {
+// ---- Gated Persistence Modal (shown only when guest tries to save/keep/track) ----
+function showPersistenceGate(action) {
   const modal = document.getElementById('modal-root-2');
   if (!modal) return;
-  const score = Math.round(results.score || 0);
-  const keys = results.keysEarned || 0;
+
+  const messages = {
+    save: {
+      icon: '📊',
+      title: 'Save Your Progress',
+      desc: 'Create a free account to save your quiz scores and track your reading growth over time.'
+    },
+    keys: {
+      icon: '🔑',
+      title: 'Keep Your Keys',
+      desc: 'Create a free account to collect keys and spend them in your classroom store.'
+    },
+    history: {
+      icon: '📚',
+      title: 'View Your Reading History',
+      desc: 'Create a free account to see all your past quizzes, scores, and reading progress.'
+    },
+    certificate: {
+      icon: '🏆',
+      title: 'Print Your Certificate',
+      desc: 'Create a free account to download and print certificates for your achievements.'
+    }
+  };
+
+  const msg = messages[action] || messages.save;
+
   modal.innerHTML = `
-    <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)this.innerHTML=''">
-      <div style="background:#fff;border-radius:20px;max-width:420px;width:100%;padding:36px 32px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2);position:relative">
-        <img src="/public/logo.png" alt="key2read" style="height:48px;width:auto;margin-bottom:16px">
-        <h2 style="margin:0 0 8px;color:var(--navy);font-size:1.375rem">Great Job! You scored ${score}%</h2>
-        <p style="color:var(--g500);margin:0 0 20px;font-size:0.9375rem">You earned <strong style="color:#F59E0B">${keys} keys</strong> this quiz!</p>
-        <div style="background:var(--blue-p, #eff6ff);border-radius:12px;padding:20px;margin-bottom:24px;text-align:left">
-          <p style="margin:0 0 12px;font-weight:700;color:var(--navy);font-size:1rem">Create an account to:</p>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <div style="display:flex;align-items:center;gap:8px;font-size:0.9375rem;color:var(--g700)">
-              <span style="color:#10B981;font-size:1.125rem">✓</span> Save your quiz scores and progress
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;font-size:0.9375rem;color:var(--g700)">
-              <span style="color:#10B981;font-size:1.125rem">✓</span> Earn and keep your keys
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;font-size:0.9375rem;color:var(--g700)">
-              <span style="color:#10B981;font-size:1.125rem">✓</span> Track your reading level growth
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;font-size:0.9375rem;color:var(--g700)">
-              <span style="color:#10B981;font-size:1.125rem">✓</span> Unlock badges and rewards
-            </div>
-          </div>
-        </div>
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)document.getElementById('modal-root-2').innerHTML=''">
+      <div style="background:#fff;border-radius:20px;max-width:420px;width:100%;padding:40px 32px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2);position:relative">
+        <div style="font-size:2.5rem;margin-bottom:12px">${msg.icon}</div>
+        <img src="/public/logo.png" alt="key2read" style="height:36px;width:auto;margin-bottom:20px">
+        <h2 style="margin:0 0 10px;color:var(--navy);font-size:1.375rem">${msg.title}</h2>
+        <p style="color:var(--g500);margin:0 0 28px;font-size:0.9375rem;line-height:1.6">${msg.desc}</p>
         <a href="signup.html" class="btn btn-primary" style="width:100%;text-align:center;text-decoration:none;font-size:1rem;padding:14px 24px;margin-bottom:12px;display:block">Create Free Account</a>
-        <button onclick="document.getElementById('modal-root-2').innerHTML=''" style="background:none;border:none;color:var(--g400);cursor:pointer;font-size:0.875rem;padding:8px">Continue browsing</button>
+        <button onclick="document.getElementById('modal-root-2').innerHTML=''" style="background:none;border:none;color:var(--g400);cursor:pointer;font-size:0.875rem;padding:8px">Maybe later</button>
       </div>
     </div>`;
 }
@@ -2975,6 +2976,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Guest mode — skip teacher/student data loading
   if (userRole === 'guest') {
+    // Check for deep-link from landing page search (e.g. ?book=56)
+    const params = new URLSearchParams(window.location.search);
+    const bookParam = params.get('book');
+    if (bookParam) {
+      page = 'book-detail';
+      renderSidebar();
+      renderHeader();
+      openBook(parseInt(bookParam));
+      return;
+    }
     page = 'guest-browse';
     renderSidebar();
     renderHeader();

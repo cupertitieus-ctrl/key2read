@@ -383,11 +383,16 @@ const QuizEngine = (function() {
                 ${r.readingLevelChange >= 0 ? '↑' : '↓'} ${Math.abs(r.readingLevelChange)} pts
               </div>
               <div class="quiz-results-stat-label">Reading Score</div>
-              <div class="quiz-results-stat-sub">${r.newReadingScore}L (Level ${r.newReadingLevel})</div>
+              ${currentStudent
+                ? `<div class="quiz-results-stat-sub">${r.newReadingScore}L (Level ${r.newReadingLevel})</div>`
+                : `<button class="btn btn-sm btn-outline" style="margin-top:6px;font-size:0.75rem" onclick="showPersistenceGate('save')">Save Score</button>`}
             </div>
             <div class="quiz-results-stat">
               <div class="quiz-results-stat-value" style="color:#F59E0B">🔑 ${r.keysEarned}</div>
               <div class="quiz-results-stat-label">Keys Earned</div>
+              ${!currentStudent
+                ? `<button class="btn btn-sm btn-outline" style="margin-top:6px;font-size:0.75rem" onclick="showPersistenceGate('keys')">Keep Keys</button>`
+                : ''}
             </div>
           </div>
 
@@ -461,8 +466,12 @@ const QuizEngine = (function() {
       // Submit quiz
       const timeTaken = Math.round((Date.now() - quizStartTime) / 1000);
       try {
+        if (!currentStudent) {
+          // Guest mode: skip API call, use local scoring
+          throw new Error('guest-local');
+        }
         quizResults = await API.submitQuiz({
-          studentId: currentStudent?.id || 1,
+          studentId: currentStudent.id,
           chapterId: currentQuiz.chapter.id,
           answers,
           timeTaken

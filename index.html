@@ -35,11 +35,15 @@
       Now powered by AI quiz generation
     </div>
     <h1>Reading comprehension that kids <span class="gradient-text">love</span> and teachers <span class="gradient-text">trust</span></h1>
-    <p>Students read books, take AI-generated quizzes, earn Keys, and grow their reading scores &mdash; while teachers track everything in real time.</p>
-    <div class="hero-actions">
-      <a href="pages/dashboard.html" class="btn btn-primary btn-lg">Guest Mode</a>
-      <a href="pages/signup.html" class="btn btn-outline btn-lg">Sign Up</a>
+    <p>Find a book, take a quiz, and start reading today &mdash; no sign-up required. Teachers get real-time analytics &amp; growth tracking.</p>
+    <div class="hero-search" id="hero-search">
+      <div class="hero-search-input-wrap">
+        <svg class="hero-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="landing-search-input" placeholder="Search for a book title, author, or genre..." autocomplete="off" spellcheck="false">
+      </div>
+      <div class="hero-search-results" id="hero-search-results"></div>
     </div>
+    <p class="hero-browse-link">or <a href="pages/dashboard.html">browse all books</a></p>
     <div class="hero-stats">
       <div class="hero-stat">
         <strong>25,000+</strong>
@@ -203,8 +207,8 @@
   <div class="how-steps stagger">
     <div class="how-step animate-slide-up">
       <div class="step-number">1</div>
-      <h3>Sign Up &amp; Add Students</h3>
-      <p>Create your free teacher account, set up your class, and invite students with a class code or roster upload.</p>
+      <h3>Find a Book</h3>
+      <p>Search our growing library of chapter books, pick one at your reading level, and jump straight into a quiz &mdash; no account needed.</p>
     </div>
     <div class="how-step animate-slide-up">
       <div class="step-number">2</div>
@@ -264,7 +268,7 @@
           <span>Multi-grade level support (K-12)</span>
         </div>
       </div>
-      <a href="pages/dashboard.html" class="btn btn-outline w-full">Try Guest Mode</a>
+      <a href="pages/dashboard.html" class="btn btn-outline w-full">Try Free</a>
     </div>
     <!-- School -->
     <div class="pricing-card popular animate-slide-up">
@@ -309,7 +313,7 @@
           <span>Google Classroom integration</span>
         </div>
       </div>
-      <a href="pages/dashboard.html" class="btn btn-primary w-full">Try Guest Mode</a>
+      <a href="pages/dashboard.html" class="btn btn-primary w-full">Try Free</a>
     </div>
     <!-- District -->
     <div class="pricing-card animate-slide-up">
@@ -361,7 +365,7 @@
 <section class="cta-section">
   <div class="cta-box">
     <h2>Ready to transform reading in your classroom?</h2>
-    <p>Join thousands of families, teachers, and districts using key2read to build stronger readers. Try Guest Mode or sign up today.</p>
+    <p>Join thousands of families, teachers, and districts using key2read to build stronger readers. Start reading now or create a teacher account for full analytics.</p>
     <a href="pages/signup.html" class="btn btn-gold btn-lg">Get Started Free</a>
   </div>
 </section>
@@ -382,5 +386,6 @@
   </div>
 </footer>
 
+<script src="js/landing-search.js"></script>
 </body>
 </html>
