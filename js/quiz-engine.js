@@ -408,38 +408,47 @@ const QuizEngine = (function() {
             <h2>${r.score >= 80 ? '🎉 Excellent Work!' : r.score >= 60 ? '👏 Good Effort!' : '💪 Keep Practicing!'}</h2>
           </div>
 
-          <div class="quiz-results-stats">
-            <div class="quiz-results-stat">
-              <div class="quiz-results-stat-value" style="color:${r.readingLevelChange >= 0 ? '#10B981' : '#EF4444'}">
-                ${r.readingLevelChange >= 0 ? '↑' : '↓'} ${Math.abs(r.readingLevelChange)} pts
-              </div>
-              <div class="quiz-results-stat-label">Reading Score</div>
-              ${currentStudent
-                ? `<div class="quiz-results-stat-sub">${r.newReadingScore}L (Level ${r.newReadingLevel})</div>`
-                : `<button class="btn btn-sm btn-outline" style="margin-top:6px;font-size:0.75rem" onclick="showPersistenceGate('save')">Save Score</button>`}
-            </div>
-            <div class="quiz-results-stat">
-              <div class="quiz-results-stat-value" style="color:#F59E0B">🔑 ${r.keysEarned}</div>
-              <div class="quiz-results-stat-label">Keys Earned</div>
-              ${!currentStudent
-                ? `<button class="btn btn-sm btn-outline" style="margin-top:6px;font-size:0.75rem" onclick="showPersistenceGate('keys')">Keep Keys</button>`
-                : ''}
-            </div>
+          <div class="quiz-results-keys-hero">
+            <div class="quiz-results-keys-sparkle quiz-results-keys-sparkle--1">✨</div>
+            <div class="quiz-results-keys-sparkle quiz-results-keys-sparkle--2">✨</div>
+            <div class="quiz-results-key-icon">🔑</div>
+            <div class="quiz-results-key-count">${r.keysEarned}</div>
+            <div class="quiz-results-key-label">Keys Earned</div>
+            ${!currentStudent
+              ? `<button class="btn btn-sm btn-outline" style="margin-top:8px;font-size:0.75rem" onclick="showPersistenceGate('keys')">Keep Keys</button>`
+              : ''}
+          </div>
+
+          <div class="quiz-results-reading-score">
+            <span class="quiz-results-reading-delta" style="color:${r.readingLevelChange >= 0 ? '#10B981' : '#EF4444'}">
+              ${r.readingLevelChange >= 0 ? '↑' : '↓'} ${Math.abs(r.readingLevelChange)} pts
+            </span>
+            <span class="quiz-results-reading-label">Reading Score</span>
+            ${currentStudent
+              ? `<span class="quiz-results-reading-detail">${r.newReadingScore}L (Level ${r.newReadingLevel})</span>`
+              : `<button class="btn btn-sm btn-outline" style="font-size:0.75rem;padding:4px 10px" onclick="showPersistenceGate('save')">Save</button>`}
           </div>
 
           <div class="quiz-results-breakdown">
-            <h4>Question Breakdown</h4>
-            ${r.results.map((res, i) => {
-              const q = currentQuiz.questions[i];
-              return `
-                <div class="quiz-result-item ${res.isCorrect ? 'correct' : 'incorrect'}">
-                  <div class="quiz-result-icon">${res.isCorrect ? '✅' : '❌'}</div>
-                  <div class="quiz-result-info">
-                    <div class="quiz-result-text">${escapeHtml((q.personalized_text || q.question_text).substring(0, 80))}...</div>
+            <div class="quiz-results-summary">
+              <span class="quiz-results-summary-correct">✅ ${r.correctCount} correct</span>
+              <span class="quiz-results-summary-wrong">❌ ${r.totalQuestions - r.correctCount} wrong</span>
+            </div>
+            ${(r.totalQuestions - r.correctCount) > 0 ? `
+            <button class="quiz-results-expand-btn" onclick="this.parentElement.classList.toggle('expanded');this.textContent=this.parentElement.classList.contains('expanded')?'Hide Details':'See Which Ones'">See Which Ones</button>
+            <div class="quiz-results-detail-list">
+              ${r.results.map((res, i) => {
+                const q = currentQuiz.questions[i];
+                return \`
+                  <div class="quiz-result-item \${res.isCorrect ? 'correct' : 'incorrect'}">
+                    <div class="quiz-result-icon">\${res.isCorrect ? '✅' : '❌'}\${res.hintUsed ? ' <span class="quiz-result-retry" title="Used a hint">🔄</span>' : ''}</div>
+                    <div class="quiz-result-info">
+                      <div class="quiz-result-text">\${escapeHtml((q.personalized_text || q.question_text).substring(0, 80))}...</div>
+                    </div>
                   </div>
-                </div>
-              `;
-            }).join('')}
+                \`;
+              }).join('')}
+            </div>` : ''}
           </div>
 
           <div class="quiz-results-actions" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
