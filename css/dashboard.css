@@ -2586,3 +2586,165 @@
     margin-top: 12px;
   }
 }
+
+/* ---- Book Completion Celebration ---- */
+.celebration-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+.celebration-modal {
+  background: #fff;
+  border-radius: 20px;
+  max-width: 480px;
+  width: 100%;
+  padding: 40px 32px 28px;
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
+  animation: scaleIn 0.3s ease;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.celebration-modal--cert {
+  max-width: 520px;
+}
+
+.celebration-icon {
+  font-size: 3rem;
+  margin-bottom: 8px;
+}
+
+.celebration-title {
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin: 0 0 8px;
+}
+
+.celebration-message {
+  color: #666;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  margin: 0 0 24px;
+}
+
+.celebration-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.celebration-actions .btn {
+  min-width: 160px;
+  font-size: 1rem;
+  padding: 14px 24px;
+}
+
+.celebration-dismiss {
+  background: none;
+  border: none;
+  color: var(--g400);
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 8px;
+  display: block;
+  margin: 0 auto;
+}
+
+.celebration-dismiss:hover {
+  color: var(--g600);
+}
+
+/* Certificate Preview Card */
+.celebration-cert-preview {
+  margin: 0 0 24px;
+  padding: 3px;
+  background: linear-gradient(135deg, #4A3AA3, #8B5CF6, #C084FC, #8B5CF6, #4A3AA3);
+  border-radius: 14px;
+}
+
+.celebration-cert-inner {
+  background: linear-gradient(135deg, #FEFCE8 0%, #FFF7ED 50%, #FEFCE8 100%);
+  border-radius: 12px;
+  padding: 28px 24px 20px;
+}
+
+.celebration-cert-badge {
+  font-size: 2rem;
+  margin-bottom: 6px;
+}
+
+.celebration-cert-title {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 10px;
+  letter-spacing: 0.02em;
+}
+
+.celebration-cert-desc {
+  color: #888;
+  font-size: 0.8125rem;
+  margin: 2px 0;
+}
+
+.celebration-cert-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 4px 0;
+}
+
+.celebration-cert-book {
+  font-size: 1.05rem;
+  font-style: italic;
+  color: #4A3AA3;
+  font-weight: 600;
+  margin: 4px 0;
+}
+
+.celebration-cert-author {
+  font-size: 0.8125rem;
+  color: #888;
+  margin: 2px 0 10px;
+}
+
+.celebration-cert-meta {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 12px;
+}
+
+.celebration-cert-brand {
+  margin-top: 14px;
+  opacity: 0.7;
+}
+
+@media (max-width: 600px) {
+  .celebration-modal {
+    padding: 28px 20px 20px;
+  }
+  .celebration-cert-inner {
+    padding: 20px 16px 16px;
+  }
+  .celebration-actions .btn {
+    min-width: 140px;
+    padding: 12px 20px;
+    font-size: 0.9375rem;
+  }
+}

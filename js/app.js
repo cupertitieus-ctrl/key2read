@@ -1,5 +1,11 @@
 /* ===== KEY2READ DASHBOARD SPA ===== */
 
+// ---- Utility: HTML Escaping ----
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 // ---- Grade Level Display Helper ----
 function displayGradeLevel(level) {
   if (!level) return '';
@@ -588,6 +594,10 @@ async function launchQuiz(bookId, chapterNum, sid) {
       // Update completed chapters so next chapter unlocks
       if (!completedChapters.includes(chapterNum)) {
         completedChapters.push(chapterNum);
+      }
+      // Check if ALL chapters for this book are now completed
+      if (completedChapters.length >= bookChapters.length && bookChapters.length > 0) {
+        setTimeout(() => showBookCompletionCelebration(book, results), 600);
       }
     }, nextChapterInfo);
     QuizEngine.render();
@@ -1554,6 +1564,8 @@ async function launchFullBookQuiz(bookId, sid) {
           currentUser.accuracy = oldQuizzes > 0 ? Math.round((oldAcc * oldQuizzes + results.score) / currentUser.quizzes_completed) : Math.round(results.score);
         }
       }
+      // Full book quiz = book is complete
+      setTimeout(() => showBookCompletionCelebration(book, results), 600);
     }, null);
     QuizEngine.render();
   } catch(e) {
@@ -1602,6 +1614,252 @@ function showPersistenceGate(action) {
         <button onclick="document.getElementById('modal-root-2').innerHTML=''" style="background:none;border:none;color:var(--g400);cursor:pointer;font-size:0.875rem;padding:8px">Maybe later</button>
       </div>
     </div>`;
+}
+
+// ---- Book Completion Celebration + Certificate ----
+function showBookCompletionCelebration(book, results) {
+  const modal = document.getElementById('modal-root-2');
+  if (!modal) return;
+
+  // Fire confetti burst if library is loaded
+  if (typeof confetti === 'function') {
+    confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+    setTimeout(() => confetti({ particleCount: 60, spread: 100, origin: { y: 0.5 } }), 300);
+  }
+
+  let content;
+  if (!currentUser) {
+    content = buildGuestCelebration(book);
+  } else if (currentUser.plan === false) {
+    // Future-proofed: currently all auth users treated as active
+    content = buildLockedCelebration(book);
+  } else {
+    content = buildCertificateCelebration(book, results);
+  }
+
+  modal.innerHTML = `
+    <div class="celebration-overlay" onclick="if(event.target===this)closeCelebration()">
+      ${content}
+    </div>`;
+}
+
+function buildGuestCelebration(book) {
+  const title = book.title || 'the Book';
+  return `
+    <div class="celebration-modal">
+      <div class="celebration-icon">🎉</div>
+      <h2 class="celebration-title">You Finished ${escapeHtml(title)}!</h2>
+      <p class="celebration-message">Amazing work completing all the quizzes! Create a free account to save your progress, earn certificates, and track your reading growth.</p>
+      <div class="celebration-actions">
+        <a href="signup.html" class="btn btn-primary" style="text-decoration:none;flex:1;text-align:center">Create Free Account</a>
+      </div>
+      <button class="celebration-dismiss" onclick="closeCelebration()">Maybe later</button>
+    </div>`;
+}
+
+function buildLockedCelebration(book) {
+  const title = book.title || 'the Book';
+  return `
+    <div class="celebration-modal">
+      <div class="celebration-icon">🎉</div>
+      <h2 class="celebration-title">You Finished ${escapeHtml(title)}!</h2>
+      <p class="celebration-message">Great job! Upgrade your plan to download and print your achievement certificate.</p>
+      <div class="celebration-actions">
+        <a href="pricing.html" class="btn btn-primary" style="text-decoration:none;flex:1;text-align:center">View Plans</a>
+      </div>
+      <button class="celebration-dismiss" onclick="closeCelebration()">Maybe later</button>
+    </div>`;
+}
+
+function buildCertificateCelebration(book, results) {
+  const title = book.title || 'the Book';
+  const author = book.author || '';
+  const studentName = currentUser.name || 'Student';
+  const score = results ? Math.round(results.score) : 0;
+  const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  return `
+    <div class="celebration-modal celebration-modal--cert">
+      <div class="celebration-icon">🎉</div>
+      <h2 class="celebration-title">You Finished ${escapeHtml(title)}!</h2>
+      <p class="celebration-message">Congratulations! Here's your achievement certificate.</p>
+
+      <div class="celebration-cert-preview">
+        <div class="celebration-cert-inner">
+          <div class="celebration-cert-badge">🏆</div>
+          <h3 class="celebration-cert-title">Certificate of Achievement</h3>
+          <p class="celebration-cert-desc">This certifies that</p>
+          <p class="celebration-cert-name">${escapeHtml(studentName)}</p>
+          <p class="celebration-cert-desc">has successfully completed all quizzes for</p>
+          <p class="celebration-cert-book">${escapeHtml(title)}</p>
+          ${author ? `<p class="celebration-cert-author">by ${escapeHtml(author)}</p>` : ''}
+          <div class="celebration-cert-meta">
+            <span>${dateStr}</span>
+            <span>Score: ${score}%</span>
+          </div>
+          <div class="celebration-cert-brand">
+            <img src="/public/logo.png" alt="key2read" style="height:24px;width:auto">
+          </div>
+        </div>
+      </div>
+
+      <div class="celebration-actions">
+        <button class="btn btn-primary" onclick="downloadCertificatePDF()">Download PDF</button>
+        <button class="btn btn-outline" onclick="printCertificate()">Print Certificate</button>
+      </div>
+      <button class="celebration-dismiss" onclick="closeCelebration()">Close</button>
+    </div>`;
+}
+
+function closeCelebration() {
+  const modal = document.getElementById('modal-root-2');
+  if (modal) modal.innerHTML = '';
+}
+
+function downloadCertificatePDF() {
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    alert('PDF library not loaded. Please try again.');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const w = 297, h = 210;
+  const book = books.find(b => b.id === selectedBookId) || { title: 'Book', author: '' };
+  const studentName = currentUser?.name || 'Student';
+  const score = document.querySelector('.celebration-cert-meta span:last-child')?.textContent || '';
+  const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  // Background
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, w, h, 'F');
+
+  // Decorative border — outer
+  doc.setDrawColor(74, 58, 163); // purple brand
+  doc.setLineWidth(2);
+  doc.rect(10, 10, w - 20, h - 20);
+
+  // Decorative border — inner
+  doc.setDrawColor(139, 92, 246);
+  doc.setLineWidth(0.5);
+  doc.rect(14, 14, w - 28, h - 28);
+
+  // Trophy emoji as text
+  doc.setFontSize(32);
+  doc.text('🏆', w / 2, 40, { align: 'center' });
+
+  // Title
+  doc.setFontSize(28);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(26, 26, 46);
+  doc.text('Certificate of Achievement', w / 2, 56, { align: 'center' });
+
+  // Divider line
+  doc.setDrawColor(139, 92, 246);
+  doc.setLineWidth(0.3);
+  doc.line(w / 2 - 50, 62, w / 2 + 50, 62);
+
+  // "This certifies that"
+  doc.setFontSize(13);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 100, 100);
+  doc.text('This certifies that', w / 2, 74, { align: 'center' });
+
+  // Student name
+  doc.setFontSize(24);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(26, 26, 46);
+  doc.text(studentName, w / 2, 88, { align: 'center' });
+
+  // "has successfully completed all quizzes for"
+  doc.setFontSize(13);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 100, 100);
+  doc.text('has successfully completed all quizzes for', w / 2, 100, { align: 'center' });
+
+  // Book title
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bolditalic');
+  doc.setTextColor(74, 58, 163);
+  doc.text(book.title || 'Book', w / 2, 114, { align: 'center' });
+
+  // Author
+  if (book.author) {
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(120, 120, 120);
+    doc.text('by ' + book.author, w / 2, 124, { align: 'center' });
+  }
+
+  // Date and score
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 100, 100);
+  doc.text(dateStr, w / 2 - 30, 145, { align: 'center' });
+  doc.text(score, w / 2 + 30, 145, { align: 'center' });
+
+  // Branding
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(74, 58, 163);
+  doc.text('key2read', w / 2, 175, { align: 'center' });
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(150, 150, 150);
+  doc.text('Building Critical Thinking Skills Through Reading', w / 2, 181, { align: 'center' });
+
+  // Save
+  const safeTitle = (book.title || 'Book').replace(/[^a-zA-Z0-9]/g, '-');
+  doc.save(`${safeTitle}-Certificate.pdf`);
+}
+
+function printCertificate() {
+  const book = books.find(b => b.id === selectedBookId) || { title: 'Book', author: '' };
+  const studentName = currentUser?.name || 'Student';
+  const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const scoreEl = document.querySelector('.celebration-cert-meta span:last-child');
+  const score = scoreEl ? scoreEl.textContent : '';
+
+  const html = `<!DOCTYPE html><html><head><title>Certificate</title>
+    <style>
+      @page { size: landscape; margin: 0; }
+      body { margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: Georgia, 'Times New Roman', serif; background: #fff; }
+      .cert { width: 267mm; height: 180mm; border: 3px solid #4A3AA3; padding: 30px; text-align: center; position: relative; box-sizing: border-box; }
+      .cert::after { content: ''; position: absolute; inset: 6px; border: 1px solid #8B5CF6; pointer-events: none; }
+      .trophy { font-size: 48px; margin-bottom: 8px; }
+      h1 { font-size: 32px; color: #1a1a2e; margin: 0 0 8px; font-weight: 700; }
+      .subtitle { color: #888; font-size: 14px; margin: 12px 0 4px; }
+      .name { font-size: 28px; color: #1a1a2e; font-weight: 700; margin: 4px 0; }
+      .book-title { font-size: 22px; color: #4A3AA3; font-style: italic; margin: 4px 0; }
+      .author { font-size: 14px; color: #888; margin: 4px 0; }
+      .meta { font-size: 12px; color: #888; margin-top: 20px; display: flex; justify-content: center; gap: 40px; }
+      .brand { margin-top: 20px; font-size: 12px; color: #4A3AA3; font-weight: 700; }
+      .brand-sub { font-size: 9px; color: #aaa; }
+    </style>
+  </head><body>
+    <div class="cert">
+      <div class="trophy">🏆</div>
+      <h1>Certificate of Achievement</h1>
+      <p class="subtitle">This certifies that</p>
+      <p class="name">${studentName}</p>
+      <p class="subtitle">has successfully completed all quizzes for</p>
+      <p class="book-title">${book.title || 'Book'}</p>
+      ${book.author ? `<p class="author">by ${book.author}</p>` : ''}
+      <div class="meta"><span>${dateStr}</span><span>${score}</span></div>
+      <div class="brand">key2read</div>
+      <div class="brand-sub">Building Critical Thinking Skills Through Reading</div>
+    </div>
+  </body></html>`;
+
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none';
+  document.body.appendChild(iframe);
+  iframe.contentDocument.open();
+  iframe.contentDocument.write(html);
+  iframe.contentDocument.close();
+  setTimeout(() => {
+    iframe.contentWindow.print();
+    setTimeout(() => iframe.remove(), 1000);
+  }, 300);
 }
 
 // ---- Page: Celebrate Students ----
