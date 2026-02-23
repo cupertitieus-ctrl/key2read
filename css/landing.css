@@ -160,42 +160,6 @@
   animation: slideUp 0.6s var(--ease-out) 0.3s both;
 }
 
-.hero-stats {
-  display: flex;
-  justify-content: center;
-  gap: 40px;
-  animation: slideUp 0.6s var(--ease-out) 0.4s both;
-  padding: 24px 40px;
-  background: rgba(255,255,255,.7);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(226,232,240,.5);
-  border-radius: var(--radius-lg);
-  display: inline-flex;
-}
-
-.hero-stat {
-  text-align: center;
-  padding: 0 8px;
-}
-
-.hero-stat strong {
-  display: block;
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--navy);
-  letter-spacing: -0.03em;
-}
-
-.hero-stat span {
-  font-size: 0.75rem;
-  color: var(--g400);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
 /* --- Book Library --- */
 .library-section {
   padding: 20px 32px 80px;
@@ -1016,12 +980,6 @@
 
   .hero h1 {
     font-size: 2.5rem;
-  }
-
-  .hero-stats {
-    flex-wrap: wrap;
-    gap: 20px;
-    padding: 20px;
   }
 
   .features-grid {
