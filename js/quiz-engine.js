@@ -46,7 +46,7 @@ const QuizEngine = (function() {
   };
 
   // ─── Contextual Vocabulary Dictionary ───
-  // Words that may increase cognitive load for K-2 readers, with 6-year-old-friendly definitions
+  // Words that may increase cognitive load for young readers (Ages 6-10), with friendly definitions
   const CONTEXTUAL_VOCAB = {
     // Abstract concepts
     'special': { word: 'special', definition: 'Not like everything else — really important or different', pos: 'adjective' },
@@ -202,6 +202,13 @@ const QuizEngine = (function() {
         }
       });
       QuizEngine._tapAwayBound = true;
+    }
+    // Show vocab helper popup once (unless dismissed permanently)
+    const vocabDismissed = localStorage.getItem('k2r_vocab_popup_dismissed');
+    if (!vocabDismissed) {
+      render();
+      showVocabHelperPopup();
+      return;
     }
     render();
   }
@@ -425,6 +432,48 @@ const QuizEngine = (function() {
     currentQuestion = 0;
     questionStartTime = Date.now();
     render();
+  }
+
+  function showVocabHelperPopup(afterDismiss) {
+    const overlay = document.createElement('div');
+    overlay.id = 'vocab-helper-popup';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.2s ease';
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:20px;max-width:440px;width:100%;padding:36px 32px 28px;text-align:center;box-shadow:0 24px 48px rgba(0,0,0,0.15);position:relative;animation:scaleIn 0.25s ease">
+        <div style="font-size:2.5rem;margin-bottom:12px">👋</div>
+        <h2 style="font-family:var(--font-display,sans-serif);font-size:1.4rem;font-weight:800;color:#1a1a2e;margin-bottom:12px;letter-spacing:-0.02em">Before You Begin!</h2>
+        <p style="color:#555;font-size:0.95rem;line-height:1.6;margin-bottom:8px">
+          Some words in the quiz may be <span style="background:linear-gradient(120deg,#FEF3C7 0%,#FDE68A 100%);padding:2px 6px;border-radius:4px;font-weight:600">highlighted</span>. If you tap a highlighted word, you'll see a simple explanation to help you understand the question better.
+        </p>
+        <p style="color:#555;font-size:0.95rem;line-height:1.6;margin-bottom:24px">
+          These highlights are here to help you think and solve problems.
+        </p>
+        <p style="color:#7C3AED;font-weight:700;font-size:1rem;margin-bottom:24px">Ready? Let's start!</p>
+        <button id="vocab-popup-start" class="btn btn-primary btn-lg" style="width:100%;margin-bottom:16px;font-size:1rem;padding:14px 24px">Start Quiz</button>
+        <label style="display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;color:#888;font-size:0.8rem">
+          <input type="checkbox" id="vocab-popup-dismiss" style="width:16px;height:16px;cursor:pointer">
+          Don't show this again
+        </label>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    document.getElementById('vocab-popup-start').addEventListener('click', function() {
+      const dismiss = document.getElementById('vocab-popup-dismiss');
+      if (dismiss && dismiss.checked) {
+        localStorage.setItem('k2r_vocab_popup_dismissed', '1');
+      }
+      overlay.remove();
+      if (afterDismiss) afterDismiss();
+    });
+
+    // Also allow clicking outside to dismiss and start
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) {
+        overlay.remove();
+        if (afterDismiss) afterDismiss();
+      }
+    });
   }
 
   function selectAnswer(idx) {

@@ -1,5 +1,12 @@
 /* ===== KEY2READ DASHBOARD SPA ===== */
 
+// ---- Grade Level Display Helper ----
+function displayGradeLevel(level) {
+  if (!level) return '';
+  const map = { 'K-2': 'Ages 6–10', 'k-2': 'Ages 6–10', 'K–2': 'Ages 6–10' };
+  return map[level] || level;
+}
+
 // ---- SVG Icons (stroke-based, no emoji) ----
 const IC = {
   key: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="4"/><path d="M10.5 10.5L21 21"/><path d="M16 16l5 0"/><path d="M19 13l0 6"/></svg>',
@@ -363,7 +370,7 @@ function renderSidebar() {
       { id: 'library',    icon: IC.book,  label: 'Book Library' },
       { section: 'Tools' },
       { id: 'celebrate',  icon: IC.star,  label: 'Celebrate Students' },
-      { id: 'aitools',    icon: IC.bulb,  label: 'AI Teaching Tools' },
+      { id: 'aitools',    icon: IC.bulb,  label: 'Teaching Tools' },
     ];
   }
 
@@ -1184,7 +1191,7 @@ function renderGuestBrowse() {
 
 function renderGuestBookCard(b) {
   const coverUrl = b.cover_url || '';
-  const level = b.grade_level || b.lexile_level || '';
+  const level = displayGradeLevel(b.grade_level || b.lexile_level || '');
   const genre = b.genre || '';
   return `
     <div class="book-card" onclick="openBook(${b.id})">
@@ -1256,7 +1263,7 @@ function initLibrarySearch() {
          </div>`
       : filtered.map(b => {
           const coverUrl = b.cover_url || '';
-          const level = b.grade_level || b.lexile_level || '';
+          const level = displayGradeLevel(b.grade_level || b.lexile_level || '');
           const genre = b.genre || '';
           return `<div class="book-card" onclick="openBook(${b.id})">
             <div class="book-card-cover">${coverUrl ? `<img src="${coverUrl}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}<div class="book-card-cover-fallback" ${coverUrl ? 'style="display:none"' : ''}><span style="font-size:0.875rem;font-weight:600;color:var(--g500);padding:12px;text-align:center;line-height:1.4">${b.title}</span></div></div>
@@ -1269,7 +1276,7 @@ function initLibrarySearch() {
 
 function renderStudentBookCard(b) {
   const coverUrl = b.cover_url || '';
-  const level = b.grade_level || b.lexile_level || '';
+  const level = displayGradeLevel(b.grade_level || b.lexile_level || '');
   const genre = b.genre || '';
   return `
     <div class="book-card" onclick="openBook(${b.id})" style="cursor:pointer">
@@ -1344,7 +1351,7 @@ function renderLibrary() {
     <div class="book-grid" id="library-book-grid">
       ${books.map(b => {
         const coverUrl = b.cover_url || '';
-        const level = b.grade_level || b.lexile_level || '';
+        const level = displayGradeLevel(b.grade_level || b.lexile_level || '');
         const genre = b.genre || '';
         return `
         <div class="book-card" onclick="openBook(${b.id})">
@@ -1419,7 +1426,7 @@ function renderBookDetail() {
         <p style="color:var(--g500);margin-bottom:12px">by ${b.author || 'Unknown'}</p>
         ${b.description ? `<p style="color:var(--g600);margin-bottom:16px;line-height:1.6">${b.description}</p>` : ''}
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
-          ${b.grade_level ? `<span class="badge badge-blue">${b.grade_level}</span>` : ''}
+          ${b.grade_level ? `<span class="badge badge-blue">${displayGradeLevel(b.grade_level)}</span>` : ''}
           ${b.genre ? `<span class="badge badge-outline">${b.genre}</span>` : ''}
           <span class="badge badge-outline">${chapCount} Chapters</span>
         </div>
@@ -1646,20 +1653,20 @@ function renderCelebrate() {
     </div>`;
 }
 
-// ---- Page: AI Teaching Tools ----
+// ---- Page: Teaching Tools ----
 function renderAITools() {
   const tools = [
-    { name: 'Generate Quiz Questions',   desc: 'Create custom comprehension questions for any book using AI.', barColor: 'blue',   iconColor: 'blue',   icon: IC.layers },
-    { name: 'Struggling Reader Report',  desc: 'Get an AI-generated analysis of students who need additional support.', barColor: 'red',    iconColor: 'red',    icon: IC.warn },
+    { name: 'Generate Quiz Questions',   desc: 'Create custom comprehension questions for any book in the library.', barColor: 'blue',   iconColor: 'blue',   icon: IC.layers },
+    { name: 'Struggling Reader Report',  desc: 'Get an in-depth analysis of students who need additional support.', barColor: 'red',    iconColor: 'red',    icon: IC.warn },
     { name: 'Reading Level Predictor',   desc: 'Predict where each student\'s reading level will be in 30/60/90 days.', barColor: 'green',  iconColor: 'green',  icon: IC.trend },
-    { name: 'Adaptive Recommendations',  desc: 'AI-powered book recommendations matched to each student\'s level and interests.', barColor: 'purple', iconColor: 'purple', icon: IC.target },
+    { name: 'Adaptive Recommendations',  desc: 'Smart book recommendations matched to each student\'s level and interests.', barColor: 'purple', iconColor: 'purple', icon: IC.target },
     { name: 'Parent Report Generator',   desc: 'Auto-generate parent-friendly progress reports with actionable insights.', barColor: 'orange', iconColor: 'orange', icon: IC.download },
     { name: 'Vocabulary Gap Analysis',   desc: 'Identify vocabulary gaps across your class based on quiz performance data.', barColor: 'gold',   iconColor: 'gold',   icon: IC.activity },
   ];
 
   return `
     <div class="page-header">
-      <h1>AI Teaching Tools</h1>
+      <h1>Teaching Tools</h1>
     </div>
 
     <div class="tools-grid">

@@ -51,7 +51,7 @@
         </div>
         <div class="search-result-info">
           <div class="search-result-title">${highlightMatch(escapeHtml(b.title), q)}</div>
-          <div class="search-result-meta">${escapeHtml(b.author || '')}${b.grade_level ? ' &middot; ' + escapeHtml(b.grade_level) : ''}${b.genre ? ' &middot; ' + escapeHtml(b.genre) : ''}</div>
+          <div class="search-result-meta">${escapeHtml(b.author || '')}${b.grade_level ? ' &middot; ' + escapeHtml(mapGradeLevel(b.grade_level)) : ''}${b.genre ? ' &middot; ' + escapeHtml(b.genre) : ''}</div>
         </div>
         <svg class="search-result-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </a>
@@ -102,6 +102,12 @@
       input.blur();
     }
   });
+
+  function mapGradeLevel(level) {
+    if (!level) return '';
+    const map = { 'K-2': 'Ages 6\u201310', 'k-2': 'Ages 6\u201310', 'K\u20132': 'Ages 6\u201310' };
+    return map[level] || level;
+  }
 
   // Highlight matching text in results
   function highlightMatch(text, query) {
