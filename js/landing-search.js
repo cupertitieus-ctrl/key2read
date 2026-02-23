@@ -1,27 +1,75 @@
-// ─── Landing Page Predictive Search ───
-// Self-contained search for the homepage hero section.
-// Fetches books from API, shows autocomplete dropdown with thumbnails.
+// ─── Landing Page: Predictive Search + Book Library Grid ───
+// Self-contained module for the homepage.
+// Fetches books once, powers both search autocomplete and visual library.
 
 (function() {
   let books = [];
-  const input = document.getElementById('landing-search-input');
-  const resultsContainer = document.getElementById('hero-search-results');
-  if (!input || !resultsContainer) return;
+  const BOOKS_PER_PAGE = 12;
+  let currentPage = 0;
+  let shuffledBooks = [];
 
-  // Fetch books on page load
+  // ─── Shared: fetch books once ───
   fetch('/api/books')
     .then(r => r.json())
-    .then(data => { books = data || []; })
-    .catch(e => console.warn('Could not load books for search:', e));
+    .then(data => {
+      books = data || [];
+      initSearch();
+      initLibrary();
+    })
+    .catch(e => console.warn('Could not load books:', e));
 
-  // Debounced input handler
-  let debounceTimer;
-  input.addEventListener('input', () => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(handleSearch, 150);
-  });
+  // ════════════════════════════════════
+  //  SEARCH AUTOCOMPLETE
+  // ════════════════════════════════════
+  function initSearch() {
+    const input = document.getElementById('landing-search-input');
+    const resultsContainer = document.getElementById('hero-search-results');
+    if (!input || !resultsContainer) return;
 
-  function handleSearch() {
+    let debounceTimer;
+    input.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => handleSearch(input, resultsContainer), 150);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#hero-search')) resultsContainer.style.display = 'none';
+    });
+
+    input.addEventListener('focus', () => {
+      if (input.value.trim().length >= 2) handleSearch(input, resultsContainer);
+    });
+
+    input.addEventListener('keydown', (e) => {
+      const items = resultsContainer.querySelectorAll('.search-result-item');
+      if (items.length === 0) return;
+      const active = resultsContainer.querySelector('.search-result-item.active');
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (!active) items[0].classList.add('active');
+        else if (active.nextElementSibling?.classList.contains('search-result-item')) {
+          active.classList.remove('active');
+          active.nextElementSibling.classList.add('active');
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (active && active.previousElementSibling?.classList.contains('search-result-item')) {
+          active.classList.remove('active');
+          active.previousElementSibling.classList.add('active');
+        }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const target = active || items[0];
+        if (target) window.location.href = target.getAttribute('href');
+      } else if (e.key === 'Escape') {
+        resultsContainer.style.display = 'none';
+        input.blur();
+      }
+    });
+  }
+
+  function handleSearch(input, resultsContainer) {
     const q = input.value.toLowerCase().trim();
     if (q.length < 2) {
       resultsContainer.innerHTML = '';
@@ -59,57 +107,87 @@
     resultsContainer.style.display = 'block';
   }
 
-  // Close dropdown when clicking outside
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('#hero-search')) {
-      resultsContainer.style.display = 'none';
+  // ════════════════════════════════════
+  //  BOOK LIBRARY GRID
+  // ════════════════════════════════════
+  function initLibrary() {
+    const grid = document.getElementById('library-grid');
+    const paginationEl = document.getElementById('library-pagination');
+    if (!grid || !paginationEl) return;
+    if (books.length === 0) return;
+
+    // Shuffle books using Fisher-Yates
+    shuffledBooks = [...books];
+    for (let i = shuffledBooks.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledBooks[i], shuffledBooks[j]] = [shuffledBooks[j], shuffledBooks[i]];
     }
-  });
 
-  // Re-open on focus if there's text
-  input.addEventListener('focus', () => {
-    if (input.value.trim().length >= 2) {
-      handleSearch();
-    }
-  });
+    currentPage = 0;
+    renderLibraryPage(grid, paginationEl);
+  }
 
-  // Keyboard navigation (Arrow Up/Down + Enter)
-  input.addEventListener('keydown', (e) => {
-    const items = resultsContainer.querySelectorAll('.search-result-item');
-    if (items.length === 0) return;
-    const active = resultsContainer.querySelector('.search-result-item.active');
+  function renderLibraryPage(grid, paginationEl) {
+    const totalPages = Math.ceil(shuffledBooks.length / BOOKS_PER_PAGE);
+    const start = currentPage * BOOKS_PER_PAGE;
+    const pageBooks = shuffledBooks.slice(start, start + BOOKS_PER_PAGE);
 
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      if (!active) {
-        items[0].classList.add('active');
-      } else if (active.nextElementSibling?.classList.contains('search-result-item')) {
-        active.classList.remove('active');
-        active.nextElementSibling.classList.add('active');
+    grid.innerHTML = pageBooks.map(b => `
+      <a class="library-book" href="pages/dashboard.html?book=${b.id}">
+        <div class="library-book-cover">
+          ${b.cover_url
+            ? `<img src="${escapeAttr(b.cover_url)}" alt="${escapeAttr(b.title)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+            : ''}
+          <div class="library-book-cover-fallback" ${b.cover_url ? 'style="display:none"' : ''}>${escapeHtml((b.title || '').charAt(0))}</div>
+        </div>
+        <div class="library-book-info">
+          <div class="library-book-title">${escapeHtml(b.title)}</div>
+          <div class="library-book-author">${escapeHtml(b.author || '')}</div>
+        </div>
+      </a>
+    `).join('');
+
+    // Pagination controls
+    const chevronLeft = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+    const chevronRight = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>';
+
+    paginationEl.innerHTML = `
+      <button class="library-page-btn" id="lib-prev" ${currentPage === 0 ? 'disabled' : ''}>${chevronLeft} Previous</button>
+      <span class="library-page-info">${currentPage + 1} / ${totalPages}</span>
+      <button class="library-page-btn" id="lib-next" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>Next Page ${chevronRight}</button>
+    `;
+
+    document.getElementById('lib-prev')?.addEventListener('click', () => {
+      if (currentPage > 0) {
+        currentPage--;
+        renderLibraryPage(grid, paginationEl);
+        scrollToLibrary();
       }
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (active && active.previousElementSibling?.classList.contains('search-result-item')) {
-        active.classList.remove('active');
-        active.previousElementSibling.classList.add('active');
-      }
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      const target = active || items[0];
-      if (target) window.location.href = target.getAttribute('href');
-    } else if (e.key === 'Escape') {
-      resultsContainer.style.display = 'none';
-      input.blur();
-    }
-  });
+    });
 
+    document.getElementById('lib-next')?.addEventListener('click', () => {
+      if (currentPage < totalPages - 1) {
+        currentPage++;
+        renderLibraryPage(grid, paginationEl);
+        scrollToLibrary();
+      }
+    });
+  }
+
+  function scrollToLibrary() {
+    const el = document.getElementById('library');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ════════════════════════════════════
+  //  UTILITIES
+  // ════════════════════════════════════
   function mapGradeLevel(level) {
     if (!level) return '';
     const map = { 'K-2': 'Ages 6\u201310', 'k-2': 'Ages 6\u201310', 'K\u20132': 'Ages 6\u201310' };
     return map[level] || level;
   }
 
-  // Highlight matching text in results
   function highlightMatch(text, query) {
     if (!query) return text;
     const re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
