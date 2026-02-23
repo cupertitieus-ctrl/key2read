@@ -2008,6 +2008,41 @@
 .vocab-tooltip-tip { color: #FDE68A; font-size: 0.8rem; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.1); }
 .vocab-tooltip-loading { color: #94A3B8; }
 
+/* Contextual vocabulary — subtle style for auto-detected words */
+.vocab-word-contextual {
+  color: var(--g700, #374151);
+  border-bottom: 1.5px dotted var(--g400, #9CA3AF);
+  cursor: help;
+  transition: color .2s, border-color .2s;
+}
+.vocab-word-contextual:hover {
+  color: var(--blue, #2563EB);
+  border-bottom-color: var(--blue, #2563EB);
+}
+.vocab-word-contextual .vocab-dot { display: none; }
+
+/* Tooltip above variant (when near bottom of viewport) */
+.vocab-tooltip.above::before {
+  top: auto;
+  bottom: -6px;
+  border-top: 6px solid #1E293B;
+  border-bottom: none;
+}
+
+/* Touch-friendly tap targets for mobile/tablet */
+@media (max-width: 900px) {
+  .vocab-word,
+  .vocab-word-contextual {
+    padding: 2px 1px;
+    -webkit-tap-highlight-color: rgba(37, 99, 235, 0.15);
+  }
+  .vocab-tooltip {
+    max-width: 280px;
+    font-size: 0.9rem;
+    padding: 16px 20px;
+  }
+}
+
 /* ===== QUIZ INTRO ===== */
 .quiz-intro { text-align: center; padding: 40px 20px; }
 .quiz-intro-icon { font-size: 3rem; margin-bottom: 16px; }

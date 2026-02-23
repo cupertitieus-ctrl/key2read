@@ -45,6 +45,123 @@ const QuizEngine = (function() {
     'personal': 'Personal Connection'
   };
 
+  // ─── Contextual Vocabulary Dictionary ───
+  // Words that may increase cognitive load for K-2 readers, with 6-year-old-friendly definitions
+  const CONTEXTUAL_VOCAB = {
+    // Abstract concepts
+    'special': { word: 'special', definition: 'Not like everything else — really important or different', pos: 'adjective' },
+    'compared': { word: 'compared', definition: 'Looking at two things to see how they are the same or different', pos: 'verb' },
+    'similar': { word: 'similar', definition: 'Almost the same but not exactly — like twins who look alike', pos: 'adjective' },
+    'different': { word: 'different', definition: 'Not the same — when two things are NOT alike', pos: 'adjective' },
+    'instead': { word: 'instead', definition: 'Picking one thing in place of another thing', pos: 'adverb' },
+    'probably': { word: 'probably', definition: 'Most likely going to happen — almost for sure', pos: 'adverb' },
+    'perhaps': { word: 'perhaps', definition: 'Maybe — it could happen or it might not', pos: 'adverb' },
+    'certain': { word: 'certain', definition: 'Totally sure about something — you KNOW it is true', pos: 'adjective' },
+    'imagine': { word: 'imagine', definition: 'Making a picture in your head of something that is not really there', pos: 'verb' },
+    'pretend': { word: 'pretend', definition: 'Acting like something is real even when it is not — like playing make-believe', pos: 'verb' },
+    'exactly': { word: 'exactly', definition: 'Perfectly right — not even a tiny bit off', pos: 'adverb' },
+    'actually': { word: 'actually', definition: 'What REALLY happened — the truth', pos: 'adverb' },
+    'especially': { word: 'especially', definition: 'More than anything else — extra important', pos: 'adverb' },
+    'ordinary': { word: 'ordinary', definition: 'Normal and regular — nothing fancy or special', pos: 'adjective' },
+    'unusual': { word: 'unusual', definition: 'Not normal — something you do not see every day', pos: 'adjective' },
+    'typical': { word: 'typical', definition: 'The way things usually are — normal and expected', pos: 'adjective' },
+    'definitely': { word: 'definitely', definition: 'For sure — no question about it', pos: 'adverb' },
+    'rarely': { word: 'rarely', definition: 'Almost never — it hardly ever happens', pos: 'adverb' },
+    'immediately': { word: 'immediately', definition: 'Right now — not waiting even one second', pos: 'adverb' },
+    'obviously': { word: 'obviously', definition: 'Easy to see or understand — super clear', pos: 'adverb' },
+    // Sequence & cause words
+    'because': { word: 'because', definition: 'The reason WHY something happened', pos: 'conjunction' },
+    'although': { word: 'although', definition: 'Even though — saying something is true BUT something else is also true', pos: 'conjunction' },
+    'however': { word: 'however', definition: 'But — something different or opposite is also true', pos: 'adverb' },
+    'therefore': { word: 'therefore', definition: 'So — this is what happened next because of that', pos: 'adverb' },
+    'meanwhile': { word: 'meanwhile', definition: 'At the same time — while one thing is happening, something else is too', pos: 'adverb' },
+    'eventually': { word: 'eventually', definition: 'After a long time — it finally happened', pos: 'adverb' },
+    'suddenly': { word: 'suddenly', definition: 'It happened really fast with no warning — out of nowhere!', pos: 'adverb' },
+    'recently': { word: 'recently', definition: 'Not long ago — it happened just a little while back', pos: 'adverb' },
+    'afterward': { word: 'afterward', definition: 'After that — what came next', pos: 'adverb' },
+    'finally': { word: 'finally', definition: 'At last! After waiting a long time, it happened', pos: 'adverb' },
+    // Emotional & social
+    'nervous': { word: 'nervous', definition: 'Feeling worried and a little scared — like butterflies in your tummy', pos: 'adjective' },
+    'worried': { word: 'worried', definition: 'Thinking that something bad might happen', pos: 'adjective' },
+    'frustrated': { word: 'frustrated', definition: 'Feeling upset because something is not working the way you want', pos: 'adjective' },
+    'embarrassed': { word: 'embarrassed', definition: 'Feeling shy or awkward because something silly happened to you', pos: 'adjective' },
+    'confident': { word: 'confident', definition: 'Believing in yourself — feeling like you CAN do it!', pos: 'adjective' },
+    'curious': { word: 'curious', definition: 'Really wanting to know more about something — asking lots of questions', pos: 'adjective' },
+    'suspicious': { word: 'suspicious', definition: 'Feeling like something sneaky or weird is going on', pos: 'adjective' },
+    'convinced': { word: 'convinced', definition: 'Totally believing something is true — your mind is made up', pos: 'adjective' },
+    'disappointed': { word: 'disappointed', definition: 'Feeling sad because something did not turn out the way you hoped', pos: 'adjective' },
+    'proud': { word: 'proud', definition: 'Feeling really happy about something good you did', pos: 'adjective' },
+    'determined': { word: 'determined', definition: 'Not giving up no matter what — you are going to do it!', pos: 'adjective' },
+    'impressed': { word: 'impressed', definition: 'Thinking something is really cool or amazing', pos: 'adjective' },
+    // Academic & reading words
+    'describe': { word: 'describe', definition: 'Telling someone what something looks like or is about using words', pos: 'verb' },
+    'explain': { word: 'explain', definition: 'Telling someone how or why something works so they understand', pos: 'verb' },
+    'predict': { word: 'predict', definition: 'Guessing what will happen next by using clues', pos: 'verb' },
+    'decide': { word: 'decide', definition: 'Making up your mind — choosing what to do', pos: 'verb' },
+    'realize': { word: 'realize', definition: 'When you suddenly understand something — an aha! moment', pos: 'verb' },
+    'discover': { word: 'discover', definition: 'Finding something new that you did not know before', pos: 'verb' },
+    'notice': { word: 'notice', definition: 'Seeing something or paying attention to it', pos: 'verb' },
+    'protect': { word: 'protect', definition: 'Keeping something safe so nothing bad happens to it', pos: 'verb' },
+    'explore': { word: 'explore', definition: 'Looking around a new place to find out what is there', pos: 'verb' },
+    'recognize': { word: 'recognize', definition: 'Knowing what something is because you have seen it before', pos: 'verb' },
+    'according': { word: 'according', definition: 'Based on what someone said or wrote', pos: 'preposition' },
+    'struggle': { word: 'struggle', definition: 'Having a really hard time doing something', pos: 'verb' },
+    'encourage': { word: 'encourage', definition: 'Cheering someone on and telling them they can do it!', pos: 'verb' },
+    'mention': { word: 'mention', definition: 'Saying something quickly without going into a lot of detail', pos: 'verb' },
+    'approach': { word: 'approach', definition: 'Getting closer to something, or a way of doing something', pos: 'verb' },
+    'survive': { word: 'survive', definition: 'Staying alive through something hard or dangerous', pos: 'verb' },
+    // Words common in quiz answer options
+    'identity': { word: 'identity', definition: 'Who you really are — your name and everything about you', pos: 'noun' },
+    'obsessed': { word: 'obsessed', definition: 'Thinking about something SO much you cannot stop', pos: 'adjective' },
+    'accidentally': { word: 'accidentally', definition: 'It happened by mistake — you did not mean to do it', pos: 'adverb' },
+    'circumstances': { word: 'circumstances', definition: 'Everything that is going on around a situation', pos: 'noun' },
+    'coincidence': { word: 'coincidence', definition: 'When two things happen at the same time by chance — not planned', pos: 'noun' },
+    'mechanism': { word: 'mechanism', definition: 'The parts inside something that make it work', pos: 'noun' },
+    'satisfaction': { word: 'satisfaction', definition: 'A happy, proud feeling when something goes well', pos: 'noun' },
+    // Book-specific key vocabulary (Purple Space Chickens)
+    'code name': { word: 'code name', definition: 'A secret name you use so nobody knows who you really are', pos: 'noun' },
+    'document': { word: 'document', definition: 'An important piece of paper or writing with information on it', pos: 'noun' },
+    'enclosure': { word: 'enclosure', definition: 'A space with walls or fences around it — like a pen for animals', pos: 'noun' },
+    'extraordinary': { word: 'extraordinary', definition: 'Way more amazing than normal — super special!', pos: 'adjective' },
+    'rustling': { word: 'rustling', definition: 'A soft, crunchy sound like leaves moving around', pos: 'noun' },
+    'miniature': { word: 'miniature', definition: 'Really really tiny — a small version of something bigger', pos: 'adjective' },
+    'ironically': { word: 'ironically', definition: 'When the opposite of what you expected happens — kind of funny!', pos: 'adverb' },
+    'hesitated': { word: 'hesitated', definition: 'Stopped for a second because you were not sure what to do', pos: 'verb' },
+    'astronaut': { word: 'astronaut', definition: 'A person who travels to outer space in a rocket ship', pos: 'noun' },
+    'suspicion': { word: 'suspicion', definition: 'A feeling that something sneaky might be going on', pos: 'noun' },
+    'skeptical': { word: 'skeptical', definition: 'Not really believing something — thinking "hmm, are you sure?"', pos: 'adjective' },
+    'casual': { word: 'casual', definition: 'Relaxed and easy-going — not fancy or serious', pos: 'adjective' },
+    'frantically': { word: 'frantically', definition: 'Doing something really fast because you are scared or worried', pos: 'adverb' },
+    'doomed': { word: 'doomed', definition: 'When something bad is definitely going to happen — no way out!', pos: 'adjective' },
+    'obsession': { word: 'obsession', definition: 'When you cannot stop thinking about something — it is always on your mind', pos: 'noun' },
+    'crimson': { word: 'crimson', definition: 'A deep, dark red color — like a red ruby', pos: 'adjective' },
+    'teleportation': { word: 'teleportation', definition: 'Moving from one place to another in the blink of an eye — like magic!', pos: 'noun' },
+    'teleport': { word: 'teleport', definition: 'Disappearing from one place and appearing in another instantly', pos: 'verb' },
+    'weightless': { word: 'weightless', definition: 'Feeling like you weigh nothing — floating in the air like in space', pos: 'adjective' },
+    'vengeance': { word: 'vengeance', definition: 'Getting someone back for something mean they did to you', pos: 'noun' },
+    'unmistakable': { word: 'unmistakable', definition: 'So clear you cannot get it wrong — easy to recognize', pos: 'adjective' },
+    'transaction': { word: 'transaction', definition: 'When you buy or trade something — giving one thing to get another', pos: 'noun' },
+    'polite': { word: 'polite', definition: 'Having good manners — saying please and thank you', pos: 'adjective' },
+    'emphasizing': { word: 'emphasizing', definition: 'Saying something in a bigger voice to show it is really important', pos: 'verb' },
+    'concentrating': { word: 'concentrating', definition: 'Thinking really hard about one thing and not getting distracted', pos: 'verb' },
+    'beeline': { word: 'beeline', definition: 'Going straight to something as fast as you can — no stopping!', pos: 'noun' },
+    'grateful': { word: 'grateful', definition: 'Feeling thankful for something nice someone did for you', pos: 'adjective' },
+    'abstract': { word: 'abstract', definition: 'Something you cannot touch or see — like an idea or a feeling', pos: 'adjective' },
+    'splatters': { word: 'splatters', definition: 'Messy drops that go everywhere — like paint splashing', pos: 'noun' },
+    'furiously': { word: 'furiously', definition: 'Doing something really fast and with lots of energy, maybe angry', pos: 'adverb' },
+    'instinctively': { word: 'instinctively', definition: 'Doing something without thinking — your body just knows what to do', pos: 'adverb' },
+    'sensation': { word: 'sensation', definition: 'A feeling in your body — like tingling or warmth', pos: 'noun' },
+    'substances': { word: 'substances', definition: 'Stuff that things are made of — like liquids, powders, or metals', pos: 'noun' },
+    'unbearable': { word: 'unbearable', definition: 'So bad or hard that you can barely take it anymore', pos: 'adjective' },
+    // Multi-word phrases
+    'most likely': { word: 'most likely', definition: 'The thing that will probably happen — the best guess', pos: 'phrase' },
+    'on purpose': { word: 'on purpose', definition: 'You meant to do it — it was not an accident', pos: 'phrase' },
+    'at first': { word: 'at first', definition: 'In the beginning — before things changed', pos: 'phrase' },
+    'in the end': { word: 'in the end', definition: 'When everything was over — the final part', pos: 'phrase' },
+    'for example': { word: 'for example', definition: 'Here is one way to show what I mean', pos: 'phrase' },
+    'make sense': { word: 'make sense', definition: 'Easy to understand — it all adds up', pos: 'phrase' }
+  };
+
   // ─── Shuffle answer options so correct answer isn't always B ───
   function shuffleOptions(questions) {
     return questions.map(q => {
@@ -76,6 +193,16 @@ const QuizEngine = (function() {
     questionStartTime = Date.now();
     onComplete = callback;
     _nextChapter = nextChapterInfo || null;
+    // Tap-away to dismiss vocab tooltips (runs once)
+    if (!QuizEngine._tapAwayBound) {
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.vocab-word') && !e.target.closest('.vocab-tooltip')) {
+          const tt = document.getElementById('vocab-tooltip');
+          if (tt) { tt.style.display = 'none'; tt._currentWord = null; }
+        }
+      });
+      QuizEngine._tapAwayBound = true;
+    }
     render();
   }
 
@@ -109,20 +236,12 @@ const QuizEngine = (function() {
     const perQuestionVocab = q._chapterVocab ? parseVocabList(q._chapterVocab) : [];
     const vocabWords = [...new Set([...questionVocab, ...chapterVocab, ...perQuestionVocab])];
 
-    let markedText = escapeHtml(questionText);
-    vocabWords.forEach(w => {
-      const re = new RegExp(`\\b(${escapeRegex(w)})\\b`, 'gi');
-      markedText = markedText.replace(re, '<span class="vocab-word" data-word="$1" onmouseenter="QuizEngine.showDefinition(this)" onmouseleave="QuizEngine.hideDefinition(this)">$1<span class="vocab-dot"></span></span>');
-    });
+    let markedText = markContextualVocab(markExplicitVocab(escapeHtml(questionText), vocabWords));
 
     // Mark vocab in passage too
     let markedPassage = '';
     if (q.passage_excerpt) {
-      markedPassage = escapeHtml(q.passage_excerpt);
-      vocabWords.forEach(w => {
-        const re = new RegExp(`\\b(${escapeRegex(w)})\\b`, 'gi');
-        markedPassage = markedPassage.replace(re, '<span class="vocab-word" data-word="$1" onmouseenter="QuizEngine.showDefinition(this)" onmouseleave="QuizEngine.hideDefinition(this)">$1<span class="vocab-dot"></span></span>');
-      });
+      markedPassage = markContextualVocab(markExplicitVocab(escapeHtml(q.passage_excerpt), vocabWords));
     }
 
     const answerForThis = answers[currentQuestion];
@@ -159,7 +278,7 @@ const QuizEngine = (function() {
               if (!answered && answerForThis === i) cls += ' selected';
               return `<button class="${cls}" onclick="QuizEngine.selectAnswer(${i})" ${answered ? 'disabled' : ''}>
                 <span class="quiz-option-letter">${letter}</span>
-                <span class="quiz-option-text">${escapeHtml(opt)}</span>
+                <span class="quiz-option-text">${markContextualVocab(markExplicitVocab(escapeHtml(opt), vocabWords))}</span>
                 ${answered && i === q.correct_answer ? '<svg class="quiz-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
               </button>`;
             }).join('')}
@@ -399,10 +518,19 @@ const QuizEngine = (function() {
     const tooltip = document.getElementById('vocab-tooltip');
     if (!tooltip) return;
 
-    // Position tooltip
+    // Position tooltip with viewport boundary detection
     const rect = el.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
     tooltip.style.left = rect.left + rect.width / 2 + 'px';
-    tooltip.style.top = rect.bottom + 8 + 'px';
+    if (spaceBelow < 140) {
+      tooltip.style.top = (rect.top - 8) + 'px';
+      tooltip.style.transform = 'translateX(-50%) translateY(-100%)';
+      tooltip.classList.add('above');
+    } else {
+      tooltip.style.top = rect.bottom + 8 + 'px';
+      tooltip.style.transform = 'translateX(-50%)';
+      tooltip.classList.remove('above');
+    }
     tooltip.innerHTML = '<div class="vocab-tooltip-loading">Looking up...</div>';
     tooltip.style.display = 'block';
 
@@ -456,6 +584,15 @@ const QuizEngine = (function() {
       } catch(e) {}
     }
 
+    // Check contextual vocabulary dictionary (instant, no API call)
+    const contextDef = CONTEXTUAL_VOCAB[word.toLowerCase()];
+    if (contextDef) {
+      const def = { word: contextDef.word, definition: contextDef.definition, part_of_speech: contextDef.pos || '', example: contextDef.example || '', tip: contextDef.tip || '' };
+      definitionCache[word.toLowerCase()] = def;
+      renderDefinitionTooltip(tooltip, def);
+      return;
+    }
+
     // Fetch from API
     try {
       const passage = currentQuiz?.questions?.[currentQuestion]?.passage_excerpt || '';
@@ -479,6 +616,48 @@ const QuizEngine = (function() {
   function hideDefinition(el) {
     const tooltip = document.getElementById('vocab-tooltip');
     if (tooltip) tooltip.style.display = 'none';
+  }
+
+  // ─── Vocab Marking Helpers ───
+  function markExplicitVocab(html, vocabWords) {
+    if (!vocabWords || vocabWords.length === 0) return html;
+    vocabWords.forEach(w => {
+      const re = new RegExp(`\\b(${escapeRegex(w)})\\b`, 'gi');
+      html = html.replace(re, '<span class="vocab-word" data-word="$1" onmouseenter="QuizEngine.showDefinition(this)" onmouseleave="QuizEngine.hideDefinition(this)" onclick="QuizEngine.toggleDefinition(this,event)">$1<span class="vocab-dot"></span></span>');
+    });
+    return html;
+  }
+
+  function markContextualVocab(html) {
+    const contextualWords = Object.keys(CONTEXTUAL_VOCAB);
+    if (contextualWords.length === 0) return html;
+    // Split by existing vocab-word spans to avoid double-wrapping
+    const parts = html.split(/(<span class="vocab-word[^"]*"[^>]*>.*?<\/span>)/g);
+    // Sort longest-first so phrases match before single words (e.g. "most likely" before "most")
+    const sorted = contextualWords.sort((a, b) => b.length - a.length);
+    const pattern = sorted.map(w => escapeRegex(w)).join('|');
+    const re = new RegExp(`\\b(${pattern})\\b`, 'gi');
+    return parts.map(part => {
+      if (part.startsWith('<span class="vocab-word')) return part;
+      return part.replace(re, (match) => {
+        const lower = match.toLowerCase();
+        if (!CONTEXTUAL_VOCAB[lower]) return match;
+        return `<span class="vocab-word vocab-word-contextual" data-word="${match}" data-contextual="true" onmouseenter="QuizEngine.showDefinition(this)" onmouseleave="QuizEngine.hideDefinition(this)" onclick="QuizEngine.toggleDefinition(this,event)">${match}</span>`;
+      });
+    }).join('');
+  }
+
+  function toggleDefinition(el, event) {
+    if (event) event.stopPropagation();
+    const tooltip = document.getElementById('vocab-tooltip');
+    if (!tooltip) return;
+    if (tooltip.style.display === 'block' && tooltip._currentWord === el.dataset.word) {
+      tooltip.style.display = 'none';
+      tooltip._currentWord = null;
+      return;
+    }
+    tooltip._currentWord = el.dataset.word;
+    showDefinition(el);
   }
 
   // ─── Vocab Helpers ───
@@ -542,7 +721,7 @@ const QuizEngine = (function() {
 
   return {
     start, render, beginQuiz, selectAnswer, submitAnswer, nextQuestion,
-    toggleStrategy, exit, nextChapter, showDefinition, hideDefinition,
+    toggleStrategy, exit, nextChapter, showDefinition, hideDefinition, toggleDefinition,
     formatReadingLevel, getLexileGrade, getReadingLevelColor,
     STRATEGY_ICONS, STRATEGY_NAMES, QUESTION_TYPE_LABELS,
     get _nextChapter() { return _nextChapter; }
