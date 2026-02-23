@@ -19,6 +19,7 @@ const QuizEngine = (function() {
   let hintShown = [];            // per-question: true if hint was shown (auto or manual)
   let attempts = [];             // per-question: number of attempts made
   let wrongPicks = [];           // per-question: Set of wrong answer indices
+  let showRetryModal = false;    // true when wrong-answer overlay is visible
 
   const STRATEGY_ICONS = {
     'finding-details': '🔍',
@@ -194,6 +195,7 @@ const QuizEngine = (function() {
     hintShown = [];
     attempts = [];
     wrongPicks = [];
+    showRetryModal = false;
     quizResults = null;
     quizStartTime = Date.now();
     questionStartTime = Date.now();
@@ -300,7 +302,7 @@ const QuizEngine = (function() {
             }).join('')}
           </div>
 
-          ${!answered ? `
+          ${!answered && !showRetryModal ? `
             <div class="quiz-hint-area">
               <button class="quiz-hint-btn" onclick="QuizEngine.toggleStrategy()">
                 ${showingStrategy ? 'Hide Hint' : '💡 Need a Hint?'}
@@ -313,12 +315,10 @@ const QuizEngine = (function() {
             </div>
           ` : ''}
 
-          ${fbForThis ? `
-            <div class="quiz-feedback ${fbForThis.isCorrect ? 'correct' : 'incorrect'}">
+          ${answered && fbForThis ? `
+            <div class="quiz-feedback correct">
               <div class="quiz-feedback-header">
-                ${fbForThis.isCorrect
-                  ? '<span class="quiz-feedback-icon">✅</span> Great Job!'
-                  : '<span class="quiz-feedback-icon">💪</span> Try Again!'}
+                <span class="quiz-feedback-icon">✅</span> Great Job!
               </div>
               <p class="quiz-feedback-text">${escapeHtml(fbForThis.feedback || q.explanation || '')}</p>
             </div>
@@ -332,11 +332,26 @@ const QuizEngine = (function() {
             </button>
           ` : `
             <button class="btn btn-primary" onclick="QuizEngine.submitAnswer()" ${answerForThis === undefined ? 'disabled' : ''}>
-              ${fbForThis && !fbForThis.isCorrect ? 'Try Again' : 'Submit Answer'}
+              Submit Answer
             </button>
           `}
         </div>
       </div>
+
+      ${showRetryModal ? `
+        <div class="quiz-retry-overlay" id="quiz-retry-overlay">
+          <div class="quiz-retry-modal">
+            <div class="quiz-retry-icon">💪</div>
+            <h3 class="quiz-retry-title">Not quite — but you're close!</h3>
+            <p class="quiz-retry-message">Read this hint and give it another try.</p>
+            <div class="quiz-retry-hint">
+              <span class="quiz-retry-hint-label">💡 Hint</span>
+              <p>${escapeHtml(q.strategy_tip || 'Think carefully about the story!')}</p>
+            </div>
+            <button class="btn btn-primary quiz-retry-btn" onclick="QuizEngine.dismissRetryModal()">Try Again</button>
+          </div>
+        </div>
+      ` : ''}
 
       <div id="vocab-tooltip" class="vocab-tooltip" style="display:none"></div>
     `;
@@ -525,16 +540,12 @@ const QuizEngine = (function() {
         };
       }
     } else {
-      // Wrong — record the wrong pick, show hint, let them try again
+      // Wrong — record the wrong pick, show modal with hint
       if (!wrongPicks[currentQuestion]) wrongPicks[currentQuestion] = new Set();
       wrongPicks[currentQuestion].add(answers[currentQuestion]);
       hintShown[currentQuestion] = true;
-      showingStrategy = true;
-      feedback[currentQuestion] = {
-        isCorrect: false,
-        feedback: 'Not quite — read the hint below and try again! You got this! 💪'
-      };
-      // Clear selection so student must pick a new answer
+      showRetryModal = true;
+      // Clear selection so student must pick a new answer after modal
       delete answers[currentQuestion];
     }
     render();
@@ -584,6 +595,7 @@ const QuizEngine = (function() {
     currentQuestion++;
     answered = false;
     showingStrategy = false;
+    showRetryModal = false;
     questionStartTime = Date.now();
     render();
   }
@@ -591,6 +603,12 @@ const QuizEngine = (function() {
   function toggleStrategy() {
     showingStrategy = !showingStrategy;
     if (showingStrategy) hintShown[currentQuestion] = true;
+    render();
+  }
+
+  function dismissRetryModal() {
+    showRetryModal = false;
+    feedback[currentQuestion] = null;
     render();
   }
 
@@ -817,7 +835,7 @@ const QuizEngine = (function() {
 
   return {
     start, render, beginQuiz, selectAnswer, submitAnswer, nextQuestion,
-    toggleStrategy, exit, nextChapter, showDefinition, hideDefinition, toggleDefinition,
+    toggleStrategy, dismissRetryModal, exit, nextChapter, showDefinition, hideDefinition, toggleDefinition,
     formatReadingLevel, getLexileGrade, getReadingLevelColor,
     STRATEGY_ICONS, STRATEGY_NAMES, QUESTION_TYPE_LABELS,
     get _nextChapter() { return _nextChapter; }
