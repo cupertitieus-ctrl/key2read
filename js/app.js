@@ -1581,9 +1581,9 @@ function showPersistenceGate(action) {
 
   const messages = {
     save: {
-      icon: '📊',
+      icon: 'logo',
       title: 'Save Your Progress',
-      desc: 'Create a free account to save your quiz scores and track your reading growth over time.'
+      desc: 'You need a paid plan to save your progress, earn certificates, and track your growth.'
     },
     keys: {
       icon: '🔑',
@@ -1607,8 +1607,9 @@ function showPersistenceGate(action) {
   modal.innerHTML = `
     <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)document.getElementById('modal-root-2').innerHTML=''">
       <div style="background:#fff;border-radius:20px;max-width:420px;width:100%;padding:40px 32px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2);position:relative">
-        <div style="font-size:2.5rem;margin-bottom:12px">${msg.icon}</div>
-        <img src="/public/logo.png" alt="key2read" style="height:36px;width:auto;margin-bottom:20px">
+        ${msg.icon === 'logo'
+          ? '<img src="/public/logo.png" alt="key2read" style="height:48px;width:auto;margin-bottom:16px">'
+          : '<div style="font-size:2.5rem;margin-bottom:12px">' + msg.icon + '</div><img src="/public/logo.png" alt="key2read" style="height:36px;width:auto;margin-bottom:20px">'}
         <h2 style="margin:0 0 10px;color:var(--navy);font-size:1.375rem">${msg.title}</h2>
         <p style="color:var(--g500);margin:0 0 28px;font-size:0.9375rem;line-height:1.6">${msg.desc}</p>
         <a href="signup.html" class="btn btn-primary" style="width:100%;text-align:center;text-decoration:none;font-size:1rem;padding:14px 24px;margin-bottom:12px;display:block">Create Free Account</a>
