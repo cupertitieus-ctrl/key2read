@@ -376,7 +376,7 @@ function renderSidebar() {
 
   let html = `
     <div class="sidebar-brand" ${userRole === 'guest' ? 'onclick="navigate(\'guest-browse\')" style="cursor:pointer"' : ''}>
-      <img src="/public/logo.png" alt="key2read" style="height:40px;width:auto">
+      <img src="/public/logo.png" alt="key2read" style="height:40px;width:auto;background:#fff;border-radius:8px;padding:4px 10px">
     </div>
     <nav class="sidebar-nav">`;
 
@@ -395,6 +395,7 @@ function renderSidebar() {
   if (userRole === 'guest') {
     html += `
     <div class="sidebar-footer" style="flex-direction:column;gap:8px;padding:16px">
+      <a href="/index.html" style="display:flex;align-items:center;gap:6px;color:var(--g400);font-size:0.8125rem;text-decoration:none;padding:6px 0;margin-bottom:4px">${IC.arrowLeft} Back to Home</a>
       <a href="signin.html" class="btn btn-primary" style="width:100%;text-align:center;text-decoration:none">Sign In</a>
       <a href="signup.html" class="btn btn-outline" style="width:100%;text-align:center;text-decoration:none">Create Account</a>
     </div>`;
