@@ -20,6 +20,7 @@ const QuizEngine = (function() {
   let attempts = [];             // per-question: number of attempts made
   let wrongPicks = [];           // per-question: Set of wrong answer indices
   let showRetryModal = false;    // true when wrong-answer overlay is visible
+  let showRevealModal = false;   // true when correct answer is revealed after 2 wrong attempts
 
   const STRATEGY_ICONS = {
     'finding-details': '🔍',
@@ -196,6 +197,7 @@ const QuizEngine = (function() {
     attempts = [];
     wrongPicks = [];
     showRetryModal = false;
+    showRevealModal = false;
     quizResults = null;
     quizStartTime = Date.now();
     questionStartTime = Date.now();
@@ -353,6 +355,20 @@ const QuizEngine = (function() {
         </div>
       ` : ''}
 
+      ${showRevealModal ? `
+        <div class="quiz-retry-overlay" id="quiz-reveal-overlay">
+          <div class="quiz-retry-modal quiz-reveal-modal">
+            <div class="quiz-retry-icon">📖</div>
+            <h3 class="quiz-retry-title">The correct answer was:</h3>
+            <div class="quiz-reveal-answer">
+              <p>"${escapeHtml(q.options[q.correct_answer] || '')}"</p>
+            </div>
+            <p class="quiz-retry-message">That's okay — every question helps you learn! Let's keep going.</p>
+            <button class="btn btn-primary quiz-retry-btn" onclick="QuizEngine.dismissRevealModal()">Next Question →</button>
+          </div>
+        </div>
+      ` : ''}
+
       <div id="vocab-tooltip" class="vocab-tooltip" style="display:none"></div>
     `;
   }
@@ -439,14 +455,10 @@ const QuizEngine = (function() {
             <div class="quiz-results-detail-list">
               ${r.results.map((res, i) => {
                 const q = currentQuiz.questions[i];
-                return \`
-                  <div class="quiz-result-item \${res.isCorrect ? 'correct' : 'incorrect'}">
-                    <div class="quiz-result-icon">\${res.isCorrect ? '✅' : '❌'}\${res.hintUsed ? ' <span class="quiz-result-retry" title="Used a hint">🔄</span>' : ''}</div>
-                    <div class="quiz-result-info">
-                      <div class="quiz-result-text">\${escapeHtml((q.personalized_text || q.question_text).substring(0, 80))}...</div>
-                    </div>
-                  </div>
-                \`;
+                return '<div class="quiz-result-item ' + (res.isCorrect ? 'correct' : 'incorrect') + '">' +
+                  '<div class="quiz-result-icon">' + (res.isCorrect ? '✅' : '❌') + (res.hintUsed ? ' <span class="quiz-result-retry" title="Used a hint">🔄</span>' : '') + '</div>' +
+                  '<div class="quiz-result-info"><div class="quiz-result-text">' + escapeHtml((q.personalized_text || q.question_text).substring(0, 80)) + '...</div></div>' +
+                  '</div>';
               }).join('')}
             </div>` : ''}
           </div>
@@ -550,13 +562,22 @@ const QuizEngine = (function() {
         };
       }
     } else {
-      // Wrong — record the wrong pick, show modal with hint
+      // Wrong — record the wrong pick
       if (!wrongPicks[currentQuestion]) wrongPicks[currentQuestion] = new Set();
       wrongPicks[currentQuestion].add(answers[currentQuestion]);
       hintShown[currentQuestion] = true;
-      showRetryModal = true;
-      // Clear selection so student must pick a new answer after modal
-      delete answers[currentQuestion];
+
+      if (attempts[currentQuestion] >= 2) {
+        // Second wrong attempt — reveal the correct answer, lock question
+        answered = true;
+        answers[currentQuestion] = q.correct_answer; // record correct for scoring display
+        showRevealModal = true;
+        feedback[currentQuestion] = { isCorrect: false, feedback: '', revealed: true };
+      } else {
+        // First wrong attempt — show hint, let them try again
+        showRetryModal = true;
+        delete answers[currentQuestion];
+      }
     }
     render();
   }
@@ -581,7 +602,8 @@ const QuizEngine = (function() {
         let correctCount = 0;
         let keysEarned = 0;
         currentQuiz.questions.forEach((q, i) => {
-          if (answers[i] === q.correct_answer) {
+          const wasRevealed = feedback[i]?.revealed;
+          if (answers[i] === q.correct_answer && !wasRevealed) {
             correctCount++;
             // Full keys (5) for first-attempt correct, reduced (2) if hint was shown
             keysEarned += hintShown[i] ? 2 : 5;
@@ -594,7 +616,7 @@ const QuizEngine = (function() {
           newReadingScore: (currentStudent?.reading_score || 500) + Math.round((score / 100 - 0.65) * 20),
           newReadingLevel: (((currentStudent?.reading_score || 500) + Math.round((score / 100 - 0.65) * 20)) / 160).toFixed(1),
           keysEarned: keysEarned + (score === 100 ? 10 : 0),
-          results: currentQuiz.questions.map((q, i) => ({ isCorrect: answers[i] === q.correct_answer, feedback: feedback[i]?.feedback || '', hintUsed: !!hintShown[i] })),
+          results: currentQuiz.questions.map((q, i) => ({ isCorrect: answers[i] === q.correct_answer && !feedback[i]?.revealed, feedback: feedback[i]?.feedback || '', hintUsed: !!hintShown[i], revealed: !!feedback[i]?.revealed })),
           strategiesUsed: [...new Set(currentQuiz.questions.map(q => q.strategy_type))]
         };
       }
@@ -606,6 +628,7 @@ const QuizEngine = (function() {
     answered = false;
     showingStrategy = false;
     showRetryModal = false;
+    showRevealModal = false;
     questionStartTime = Date.now();
     render();
   }
@@ -620,6 +643,11 @@ const QuizEngine = (function() {
     showRetryModal = false;
     feedback[currentQuestion] = null;
     render();
+  }
+
+  function dismissRevealModal() {
+    showRevealModal = false;
+    nextQuestion();
   }
 
   function exit() {
@@ -857,7 +885,7 @@ const QuizEngine = (function() {
 
   return {
     start, render, beginQuiz, selectAnswer, submitAnswer, nextQuestion,
-    toggleStrategy, dismissRetryModal, exit, nextChapter, retake, showDefinition, hideDefinition, toggleDefinition,
+    toggleStrategy, dismissRetryModal, dismissRevealModal, exit, nextChapter, retake, showDefinition, hideDefinition, toggleDefinition,
     formatReadingLevel, getLexileGrade, getReadingLevelColor,
     STRATEGY_ICONS, STRATEGY_NAMES, QUESTION_TYPE_LABELS,
     get _nextChapter() { return _nextChapter; }
