@@ -21,6 +21,7 @@ const IC = {
   arrowUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>',
   arrowDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
   arrowLeft: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
+  arrowRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
   x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
   calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
@@ -1957,10 +1958,7 @@ function renderStudentDashboard() {
     </div>
 
     <div style="margin-top:24px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <h3>${IC.book} Book Library</h3>
-        <button class="btn btn-sm btn-ghost" onclick="navigate('library')">View All ${books.length} Books</button>
-      </div>
+      <h3 style="margin-bottom:16px;font-size:1rem;font-weight:700">Book Library</h3>
       ${featuredBooks.length > 0 ? `
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px">
         ${featuredBooks.map(b => `
@@ -1974,6 +1972,11 @@ function renderStudentDashboard() {
             </div>
           </div>
         `).join('')}
+        <div onclick="navigate('library')" style="cursor:pointer;background:#fff;border-radius:var(--radius-md);border:2px dashed var(--g200);overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:260px;transition:border-color .2s,background .2s" onmouseover="this.style.borderColor='var(--blue)';this.style.background='var(--blue-p)'" onmouseout="this.style.borderColor='var(--g200)';this.style.background='#fff'">
+          <div style="width:40px;height:40px;border-radius:50%;background:var(--g100);display:flex;align-items:center;justify-content:center;color:var(--g500);margin-bottom:8px">${IC.arrowRight}</div>
+          <div style="font-weight:600;font-size:0.8125rem;color:var(--g600)">View All</div>
+          <div style="font-size:0.75rem;color:var(--g400)">${books.length} Books</div>
+        </div>
       </div>` : `<p style="color:var(--g500)">No books available yet.</p>`}
     </div>
 
