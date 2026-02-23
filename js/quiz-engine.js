@@ -443,10 +443,10 @@ const QuizEngine = (function() {
         <div style="font-size:2.5rem;margin-bottom:12px">👋</div>
         <h2 style="font-family:var(--font-display,sans-serif);font-size:1.4rem;font-weight:800;color:#1a1a2e;margin-bottom:12px;letter-spacing:-0.02em">Before You Begin!</h2>
         <p style="color:#555;font-size:0.95rem;line-height:1.6;margin-bottom:8px">
-          Some words in the quiz may be <span style="background:linear-gradient(120deg,#FEF3C7 0%,#FDE68A 100%);padding:2px 6px;border-radius:4px;font-weight:600">highlighted</span>. If you tap a highlighted word, you'll see a simple explanation to help you understand the question better.
+          Some words in the quiz may be <span style="text-decoration:underline;text-decoration-color:#7C3AED;text-underline-offset:3px;font-weight:600">underlined</span>. If you tap an underlined word, you'll see a simple explanation to help you understand the question better.
         </p>
         <p style="color:#555;font-size:0.95rem;line-height:1.6;margin-bottom:24px">
-          These highlights are here to help you think and solve problems.
+          These underlines are here to help you think and solve problems.
         </p>
         <p style="color:#7C3AED;font-weight:700;font-size:1rem;margin-bottom:24px">Ready? Let's start!</p>
         <button id="vocab-popup-start" class="btn btn-primary btn-lg" style="width:100%;margin-bottom:16px;font-size:1rem;padding:14px 24px">Start Quiz</button>
