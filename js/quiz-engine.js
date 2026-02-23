@@ -45,9 +45,26 @@ const QuizEngine = (function() {
     'personal': 'Personal Connection'
   };
 
+  // ─── Shuffle answer options so correct answer isn't always B ───
+  function shuffleOptions(questions) {
+    return questions.map(q => {
+      if (!q.options || q.options.length < 2) return q;
+      const correctText = q.options[q.correct_answer];
+      // Build index array and shuffle using Fisher-Yates
+      const indices = q.options.map((_, i) => i);
+      for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+      }
+      const newOptions = indices.map(i => q.options[i]);
+      const newCorrect = newOptions.indexOf(correctText);
+      return { ...q, options: newOptions, correct_answer: newCorrect };
+    });
+  }
+
   // ─── Start a quiz ───
   function start(quizData, student, callback, nextChapterInfo) {
-    currentQuiz = quizData;
+    currentQuiz = { ...quizData, questions: shuffleOptions(quizData.questions || []) };
     currentStudent = student;
     currentQuestion = 0;
     answers = [];

@@ -35,7 +35,7 @@ For each question, provide:
 - question_text: The question
 - passage_excerpt: A short relevant quote or passage (1-2 sentences). Leave empty for personal questions.
 - options: Exactly 4 answer choices (array of strings)
-- correct_answer: Index of correct answer (0-3)
+- correct_answer: Index of correct answer (0-3). IMPORTANT: Vary the position of the correct answer across questions — do NOT always put the correct answer at the same index. Spread correct answers roughly evenly across 0, 1, 2, and 3.
 - strategy_type: One of "finding-details", "making-inferences", "context-clues", "identifying-theme", "personal-connection", "cause-and-effect", "character-analysis"
 - strategy_tip: A helpful tip teaching students HOW to find the answer (2-3 sentences, written for a child). Focus on the reading STRATEGY, not the answer itself.
 - explanation: Why the correct answer is right (2-3 sentences, friendly tone)

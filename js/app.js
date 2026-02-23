@@ -1441,7 +1441,7 @@ function renderBookDetail() {
         <div class="list-card">
           ${bookChapters.map((ch, i) => {
             const isCompleted = completedChapters.includes(ch.chapter_number);
-            const isUnlocked = userRole === 'guest' || ch.chapter_number === 1 || completedChapters.includes(ch.chapter_number - 1);
+            const isUnlocked = ch.chapter_number === 1 || completedChapters.includes(ch.chapter_number - 1);
             const isLocked = !isUnlocked && !isCompleted;
 
             if (isLocked) {
