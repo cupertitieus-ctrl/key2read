@@ -534,9 +534,12 @@ const QuizEngine = (function() {
 
           <div class="quiz-options">
             ${(() => {
-              // Mark vocab in all options, then ensure at least 2 have underlines
+              // Mark vocab in options, but EXCLUDE the question's own vocabulary_words
+              // to prevent them from giving away the correct answer via blue highlights
               const opts = q.options || [];
-              const markedOpts = opts.map(opt => markContextualVocab(markExplicitVocab(escapeHtml(opt), vocabWords), testedWords));
+              const qVocabLower = (q.vocabulary_words || []).map(w => w.toLowerCase());
+              const optionVocabWords = vocabWords.filter(w => !qVocabLower.includes(w.toLowerCase()));
+              const markedOpts = opts.map(opt => markContextualVocab(markExplicitVocab(escapeHtml(opt), optionVocabWords), [...testedWords, ...qVocabLower]));
               const hasVocab = markedOpts.map(m => m.includes('vocab-word'));
               const vocabCount = hasVocab.filter(Boolean).length;
 
@@ -555,7 +558,7 @@ const QuizEngine = (function() {
                 }
                 if (bestIdx >= 0 && bestWord) {
                   markedOpts[bestIdx] = markContextualVocab(
-                    markExplicitVocab(escapeHtml(opts[bestIdx]), [...vocabWords, bestWord]), testedWords
+                    markExplicitVocab(escapeHtml(opts[bestIdx]), [...optionVocabWords, bestWord]), [...testedWords, ...qVocabLower]
                   );
                 }
               }
