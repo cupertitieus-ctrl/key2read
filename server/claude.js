@@ -30,8 +30,14 @@ Question 2 — CAUSE/EFFECT OR MOTIVATION: "Why did it happen?"
   question_type: "cause-effect"
   strategy_type: "cause-and-effect"
 
-Question 3 — VOCABULARY SKILL: Word meaning in context
-  Tests understanding of a Tier 2 academic word (like "investigate", "suspicious", "extraordinary") or an important story-specific word. The question should ask what the word means OR how it is used.
+Question 3 — VOCABULARY IN CONTEXT: How a word is used in the story
+  NEVER ask "What does [word] mean?" — students already have a vocabulary helper for definitions.
+  Instead, test HOW a word is used in context. Good question formats:
+    - "When the author says the cat was 'determined,' what does that tell us about the cat?"
+    - "Why did the author use the word 'furiously' to describe how the character ran?"
+    - "Which sentence uses the word 'ordinary' the same way it is used in the chapter?"
+    - "What does the word 'hesitant' tell us about how the character was feeling?"
+  The answer choices should be about meaning IN THE STORY, not dictionary definitions.
   question_type: "vocabulary"
   strategy_type: "context-clues"
 
@@ -61,8 +67,13 @@ Question 3 — CAUSE/EFFECT OR MOTIVATION: "Why did it happen?"
   question_type: "cause-effect"
   strategy_type: "cause-and-effect"
 
-Question 4 — VOCABULARY SKILL: Word meaning in context
-  Tests understanding of a Tier 2 academic word or important story-specific word.
+Question 4 — VOCABULARY IN CONTEXT: How a word is used in the story
+  NEVER ask "What does [word] mean?" — students already have a vocabulary helper for definitions.
+  Instead, test HOW a word is used in context. Good formats:
+    - "When the author says [word], what does that tell us about the character?"
+    - "Why did the author use the word [word] to describe what happened?"
+    - "What does the word [word] tell us about how the character was feeling?"
+  Answer choices should be about meaning IN THE STORY, not dictionary definitions.
   question_type: "vocabulary"
   strategy_type: "context-clues"
 
