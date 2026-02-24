@@ -13,58 +13,24 @@
   <!-- ===== LEFT PANEL ===== -->
   <div class="auth-left">
     <a href="/index.html" class="auth-left-logo">
-      <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="9" cy="9" r="5"/>
-        <path d="M12.5 12.5L28 28"/>
-        <path d="M22 22l6 0"/>
-        <path d="M25 19l0 6"/>
-      </svg>
-      <span>key2read</span>
+      <img src="/public/logo.png" alt="key2read" style="height:48px;width:auto">
     </a>
     <div class="auth-left-content">
-      <h2>Start building stronger readers</h2>
-      <p>Join 8,500+ teachers already using key2read in their classrooms.</p>
-      <div class="auth-float-cards">
-        <div class="auth-float-card">
-          <div class="auth-float-icon blue">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-          </div>
-          <div>
-            <strong>25,000+</strong>
-            <span>Book Quizzes Available</span>
-          </div>
+      <h2>Start reading today!</h2>
+      <p>Free to set up. No credit card needed.</p>
+
+      <div class="auth-left-features">
+        <div class="auth-left-feature">
+          <span class="auth-left-feature-icon">📚</span>
+          <span>Quizzes for popular chapter books</span>
         </div>
-        <div class="auth-float-card">
-          <div class="auth-float-icon gold">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="4"/><path d="M10.5 10.5L21 21"/><path d="M16 16l5 0"/><path d="M19 13l0 6"/></svg>
-          </div>
-          <div>
-            <strong>Gamified</strong>
-            <span>Keys &amp; Class Store</span>
-          </div>
+        <div class="auth-left-feature">
+          <span class="auth-left-feature-icon">🔑</span>
+          <span>Earn keys and shop in the Class Store</span>
         </div>
-        <div class="auth-float-card">
-          <div class="auth-float-icon green">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          </div>
-          <div>
-            <strong>Real-Time</strong>
-            <span>Analytics Dashboard</span>
-          </div>
-        </div>
-      </div>
-      <div class="auth-left-stats">
-        <div>
-          <strong>Free</strong>
-          <span>To Start</span>
-        </div>
-        <div>
-          <strong>2 min</strong>
-          <span>Setup Time</span>
-        </div>
-        <div>
-          <strong>No CC</strong>
-          <span>Required</span>
+        <div class="auth-left-feature">
+          <span class="auth-left-feature-icon">🧠</span>
+          <span>Build real reading comprehension skills</span>
         </div>
       </div>
     </div>
@@ -78,17 +44,17 @@
 
       <!-- Role Selector -->
       <div class="role-selector" style="grid-template-columns: 1fr 1fr 1fr">
-        <div class="role-card" data-role="principal" onclick="selectRole(this)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-4h6v4"/><path d="M9 9h.01"/><path d="M15 9h.01"/><path d="M9 13h.01"/><path d="M15 13h.01"/>
-          </svg>
-          <span>Principal</span>
-        </div>
         <div class="role-card active" data-role="teacher" onclick="selectRole(this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
           </svg>
           <span>Teacher</span>
+        </div>
+        <div class="role-card" data-role="parent" onclick="selectRole(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 20a2 2 0 0 1 2-2h3.172a2 2 0 0 1 1.414.586l.828.828a2 2 0 0 0 1.414.586h.344a2 2 0 0 0 1.414-.586l.828-.828A2 2 0 0 1 15.828 18H19a2 2 0 0 1 2 2v1H3v-1z"/><circle cx="8" cy="10" r="3"/><circle cx="16" cy="10" r="3"/>
+          </svg>
+          <span>Parent</span>
         </div>
         <div class="role-card" data-role="student" onclick="selectRole(this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -256,9 +222,8 @@ function selectRole(el) {
     fieldGrade.style.display  = '';
     fieldTerms.style.display  = '';
     fieldPassword.style.display = '';
-  } else if (role === 'principal') {
+  } else if (role === 'parent') {
     fieldEmail.style.display    = '';
-    fieldDistrict.style.display = '';
     fieldTerms.style.display    = '';
     fieldPassword.style.display = '';
   } else if (role === 'student') {
@@ -299,17 +264,15 @@ document.getElementById('signup-form').addEventListener('submit', async function
       showError(err.message || 'Signup failed. Please try again.');
     }
 
-  } else if (role === 'principal') {
-    const email    = document.getElementById('email').value.trim();
-    const district = document.getElementById('district').value.trim();
-    const terms    = document.getElementById('terms-checkbox').checked;
-    if (!email)    return showError('Please enter your school email.');
-    if (!district) return showError('Please enter your school or district name.');
+  } else if (role === 'parent') {
+    const email = document.getElementById('email').value.trim();
+    const terms = document.getElementById('terms-checkbox').checked;
+    if (!email)    return showError('Please enter your email.');
     if (!password) return showError('Please create a password.');
     if (!terms)    return showError('Please agree to the Terms of Service and Privacy Policy.');
 
     try {
-      await API.post('/api/auth/signup', { name, email, password, role: 'principal', school: district });
+      await API.post('/api/auth/signup', { name, email, password, role: 'parent' });
       window.location.href = 'dashboard.html';
     } catch (err) {
       showError(err.message || 'Signup failed. Please try again.');

@@ -13,61 +13,25 @@
   <!-- ===== LEFT PANEL ===== -->
   <div class="auth-left">
     <a href="/index.html" class="auth-left-logo">
-      <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="9" cy="9" r="5"/>
-        <path d="M12.5 12.5L28 28"/>
-        <path d="M22 22l6 0"/>
-        <path d="M25 19l0 6"/>
-      </svg>
-      <span>key2read</span>
+      <img src="/public/logo.png" alt="key2read" style="height:48px;width:auto">
     </a>
 
     <div class="auth-left-content">
-      <h2>Welcome back</h2>
-      <p>Reading comprehension that kids love and teachers trust.</p>
+      <h2>Welcome back!</h2>
+      <p>Pick up where you left off and keep reading.</p>
 
-      <div class="auth-float-cards">
-        <div class="auth-float-card">
-          <div class="auth-float-icon blue">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
-          </div>
-          <div>
-            <strong>724</strong>
-            <span>Avg Reading Score</span>
-          </div>
+      <div class="auth-left-features">
+        <div class="auth-left-feature">
+          <span class="auth-left-feature-icon">📖</span>
+          <span>Take quizzes on your favorite books</span>
         </div>
-        <div class="auth-float-card">
-          <div class="auth-float-icon gold">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="4"/><path d="M10.5 10.5L21 21"/><path d="M16 16l5 0"/><path d="M19 13l0 6"/></svg>
-          </div>
-          <div>
-            <strong>3,247</strong>
-            <span>Keys Earned This Week</span>
-          </div>
+        <div class="auth-left-feature">
+          <span class="auth-left-feature-icon">🔑</span>
+          <span>Earn keys and unlock rewards</span>
         </div>
-        <div class="auth-float-card">
-          <div class="auth-float-icon green">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          </div>
-          <div>
-            <strong>96%</strong>
-            <span>Teacher Satisfaction</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="auth-left-stats">
-        <div>
-          <strong>8,500+</strong>
-          <span>Teachers</span>
-        </div>
-        <div>
-          <strong>1.2M</strong>
-          <span>Quizzes Taken</span>
-        </div>
-        <div>
-          <strong>25K+</strong>
-          <span>Book Quizzes</span>
+        <div class="auth-left-feature">
+          <span class="auth-left-feature-icon">📊</span>
+          <span>Track your reading progress</span>
         </div>
       </div>
     </div>
@@ -81,13 +45,13 @@
 
       <!-- Role Selector -->
       <div class="role-selector" id="role-selector" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="role-card" onclick="selectRole(this, 'principal')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-4h6v4"/><path d="M9 9h.01"/><path d="M15 9h.01"/><path d="M9 13h.01"/><path d="M15 13h.01"/></svg>
-          <span>Principal</span>
-        </div>
         <div class="role-card active" onclick="selectRole(this, 'teacher')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           <span>Teacher</span>
+        </div>
+        <div class="role-card" onclick="selectRole(this, 'parent')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20a2 2 0 0 1 2-2h3.172a2 2 0 0 1 1.414.586l.828.828a2 2 0 0 0 1.414.586h.344a2 2 0 0 0 1.414-.586l.828-.828A2 2 0 0 1 15.828 18H19a2 2 0 0 1 2 2v1H3v-1z"/><circle cx="8" cy="10" r="3"/><circle cx="16" cy="10" r="3"/></svg>
+          <span>Parent</span>
         </div>
         <div class="role-card" onclick="selectRole(this, 'student')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -197,7 +161,7 @@ function selectRole(el, role) {
     if (passwordGroup) passwordGroup.style.display = '';
     if (extrasGroup) extrasGroup.style.display = 'none';
   } else {
-    // Teacher & Principal: email-only login (no password required)
+    // Teacher & Parent: email-only login (no password required)
     if (emailGroup) emailGroup.style.display = '';
     if (nameGroup) nameGroup.style.display = 'none';
     if (codeGroup) codeGroup.style.display = 'none';
@@ -328,8 +292,8 @@ async function handleCleverLogin() {
 async function handleDemoLogin() {
   try {
     const demoRole = selectedRole || 'teacher';
-    const demoName = demoRole === 'student' ? 'Demo Student' : demoRole === 'principal' ? 'Demo Principal' : 'Sarah Johnson';
-    const demoEmail = demoRole === 'student' ? 'demo-student@demo.com' : demoRole === 'principal' ? 'demo-principal@demo.com' : 'sarah@demo.com';
+    const demoName = demoRole === 'student' ? 'Demo Student' : demoRole === 'parent' ? 'Demo Parent' : 'Sarah Johnson';
+    const demoEmail = demoRole === 'student' ? 'demo-student@demo.com' : demoRole === 'parent' ? 'demo-parent@demo.com' : 'sarah@demo.com';
     await API.demoLogin(demoName, demoEmail, demoRole);
     window.location.href = 'dashboard.html';
   } catch(e) { showError('Demo login failed. Is the server running?'); }
