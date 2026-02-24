@@ -1440,7 +1440,7 @@ function renderBookDetail() {
           ${b.genre ? `<span class="badge badge-outline">${b.genre}</span>` : ''}
           <span class="badge badge-outline">${chapCount} Chapters</span>
         </div>
-        ${chapCount > 1 && ![51,52,53,54,55,56,57,58,59,60,61].includes(b.id) ? `<button class="btn btn-primary" onclick="launchFullBookQuiz(${b.id}, ${sid})">Take Full Book Quiz (All ${chapCount} Chapters)</button>` : ''}
+        ${chapCount > 1 && ![51,52,53,54,55,56,57,58,59,60,61,62,63,64].includes(b.id) ? `<button class="btn btn-primary" onclick="launchFullBookQuiz(${b.id}, ${sid})">Take Full Book Quiz (All ${chapCount} Chapters)</button>` : ''}
       </div>
     </div>
 
