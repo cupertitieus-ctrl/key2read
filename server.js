@@ -71,7 +71,22 @@ async function buildSessionUser(user) {
       sessionUser.className = cls.name;
       sessionUser.grade = cls.grade || '4th';
     }
+  } else if (user.role === 'parent') {
+    // Parent: look up class_id from the user record
+    if (user.class_id) {
+      const { data: cls } = await db.supabase.from('classes').select('id, name, class_code, users!teacher_id (name)').eq('id', user.class_id).single();
+      if (cls) {
+        sessionUser.classId = cls.id;
+        sessionUser.classCode = cls.class_code;
+        sessionUser.className = cls.name;
+        sessionUser.teacherName = cls.users?.name || '';
+      }
+    }
+    sessionUser.plan = user.plan || 'free';
   }
+
+  // Include plan for all users
+  sessionUser.plan = user.plan || 'free';
 
   return sessionUser;
 }
@@ -298,6 +313,25 @@ app.post('/api/auth/signup', async (req, res) => {
       req.session.userId = user.id;
       req.session.user = user;
       return res.json({ success: true, user });
+
+    } else if (role === 'parent') {
+      // Parent signup: create user, link to class via classCode if provided
+      const userEmail = email || `${name.toLowerCase().replace(/\s+/g, '.')}@parent.key2read.com`;
+      const user = await db.createUser({ email: userEmail, name, role: 'parent', auth_provider: 'local' });
+      if (!user) return res.status(500).json({ error: 'Failed to create account' });
+
+      let sessionUser = { ...user };
+      if (classCode) {
+        const cls = await db.getClassByCode(classCode);
+        if (cls) {
+          sessionUser.classId = cls.id;
+          sessionUser.classCode = cls.class_code;
+          sessionUser.className = cls.name;
+        }
+      }
+      req.session.userId = user.id;
+      req.session.user = sessionUser;
+      return res.json({ success: true, user: sessionUser });
 
     } else {
       // Teacher signup (default)
