@@ -218,7 +218,7 @@ function fallbackQuiz(chapterTitle) {
 }
 
 function fallbackDefinition(word) {
-  return { word, definition: `"${word}" — look this word up in a dictionary for the full definition.`, part_of_speech: 'unknown', example: `Can you use "${word}" in a sentence?`, tip: 'Try breaking the word into smaller parts to understand its meaning.' };
+  return { word, definition: `This is a cool word! Ask a grown-up or your teacher what "${word}" means.`, part_of_speech: '', example: '', tip: `Try saying "${word}" out loud — sometimes hearing a word helps you figure it out!` };
 }
 
 function fallbackStrategy(type) {
