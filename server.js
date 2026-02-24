@@ -603,6 +603,29 @@ app.post('/api/feedback', async (req, res) => {
   res.json(feedback);
 });
 
+// ─── STUDENT FAVORITES ───
+app.get('/api/students/:id/favorites', async (req, res) => {
+  try {
+    const favorites = await db.getFavoriteBooks(parseInt(req.params.id));
+    res.json({ favorites });
+  } catch (e) {
+    console.error('Get favorites error:', e);
+    res.json({ favorites: [] });
+  }
+});
+
+app.post('/api/students/:id/favorites/toggle', async (req, res) => {
+  const { bookId } = req.body;
+  if (!bookId) return res.status(400).json({ error: 'Missing bookId' });
+  try {
+    const result = await db.toggleFavoriteBook(parseInt(req.params.id), bookId);
+    res.json(result);
+  } catch (e) {
+    console.error('Toggle favorite error:', e);
+    res.status(500).json({ error: 'Failed to toggle favorite' });
+  }
+});
+
 // ─── CLASS STORE PURCHASE ───
 app.post('/api/store/purchase', async (req, res) => {
   const { studentId, itemName, price } = req.body;

@@ -44,6 +44,8 @@ const API = {
   getQuizResults: (id) => API.get(`/api/students/${id}/quiz-results`),
   getWeeklyStats: (id) => API.get(`/api/students/${id}/weekly-stats`),
   getBookProgress: (id) => API.get(`/api/students/${id}/book-progress`),
+  getFavorites: (id) => API.get(`/api/students/${id}/favorites`),
+  toggleFavorite: (id, bookId) => API.post(`/api/students/${id}/favorites/toggle`, { bookId }),
 
   // Books
   getBooks: () => API.get('/api/books'),

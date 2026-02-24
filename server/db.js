@@ -40,7 +40,7 @@ async function getStudents(classId) {
       student_surveys (
         interest_tags, reading_style, favorite_genre, hobbies,
         favorite_animals, favorite_sports, favorite_subjects, favorite_foods,
-        dream_job, favorite_place, favorite_color, favorite_movie_or_show, fun_fact
+        dream_job, favorite_place, favorite_color, favorite_movie_or_show, fun_fact, favorite_books
       )
     `)
     .eq('class_id', classId || 1)
@@ -66,7 +66,8 @@ async function getStudents(classId) {
       favorite_place: survey.favorite_place || '',
       favorite_color: survey.favorite_color || '',
       favorite_movie_or_show: survey.favorite_movie_or_show || '',
-      fun_fact: survey.fun_fact || ''
+      fun_fact: survey.fun_fact || '',
+      favorite_books: survey.favorite_books || []
     };
   });
 }
@@ -79,7 +80,7 @@ async function getStudent(id) {
       student_surveys (
         interest_tags, reading_style, favorite_genre, hobbies,
         favorite_animals, favorite_sports, favorite_subjects, favorite_foods,
-        dream_job, favorite_place, favorite_color, favorite_movie_or_show, fun_fact
+        dream_job, favorite_place, favorite_color, favorite_movie_or_show, fun_fact, favorite_books
       )
     `)
     .eq('id', id)
@@ -103,12 +104,13 @@ async function getStudent(id) {
     favorite_place: survey.favorite_place || '',
     favorite_color: survey.favorite_color || '',
     favorite_movie_or_show: survey.favorite_movie_or_show || '',
-    fun_fact: survey.fun_fact || ''
+    fun_fact: survey.fun_fact || '',
+    favorite_books: survey.favorite_books || []
   };
 }
 
 async function updateStudentSurvey(studentId, surveyData) {
-  const fields = ['interest_tags', 'reading_style', 'favorite_genre', 'hobbies', 'favorite_animals', 'favorite_sports', 'favorite_subjects', 'favorite_foods', 'dream_job', 'favorite_place', 'favorite_color', 'favorite_movie_or_show', 'fun_fact'];
+  const fields = ['interest_tags', 'reading_style', 'favorite_genre', 'hobbies', 'favorite_animals', 'favorite_sports', 'favorite_subjects', 'favorite_foods', 'dream_job', 'favorite_place', 'favorite_color', 'favorite_movie_or_show', 'fun_fact', 'favorite_books'];
   const updates = {};
   for (const f of fields) {
     if (surveyData[f] !== undefined) updates[f] = surveyData[f];
@@ -405,6 +407,32 @@ async function updateStudentStats(studentId, keysEarned, newAccuracy) {
         });
     }
   });
+}
+
+// ─── STUDENT FAVORITES ───
+
+async function getFavoriteBooks(studentId) {
+  const { data } = await supabase
+    .from('student_surveys')
+    .select('favorite_books')
+    .eq('student_id', studentId)
+    .single();
+  return (data?.favorite_books) || [];
+}
+
+async function toggleFavoriteBook(studentId, bookId) {
+  let favorites = await getFavoriteBooks(studentId);
+  const idx = favorites.indexOf(bookId);
+  const added = idx === -1;
+  if (added) {
+    favorites.push(bookId);
+  } else {
+    favorites.splice(idx, 1);
+  }
+  await supabase
+    .from('student_surveys')
+    .upsert({ student_id: studentId, favorite_books: favorites, updated_at: new Date().toISOString() }, { onConflict: 'student_id' });
+  return { favorites, added };
 }
 
 // ─── DEDUCT STUDENT KEYS (Class Store Purchase) ───
@@ -732,7 +760,9 @@ module.exports = {
   getFullBookQuiz,
   getWeeklyStats,
   getStudentBookProgress,
-  deductStudentKeys
+  deductStudentKeys,
+  getFavoriteBooks,
+  toggleFavoriteBook
 };
 
 async function getFullBookQuiz(bookId) {

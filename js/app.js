@@ -101,6 +101,8 @@ let books = [];
 let selectedBookId = null; // For book detail view
 let bookChapters = []; // Chapters for selected book
 let completedChapters = []; // Chapter numbers the student has completed for current book
+let studentFavorites = []; // Array of favorite book IDs (student only)
+let showFavoritesOnly = false; // Filter toggle state
 
 // Sort books: Book 1 with quizzes first (randomized), then Book 2+ with quizzes, then Coming Soon at end
 function sortBooksForDisplay(bookList) {
@@ -1378,10 +1380,16 @@ function renderStudentBookCard(b) {
   const level = displayGradeLevel(b.grade_level || b.lexile_level || '');
   const genre = b.genre || '';
   const comingSoon = b.has_quizzes === false;
+  const isFav = studentFavorites.includes(b.id);
   return `
     <div class="book-card${comingSoon ? ' book-card-coming-soon' : ''}" ${comingSoon ? '' : `onclick="openBook(${b.id})" style="cursor:pointer"`}>
       <div class="book-card-cover" style="height:200px">
         ${comingSoon ? '<div class="coming-soon-ribbon">Coming Soon</div>' : ''}
+        <button class="book-fav-btn${isFav ? ' active' : ''}" onclick="event.stopPropagation(); toggleFavoriteBook(${b.id})" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
+          ${isFav
+            ? '<svg viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'
+            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'}
+        </button>
         ${coverUrl
           ? `<img src="${coverUrl}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
           : ''}
@@ -1400,6 +1408,17 @@ function renderStudentBookCard(b) {
     </div>`;
 }
 
+async function toggleFavoriteBook(bookId) {
+  if (!currentUser?.studentId) return;
+  try {
+    const result = await API.toggleFavorite(currentUser.studentId, bookId);
+    studentFavorites = result.favorites || [];
+    renderMain();
+  } catch(e) {
+    console.error('Toggle favorite error:', e);
+  }
+}
+
 function initStudentBookSearch() {
   const input = document.getElementById('student-book-search');
   if (!input) return;
@@ -1408,14 +1427,15 @@ function initStudentBookSearch() {
     const grid = document.getElementById('student-book-grid');
     const countEl = document.getElementById('student-book-count');
     if (!grid) return;
+    const base = showFavoritesOnly ? books.filter(b => studentFavorites.includes(b.id)) : books;
     const filtered = q
-      ? books.filter(b =>
+      ? base.filter(b =>
           (b.title || '').toLowerCase().includes(q) ||
           (b.author || '').toLowerCase().includes(q) ||
           (b.genre || '').toLowerCase().includes(q) ||
           (b.grade_level || '').toLowerCase().includes(q)
         )
-      : books;
+      : base;
     grid.innerHTML = filtered.length === 0
       ? `<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--g400)">
            <p style="font-size:1rem;margin-bottom:4px">No books found</p>
@@ -2750,6 +2770,7 @@ function renderStudentDashboard() {
     onboarded: currentUser?.onboarded || 0
   };
   const hasQuizzes = s.quizzes > 0;
+  const displayBooks = showFavoritesOnly ? books.filter(b => studentFavorites.includes(b.id)) : books;
 
   // Weekly stats (fetched during loadApp)
   const w = currentUser?.weeklyStats || { keysThisWeek: 0, quizzesThisWeek: 0, booksCompletedThisWeek: 0 };
@@ -2810,7 +2831,11 @@ function renderStudentDashboard() {
     <div style="margin-top:24px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <h3 style="margin:0;font-size:1rem;font-weight:700">Browse Books</h3>
-        <span style="color:var(--g500);font-size:0.8125rem" id="student-book-count">${books.length} books</span>
+        <span style="color:var(--g500);font-size:0.8125rem" id="student-book-count">${displayBooks.length} books</span>
+      </div>
+      <div class="book-filter-toggle" style="margin-bottom:12px">
+        <button class="book-filter-btn${!showFavoritesOnly ? ' active' : ''}" onclick="showFavoritesOnly=false; renderMain()">All Books</button>
+        <button class="book-filter-btn${showFavoritesOnly ? ' active' : ''}" onclick="showFavoritesOnly=true; renderMain()">&#10084;&#65039; My Favorites</button>
       </div>
       <div style="position:relative;margin-bottom:16px">
         <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--g400);pointer-events:none">${IC.search}</span>
@@ -2819,7 +2844,9 @@ function renderStudentDashboard() {
           onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--g200)'">
       </div>
       <div class="book-grid" id="student-book-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
-        ${books.length > 0 ? books.map(b => renderStudentBookCard(b)).join('') : `<p style="grid-column:1/-1;color:var(--g500);text-align:center;padding:24px">No books available yet.</p>`}
+        ${displayBooks.length > 0 ? displayBooks.map(b => renderStudentBookCard(b)).join('') : showFavoritesOnly
+          ? `<p style="grid-column:1/-1;color:var(--g500);text-align:center;padding:24px">No favorites yet! Tap the &#10084;&#65039; on any book to add it here.</p>`
+          : `<p style="grid-column:1/-1;color:var(--g500);text-align:center;padding:24px">No books available yet.</p>`}
       </div>
     </div>
   `;
@@ -2847,6 +2874,46 @@ function renderStudentQuizzes() {
       <div class="stat-card"><div class="stat-card-label">Quizzes Completed</div><div class="stat-card-value">${s.quizzes}</div></div>
       <div class="stat-card"><div class="stat-card-label">Keys Earned</div><div class="stat-card-value">${s.keys}</div></div>
     </div>
+
+    ${(() => {
+      const favBooks = books.filter(b => studentFavorites.includes(b.id));
+      if (favBooks.length > 0) {
+        return `<div style="margin-top:28px">
+          <h3 style="margin:0 0 16px;font-size:1rem;font-weight:700">&#10084;&#65039; My Favorites</h3>
+          <div class="book-progress-grid">
+            ${favBooks.map(b => {
+              const prog = progressMap[b.id];
+              const isComplete = prog && prog.isComplete;
+              const hasProgress = !!prog;
+              return `
+              <div class="book-progress-card" onclick="openBook(${b.id})" style="cursor:pointer">
+                <div class="book-progress-cover">
+                  ${b.cover_url ? `<img src="${b.cover_url}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+                  <div class="book-progress-cover-fallback" ${b.cover_url ? 'style="display:none"' : ''}>
+                    <span>${b.title}</span>
+                  </div>
+                  ${isComplete ? `
+                  <div class="book-completed-overlay">
+                    <div class="book-completed-badge">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      <span>COMPLETED</span>
+                    </div>
+                  </div>` : ''}
+                </div>
+                <div class="book-progress-info">
+                  <div class="book-progress-title">${b.title}</div>
+                  <div class="book-progress-status">${isComplete ? '&#9989; All done!' : hasProgress ? `${prog.completedChapters}/${prog.totalChapters} chapters` : 'Not started'}</div>
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      } else {
+        return `<div style="margin-top:20px;padding:20px;background:var(--blue-p);border-radius:var(--radius-md);text-align:center;color:var(--g500);font-size:0.875rem">
+          Tap the &#10084;&#65039; on any book to add it to your favorites!
+        </div>`;
+      }
+    })()}
 
     ${startedBooks.length > 0 ? `
     <div style="margin-top:28px">
@@ -3433,6 +3500,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentUser.bookProgress = await API.getBookProgress(currentUser.studentId);
       } catch(e) {
         currentUser.bookProgress = [];
+      }
+      try {
+        const favResult = await API.getFavorites(currentUser.studentId);
+        studentFavorites = favResult.favorites || [];
+      } catch(e) {
+        studentFavorites = [];
       }
     }
 
