@@ -591,31 +591,38 @@ const QuizEngine = (function() {
           // Guest mode: skip API call, use local scoring
           throw new Error('guest-local');
         }
+        const hintCount = hintShown.filter(Boolean).length;
         quizResults = await API.submitQuiz({
           studentId: currentStudent.id,
           chapterId: currentQuiz.chapter.id,
           answers,
-          timeTaken
+          timeTaken,
+          hintCount
         });
       } catch(e) {
         // Fallback local scoring
         let correctCount = 0;
-        let keysEarned = 0;
         currentQuiz.questions.forEach((q, i) => {
           const wasRevealed = feedback[i]?.revealed;
           if (answers[i] === q.correct_answer && !wasRevealed) {
             correctCount++;
-            // Full keys (5) for first-attempt correct, reduced (2) if hint was shown
-            keysEarned += hintShown[i] ? 2 : 5;
           }
         });
         const score = (correctCount / currentQuiz.questions.length) * 100;
+        const localHintCount = hintShown.filter(Boolean).length;
+        // Per-quiz keys: pass (>=80%) + 0 hints = 3, <=3 hints = 2, >3 hints = 1, fail = 0
+        let keysEarned = 0;
+        if (score >= 80) {
+          if (localHintCount === 0) keysEarned = 3;
+          else if (localHintCount <= 3) keysEarned = 2;
+          else keysEarned = 1;
+        }
         quizResults = {
           score, correctCount, totalQuestions: currentQuiz.questions.length,
           readingLevelChange: Math.round((score / 100 - 0.65) * 20),
           newReadingScore: (currentStudent?.reading_score || 500) + Math.round((score / 100 - 0.65) * 20),
           newReadingLevel: (((currentStudent?.reading_score || 500) + Math.round((score / 100 - 0.65) * 20)) / 160).toFixed(1),
-          keysEarned: keysEarned + (score === 100 ? 10 : 0),
+          keysEarned,
           results: currentQuiz.questions.map((q, i) => ({ isCorrect: answers[i] === q.correct_answer && !feedback[i]?.revealed, feedback: feedback[i]?.feedback || '', hintUsed: !!hintShown[i], revealed: !!feedback[i]?.revealed })),
           strategiesUsed: [...new Set(currentQuiz.questions.map(q => q.strategy_type))]
         };

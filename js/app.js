@@ -2654,11 +2654,8 @@ function renderStudentDashboard() {
   const hasQuizzes = s.quizzes > 0;
 
   // Weekly stats (fetched during loadApp)
-  const w = currentUser?.weeklyStats || { keysThisWeek: 0, quizzesThisWeek: 0, growthScoreThisWeek: 0, booksCompletedThisWeek: 0 };
+  const w = currentUser?.weeklyStats || { keysThisWeek: 0, quizzesThisWeek: 0, booksCompletedThisWeek: 0 };
   const totalBooksCompleted = currentUser?.totalBooksCompleted || 0;
-  const growthRaw = Math.round((w.growthScoreThisWeek || 0) * 10) / 10;
-  const growthDisplay = growthRaw > 0 ? `+${growthRaw}` : `${growthRaw}`;
-  const growthColor = growthRaw > 0 ? 'green' : growthRaw < 0 ? 'red' : 'g500';
 
   return `
     <div class="page-header"><h1>Welcome${hasQuizzes ? ' back' : ''}, ${s.name.split(' ')[0]}!</h1></div>
@@ -2676,11 +2673,6 @@ function renderStudentDashboard() {
         <span class="weekly-wins-reset">Resets every Monday</span>
       </div>
       <div class="weekly-wins-cards">
-        <div class="weekly-win-card weekly-win-growth">
-          <div class="weekly-win-emoji">📈</div>
-          <div class="weekly-win-value" style="color:var(--${growthColor})">${growthDisplay}</div>
-          <div class="weekly-win-label">Growth Score</div>
-        </div>
         <div class="weekly-win-card weekly-win-keys">
           <div class="weekly-win-emoji">🔑</div>
           <div class="weekly-win-value">${w.keysThisWeek}</div>
@@ -2807,11 +2799,8 @@ function renderStudentProgress() {
   };
   const hasQuizzes = s.quizzes > 0;
 
-  const w = currentUser?.weeklyStats || { keysThisWeek: 0, quizzesThisWeek: 0, growthScoreThisWeek: 0, booksCompletedThisWeek: 0 };
+  const w = currentUser?.weeklyStats || { keysThisWeek: 0, quizzesThisWeek: 0, booksCompletedThisWeek: 0 };
   const totalBooksCompleted = currentUser?.totalBooksCompleted || 0;
-  const growthRaw = Math.round((w.growthScoreThisWeek || 0) * 10) / 10;
-  const growthDisplay = growthRaw > 0 ? `+${growthRaw}` : `${growthRaw}`;
-  const growthColor = growthRaw > 0 ? 'green' : growthRaw < 0 ? 'red' : 'g500';
 
   return `
     <div class="page-header"><h1>My Reading Progress</h1></div>
@@ -2822,11 +2811,6 @@ function renderStudentProgress() {
         <span class="weekly-wins-reset">Resets every Monday</span>
       </div>
       <div class="weekly-wins-cards">
-        <div class="weekly-win-card weekly-win-growth">
-          <div class="weekly-win-emoji">📈</div>
-          <div class="weekly-win-value" style="color:var(--${growthColor})">${growthDisplay}</div>
-          <div class="weekly-win-label">Growth Score</div>
-        </div>
         <div class="weekly-win-card weekly-win-keys">
           <div class="weekly-win-emoji">🔑</div>
           <div class="weekly-win-value">${w.keysThisWeek}</div>

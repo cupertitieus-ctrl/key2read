@@ -518,7 +518,7 @@ app.post('/api/quiz/personalize-all', async (req, res) => {
 });
 
 app.post('/api/quiz/submit', async (req, res) => {
-  const { studentId, chapterId, assignmentId, answers, timeTaken } = req.body;
+  const { studentId, chapterId, assignmentId, answers, timeTaken, hintCount } = req.body;
   const student = await db.getStudent(studentId);
   const questions = await db.getChapterQuiz(chapterId);
   if (!student || questions.length === 0) return res.status(400).json({ error: 'Invalid submission' });
@@ -547,7 +547,14 @@ app.post('/api/quiz/submit', async (req, res) => {
 
   const score = (correctCount / questions.length) * 100;
   const levelChange = claude.calculateReadingLevelChange(student.reading_score, chapter?.books?.lexile_level || 600, correctCount, questions.length);
-  const keysEarned = correctCount * 5 + (score === 100 ? 10 : 0);
+  // Per-quiz keys: pass (>=80%) + 0 hints = 3, <=3 hints = 2, >3 hints = 1, fail = 0
+  const hints = hintCount || 0;
+  let keysEarned = 0;
+  if (score >= 80) {
+    if (hints === 0) keysEarned = 3;
+    else if (hints <= 3) keysEarned = 2;
+    else keysEarned = 1;
+  }
 
   const newScore = Math.max(200, student.reading_score + levelChange);
   await db.updateReadingLevel(studentId, newScore, 'quiz');
