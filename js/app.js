@@ -2763,22 +2763,55 @@ function renderStudentQuizzes() {
   let s = {
     id: currentUser?.studentId || 0,
     name: currentUser?.name || 'Student',
-    level: currentUser?.reading_level || '3.0',
-    score: currentUser?.reading_score || 500,
     keys: currentUser?.keys_earned || 0,
-    quizzes: currentUser?.quizzes_completed || 0,
-    accuracy: currentUser?.accuracy || 0,
-    streak: currentUser?.streak_days || 0
+    quizzes: currentUser?.quizzes_completed || 0
   };
   const hasQuizzes = s.quizzes > 0;
 
+  // Build book progress map: bookId → { completedChapters, totalChapters, isComplete }
+  const progressMap = {};
+  (currentUser?.bookProgress || []).forEach(p => { progressMap[p.bookId] = p; });
+
+  // Books the student has started (at least one quiz)
+  const startedBooks = books.filter(b => progressMap[b.id]);
+
   return `
     <div class="page-header"><h1>My Quizzes</h1></div>
-    <div class="stat-cards">
+    <div class="stat-cards" style="grid-template-columns: repeat(2, 1fr)">
       <div class="stat-card"><div class="stat-card-label">Quizzes Completed</div><div class="stat-card-value">${s.quizzes}</div></div>
-      <div class="stat-card"><div class="stat-card-label">Avg Accuracy</div><div class="stat-card-value">${hasQuizzes ? s.accuracy + '%' : '—'}</div></div>
       <div class="stat-card"><div class="stat-card-label">Keys Earned</div><div class="stat-card-value">${s.keys}</div></div>
     </div>
+
+    ${startedBooks.length > 0 ? `
+    <div style="margin-top:28px">
+      <h3 style="margin:0 0 16px;font-size:1rem;font-weight:700">My Books</h3>
+      <div class="book-progress-grid">
+        ${startedBooks.map(b => {
+          const prog = progressMap[b.id];
+          const isComplete = prog && prog.isComplete;
+          return `
+          <div class="book-progress-card" onclick="openBook(${b.id})" style="cursor:pointer">
+            <div class="book-progress-cover">
+              ${b.cover_url ? `<img src="${b.cover_url}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+              <div class="book-progress-cover-fallback" ${b.cover_url ? 'style="display:none"' : ''}>
+                <span>${b.title}</span>
+              </div>
+              ${isComplete ? `
+              <div class="book-completed-overlay">
+                <div class="book-completed-badge">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>COMPLETED</span>
+                </div>
+              </div>` : ''}
+            </div>
+            <div class="book-progress-info">
+              <div class="book-progress-title">${b.title}</div>
+              <div class="book-progress-status">${isComplete ? '✅ All done!' : `${prog.completedChapters}/${prog.totalChapters} chapters`}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : ''}
 
     ${assignments.length > 0 ? `
     <div class="list-card" style="margin-top:24px">
@@ -2794,30 +2827,12 @@ function renderStudentQuizzes() {
           </div>
         </div>
       `).join('')}
-    </div>` : `
+    </div>` : !hasQuizzes ? `
     <div class="empty-state" style="margin-top:24px">
       <div class="empty-state-icon" style="font-size:2rem">📋</div>
       <h2>No Quizzes Yet</h2>
-      <p>Your teacher hasn't assigned any quizzes yet. In the meantime, explore the book library!</p>
-      <button class="btn btn-primary" onclick="navigate('library')">Browse Books</button>
-    </div>`}
-
-    ${books.length > 0 ? `
-    <div style="margin-top:24px">
-      <h3 style="margin-bottom:16px">Pick a Book to Read</h3>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px">
-        ${books.slice(0, 8).map(b => `
-          <div class="book-card" onclick="openBook(${b.id})" style="cursor:pointer;background:#fff;border-radius:var(--radius-md);border:1px solid var(--g200);overflow:hidden">
-            <div style="height:180px;background:var(--g100);display:flex;align-items:center;justify-content:center;overflow:hidden">
-              ${b.cover_url ? `<img src="${b.cover_url}" alt="${b.title}" style="width:100%;height:100%;object-fit:contain">` : `<div style="color:var(--g500);font-size:0.875rem;font-weight:600;padding:12px;text-align:center;line-height:1.4">${b.title}</div>`}
-            </div>
-            <div style="padding:8px 10px">
-              <div style="font-weight:600;font-size:0.8125rem;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.title}</div>
-              <div style="font-size:0.75rem;color:var(--g500)">${b.author}</div>
-            </div>
-          </div>
-        `).join('')}
-      </div>
+      <p>Pick a book from the dashboard and start reading!</p>
+      <button class="btn btn-primary" onclick="navigate('student-dashboard')">Browse Books</button>
     </div>` : ''}
   `;
 }
@@ -3338,15 +3353,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (userRole === 'student') {
     page = 'student-dashboard';
 
-    // Fetch weekly stats for the student dashboard
+    // Fetch weekly stats and book progress for the student dashboard
     if (currentUser?.studentId) {
       try {
         const ws = await API.getWeeklyStats(currentUser.studentId);
         currentUser.weeklyStats = ws;
         currentUser.totalBooksCompleted = ws.totalBooksCompleted || 0;
       } catch(e) {
-        currentUser.weeklyStats = { keysThisWeek: 0, quizzesThisWeek: 0, growthScoreThisWeek: 0, booksCompletedThisWeek: 0 };
+        currentUser.weeklyStats = { keysThisWeek: 0, quizzesThisWeek: 0, booksCompletedThisWeek: 0 };
         currentUser.totalBooksCompleted = 0;
+      }
+      try {
+        currentUser.bookProgress = await API.getBookProgress(currentUser.studentId);
+      } catch(e) {
+        currentUser.bookProgress = [];
       }
     }
 

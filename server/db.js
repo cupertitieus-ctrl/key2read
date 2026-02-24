@@ -537,6 +537,45 @@ async function getCompletedChapters(studentId, bookId) {
     .map(c => c.chapter_number);
 }
 
+// ─── STUDENT BOOK PROGRESS (for My Quizzes page) ───
+
+async function getStudentBookProgress(studentId) {
+  // Get all quiz results for this student with chapter → book mapping
+  const { data: results } = await supabase
+    .from('quiz_results')
+    .select('chapter_id, chapters!inner(book_id)')
+    .eq('student_id', studentId);
+
+  if (!results || results.length === 0) return [];
+
+  // Collect unique book IDs the student has worked on
+  const bookIds = [...new Set(results.map(r => r.chapters.book_id))];
+
+  // For each book, get total chapters and how many the student completed
+  const progress = [];
+  for (const bookId of bookIds) {
+    const { data: chapters } = await supabase
+      .from('chapters')
+      .select('id')
+      .eq('book_id', bookId);
+
+    const totalChapters = chapters ? chapters.length : 0;
+    const chapterIds = chapters ? chapters.map(c => c.id) : [];
+    const completedChapterIds = new Set(
+      results.filter(r => chapterIds.includes(r.chapter_id)).map(r => r.chapter_id)
+    );
+
+    progress.push({
+      bookId,
+      completedChapters: completedChapterIds.size,
+      totalChapters,
+      isComplete: totalChapters > 0 && completedChapterIds.size >= totalChapters
+    });
+  }
+
+  return progress;
+}
+
 // ─── WEEKLY STATS ───
 
 async function getWeeklyStats(studentId) {
@@ -671,7 +710,8 @@ module.exports = {
   getAllStudentsForOwner,
   getCompletedChapters,
   getFullBookQuiz,
-  getWeeklyStats
+  getWeeklyStats,
+  getStudentBookProgress
 };
 
 async function getFullBookQuiz(bookId) {

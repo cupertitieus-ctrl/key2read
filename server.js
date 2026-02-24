@@ -354,6 +354,17 @@ app.get('/api/students/:id/weekly-stats', async (req, res) => {
   }
 });
 
+// ─── BOOK PROGRESS (for My Quizzes page) ───
+app.get('/api/students/:id/book-progress', async (req, res) => {
+  try {
+    const progress = await db.getStudentBookProgress(parseInt(req.params.id));
+    res.json(progress);
+  } catch (e) {
+    console.error('Book progress error:', e);
+    res.status(500).json({ error: 'Failed to load book progress' });
+  }
+});
+
 // ─── CHAPTER PROGRESS ───
 app.get('/api/students/:id/completed-chapters/:bookId', async (req, res) => {
   const studentId = parseInt(req.params.id);

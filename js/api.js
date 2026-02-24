@@ -43,6 +43,7 @@ const API = {
   getReadingHistory: (id) => API.get(`/api/students/${id}/reading-history`),
   getQuizResults: (id) => API.get(`/api/students/${id}/quiz-results`),
   getWeeklyStats: (id) => API.get(`/api/students/${id}/weekly-stats`),
+  getBookProgress: (id) => API.get(`/api/students/${id}/book-progress`),
 
   // Books
   getBooks: () => API.get('/api/books'),
