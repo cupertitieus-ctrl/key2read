@@ -486,14 +486,37 @@ async function handleLogout() {
   window.location.href = 'signin.html';
 }
 
+// ---- Refresh student data from server ----
+async function refreshStudentData() {
+  if (!currentUser?.studentId) return;
+  try {
+    const [ws, bp] = await Promise.all([
+      API.getWeeklyStats(currentUser.studentId),
+      API.getBookProgress(currentUser.studentId)
+    ]);
+    currentUser.weeklyStats = ws;
+    currentUser.totalBooksCompleted = ws.totalBooksCompleted || 0;
+    currentUser.bookProgress = bp;
+  } catch(e) {
+    console.warn('refreshStudentData error:', e);
+  }
+}
+
 // ---- Navigate ----
+let _prevPage = null;
 function navigate(p, detail, sid) {
+  _prevPage = page;
   page = p;
   detailId = detail != null ? detail : null;
   studentId = sid != null ? sid : null;
   if (p !== 'reports') reportStudentId = null;
   renderSidebar();
   renderMain();
+  // Refresh data from server when navigating to student pages from quiz player
+  if (_prevPage === 'quiz-player' && userRole === 'student' &&
+      (p === 'student-dashboard' || p === 'student-quizzes' || p === 'student-progress')) {
+    refreshStudentData().then(() => renderMain());
+  }
 }
 
 // ---- Render Main ----
@@ -622,10 +645,8 @@ async function launchQuiz(bookId, chapterNum, sid) {
         if (currentUser.weeklyStats) currentUser.weeklyStats.booksCompletedThisWeek = (currentUser.weeklyStats.booksCompletedThisWeek || 0) + 1;
         try { setTimeout(() => showBookCompletionCelebration(book, results), 600); } catch(err) { console.error('Celebration error:', err); }
       }
-      // Refresh book progress from server so My Quizzes and dashboard stay in sync
-      if (currentUser?.studentId) {
-        API.getBookProgress(currentUser.studentId).then(bp => { currentUser.bookProgress = bp; }).catch(() => {});
-      }
+      // Refresh all student data from server so My Quizzes, dashboard, and Weekly Wins stay in sync
+      await refreshStudentData();
     }, nextChapterInfo);
     QuizEngine.render();
   } catch(e) {
@@ -1401,7 +1422,7 @@ function renderStudentBookCard(b) {
     <div class="book-card${comingSoon ? ' book-card-coming-soon' : ''}" ${comingSoon ? '' : `onclick="openBook(${b.id})" style="cursor:pointer"`}>
       <div class="book-card-cover" style="height:200px">
         ${comingSoon ? '<div class="coming-soon-ribbon">Coming Soon</div>' : ''}
-        <button class="book-fav-btn${isFav ? ' active' : ''}" onclick="event.stopPropagation(); toggleFavoriteBook(${b.id})" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
+        <button class="book-fav-btn${isFav ? ' active' : ''}" data-book-id="${b.id}" onclick="event.stopPropagation(); toggleFavoriteBook(${b.id})" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
           ${isFav
             ? '<svg viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'
             : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'}
@@ -1426,12 +1447,34 @@ function renderStudentBookCard(b) {
 
 async function toggleFavoriteBook(bookId) {
   if (!currentUser?.studentId) return;
+  // Optimistic update: toggle immediately in UI
+  const wasFav = studentFavorites.includes(bookId);
+  if (wasFav) {
+    studentFavorites = studentFavorites.filter(id => id !== bookId);
+  } else {
+    studentFavorites = [...studentFavorites, bookId];
+  }
+  // Update just the heart buttons without full re-render (preserves scroll)
+  document.querySelectorAll(`.book-fav-btn[data-book-id="${bookId}"]`).forEach(btn => {
+    btn.classList.toggle('active', !wasFav);
+    btn.title = !wasFav ? 'Remove from favorites' : 'Add to favorites';
+    btn.innerHTML = !wasFav
+      ? '<svg viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+  });
+  // Persist to server
   try {
     const result = await API.toggleFavorite(currentUser.studentId, bookId);
     studentFavorites = result.favorites || [];
-    renderMain();
   } catch(e) {
     console.error('Toggle favorite error:', e);
+    // Revert on failure
+    if (wasFav) {
+      studentFavorites = [...studentFavorites, bookId];
+    } else {
+      studentFavorites = studentFavorites.filter(id => id !== bookId);
+    }
+    renderMain();
   }
 }
 
@@ -1714,10 +1757,8 @@ async function launchFullBookQuiz(bookId, sid) {
       // Full book quiz = book is complete
       if (currentUser?.weeklyStats) currentUser.weeklyStats.booksCompletedThisWeek = (currentUser.weeklyStats.booksCompletedThisWeek || 0) + 1;
       try { setTimeout(() => showBookCompletionCelebration(book, results), 600); } catch(err) { console.error('Celebration error:', err); }
-      // Refresh book progress from server
-      if (currentUser?.studentId) {
-        API.getBookProgress(currentUser.studentId).then(bp => { currentUser.bookProgress = bp; }).catch(() => {});
-      }
+      // Refresh all student data from server
+      await refreshStudentData();
     }, null);
     QuizEngine.render();
   } catch(e) {

@@ -32,19 +32,26 @@ async function initDB() {
 
 // ─── QUERY HELPERS (async versions) ───
 
+// Survey fields that are safe to query (favorite_books added separately if column exists)
+const SURVEY_FIELDS = 'interest_tags, reading_style, favorite_genre, hobbies, favorite_animals, favorite_sports, favorite_subjects, favorite_foods, dream_job, favorite_place, favorite_color, favorite_movie_or_show, fun_fact';
+
 async function getStudents(classId) {
-  const { data, error } = await supabase
+  // Try with favorite_books first, fall back without it
+  let data, error;
+  ({ data, error } = await supabase
     .from('students')
-    .select(`
-      *,
-      student_surveys (
-        interest_tags, reading_style, favorite_genre, hobbies,
-        favorite_animals, favorite_sports, favorite_subjects, favorite_foods,
-        dream_job, favorite_place, favorite_color, favorite_movie_or_show, fun_fact, favorite_books
-      )
-    `)
+    .select(`*, student_surveys (${SURVEY_FIELDS}, favorite_books)`)
     .eq('class_id', classId || 1)
-    .order('name');
+    .order('name'));
+
+  if (error && error.code === '42703') {
+    // favorite_books column doesn't exist yet — retry without it
+    ({ data, error } = await supabase
+      .from('students')
+      .select(`*, student_surveys (${SURVEY_FIELDS})`)
+      .eq('class_id', classId || 1)
+      .order('name'));
+  }
 
   if (error) { console.error('getStudents error:', error); return []; }
 
@@ -73,18 +80,20 @@ async function getStudents(classId) {
 }
 
 async function getStudent(id) {
-  const { data, error } = await supabase
+  let data, error;
+  ({ data, error } = await supabase
     .from('students')
-    .select(`
-      *,
-      student_surveys (
-        interest_tags, reading_style, favorite_genre, hobbies,
-        favorite_animals, favorite_sports, favorite_subjects, favorite_foods,
-        dream_job, favorite_place, favorite_color, favorite_movie_or_show, fun_fact, favorite_books
-      )
-    `)
+    .select(`*, student_surveys (${SURVEY_FIELDS}, favorite_books)`)
     .eq('id', id)
-    .single();
+    .single());
+
+  if (error && error.code === '42703') {
+    ({ data, error } = await supabase
+      .from('students')
+      .select(`*, student_surveys (${SURVEY_FIELDS})`)
+      .eq('id', id)
+      .single());
+  }
 
   if (error || !data) return null;
 
@@ -412,20 +421,24 @@ async function updateStudentStats(studentId, keysEarned, newAccuracy) {
 // ─── STUDENT FAVORITES ───
 
 async function getFavoriteBooks(studentId) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('student_surveys')
     .select('favorite_books')
     .eq('student_id', studentId)
-    .single();
-  return (data?.favorite_books) || [];
+    .limit(1)
+    .maybeSingle();
+  if (error) { console.error('getFavoriteBooks error:', error); return []; }
+  return Array.isArray(data?.favorite_books) ? data.favorite_books : [];
 }
 
 async function toggleFavoriteBook(studentId, bookId) {
   let favorites = await getFavoriteBooks(studentId);
-  const idx = favorites.indexOf(bookId);
+  // Ensure bookId types match (compare as numbers)
+  const numBookId = Number(bookId);
+  const idx = favorites.findIndex(id => Number(id) === numBookId);
   const added = idx === -1;
   if (added) {
-    favorites.push(bookId);
+    favorites.push(numBookId);
   } else {
     favorites.splice(idx, 1);
   }

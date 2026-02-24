@@ -50,7 +50,10 @@ CRITICAL — ANSWER LENGTH BALANCE: The correct answer must NOT be consistently 
 
 IMPORTANT: When answer choices contain vocabulary words that will be underlined, ensure at least 2 answer choices include vocabulary-level words — never just the correct answer alone. Distribute vocabulary naturally so students cannot identify the correct answer by vocabulary highlighting alone.
 
-IMPORTANT: Vary the sentence starters across answer choices. Do NOT begin all 4 options with the same words (e.g., all starting with "The narrator" or "He felt"). Use diverse phrasing.
+IMPORTANT — SENTENCE VARIETY: Vary the sentence starters across answer choices. Do NOT begin all 4 options with the same words. In particular:
+- NEVER start 3+ answer choices with "The narrator" — use the character's name, pronouns ("He", "She"), or rephrase entirely.
+- Mix up phrasing: use action-first ("Running to the door, he..."), reason-first ("Because the egg was glowing..."), or emotion-first ("Excited by the discovery...") structures.
+- Each of the 4 options should begin with different words.
 
 Respond in valid JSON format:
 { "questions": [ { "question_number": 1, "question_type": "recall", "question_text": "...", "passage_excerpt": "...", "options": ["A","B","C","D"], "correct_answer": 0, "strategy_type": "...", "strategy_tip": "...", "explanation": "...", "vocabulary_words": ["word1"] } ] }` }]
