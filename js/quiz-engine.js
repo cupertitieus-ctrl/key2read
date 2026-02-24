@@ -359,7 +359,7 @@ const QuizEngine = (function() {
     'excited': { word: 'excited', definition: 'Feeling super happy and full of energy because something great is happening', pos: 'adjective' },
     'experience': { word: 'experience', definition: 'Something that happened to you — what you went through', pos: 'noun' },
     'extremely': { word: 'extremely', definition: 'Way more than normal — like REALLY, REALLY a lot', pos: 'adverb' },
-    'famous': { word: 'famous', definition: 'Very well-known — when everyone has heard of you, like a movie star', pos: 'adjective' },
+    'famous': { word: 'famous', definition: 'Everyone knows who you are!', pos: 'adjective' },
     'frighten': { word: 'frighten', definition: 'To scare someone — making them feel afraid', pos: 'verb' },
     'frightening': { word: 'frightening', definition: 'Something that makes you feel scared or afraid', pos: 'adjective' },
     'genuine': { word: 'genuine', definition: 'Real and true — not fake or pretend', pos: 'adjective' },
