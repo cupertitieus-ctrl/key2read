@@ -40,7 +40,7 @@ const ALL_QUESTIONS = {
       '',
       [
         'A dusty leather notebook with strange markings burned into the spine of it',
-        'An old aquarium sitting on a card table along with some beat-up pet supplies',
+        'A small wooden box filled with old coins and a folded-up treasure map inside it',
         'A collection of ancient-looking dragon books stacked inside a wooden crate',
         'A glowing rock wrapped in newspaper and hidden at the bottom of a bargain bin'
       ], 0, 'finding-details',

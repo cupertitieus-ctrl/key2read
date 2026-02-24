@@ -216,7 +216,125 @@ const QuizEngine = (function() {
     'frustration': { word: 'frustration', definition: 'That annoyed feeling when things are not going your way', pos: 'noun' },
     'recharge': { word: 'recharge', definition: 'Filling up your energy again — like charging a phone battery', pos: 'verb' },
     'shimmered': { word: 'shimmered', definition: 'Sparkled and glowed with a soft, pretty light', pos: 'verb' },
-    'creature': { word: 'creature', definition: 'Any living animal or being — real or imaginary', pos: 'noun' }
+    'creature': { word: 'creature', definition: 'Any living animal or being — real or imaginary', pos: 'noun' },
+    // Descriptive action words kids encounter in chapter books
+    'dangling': { word: 'dangling', definition: 'Hanging down and swinging back and forth loosely', pos: 'verb' },
+    'swooped': { word: 'swooped', definition: 'Flew down really fast — like a bird diving through the air', pos: 'verb' },
+    'crouched': { word: 'crouched', definition: 'Bent down low to hide or get ready to jump', pos: 'verb' },
+    'lunged': { word: 'lunged', definition: 'Jumped forward really fast to grab something', pos: 'verb' },
+    'scrambled': { word: 'scrambled', definition: 'Moved quickly in a messy, clumsy way — like climbing fast', pos: 'verb' },
+    'trembling': { word: 'trembling', definition: 'Shaking a little because you are scared or cold', pos: 'verb' },
+    'gasped': { word: 'gasped', definition: 'Took a sudden sharp breath because you were surprised or shocked', pos: 'verb' },
+    'muttered': { word: 'muttered', definition: 'Said something very quietly, almost under your breath', pos: 'verb' },
+    'whispered': { word: 'whispered', definition: 'Talked super quietly so only the person next to you can hear', pos: 'verb' },
+    'pounced': { word: 'pounced', definition: 'Jumped on something quickly — like a cat catching a mouse!', pos: 'verb' },
+    'wobbled': { word: 'wobbled', definition: 'Moved side to side in a shaky, unsteady way', pos: 'verb' },
+    'yanked': { word: 'yanked', definition: 'Pulled something really hard and fast', pos: 'verb' },
+    'darted': { word: 'darted', definition: 'Moved suddenly and quickly in one direction', pos: 'verb' },
+    'snatched': { word: 'snatched', definition: 'Grabbed something really fast', pos: 'verb' },
+    'glanced': { word: 'glanced', definition: 'Took a quick, short look at something', pos: 'verb' },
+    'squinted': { word: 'squinted', definition: 'Made your eyes small and narrow to see better', pos: 'verb' },
+    'grinned': { word: 'grinned', definition: 'Smiled really big showing your teeth', pos: 'verb' },
+    'giggled': { word: 'giggled', definition: 'Laughed in a quiet, silly way', pos: 'verb' },
+    'groaned': { word: 'groaned', definition: 'Made a low, tired sound because something was annoying or hard', pos: 'verb' },
+    'shrugged': { word: 'shrugged', definition: 'Lifted your shoulders up and down to say "I don\'t know"', pos: 'verb' },
+    'stumbled': { word: 'stumbled', definition: 'Almost fell down because you tripped on something', pos: 'verb' },
+    'tiptoed': { word: 'tiptoed', definition: 'Walked very quietly on the tips of your toes so nobody hears you', pos: 'verb' },
+    'enormous': { word: 'enormous', definition: 'REALLY, really big — way bigger than normal', pos: 'adjective' },
+    'tiny': { word: 'tiny', definition: 'Super small — like an ant or a grain of sand', pos: 'adjective' },
+    'fierce': { word: 'fierce', definition: 'Strong and scary-looking — like a lion about to roar', pos: 'adjective' },
+    'cozy': { word: 'cozy', definition: 'Warm and comfortable — like being under a soft blanket', pos: 'adjective' },
+    'drenched': { word: 'drenched', definition: 'Completely soaked with water — totally wet all over', pos: 'adjective' },
+    'exhausted': { word: 'exhausted', definition: 'SO tired that you can barely move or keep your eyes open', pos: 'adjective' },
+    'stunned': { word: 'stunned', definition: 'So surprised you cannot move or talk for a second', pos: 'adjective' },
+    'squishy': { word: 'squishy', definition: 'Soft and mushy — you can squeeze it and it changes shape', pos: 'adjective' },
+    'soaked': { word: 'soaked', definition: 'Very very wet — like you jumped in a puddle', pos: 'adjective' },
+    'tangled': { word: 'tangled', definition: 'All twisted and knotted up together — hard to pull apart', pos: 'adjective' },
+    'perched': { word: 'perched', definition: 'Sitting on the edge of something up high, like a bird on a branch', pos: 'verb' },
+    'clutched': { word: 'clutched', definition: 'Held onto something really tight because you didn\'t want to let go', pos: 'verb' },
+    'peered': { word: 'peered', definition: 'Looked closely at something, usually through a small space', pos: 'verb' },
+    'slumped': { word: 'slumped', definition: 'Fell or drooped down because you were tired or sad', pos: 'verb' },
+    'beamed': { word: 'beamed', definition: 'Smiled really brightly — your whole face lit up with happiness', pos: 'verb' },
+    'startled': { word: 'startled', definition: 'Surprised and a little scared by something sudden', pos: 'adjective' },
+    // ─── Additional quiz vocabulary (Famous Cat + Dragon Diaries) ───
+    'alley': { word: 'alley', definition: 'A narrow path or street between buildings', pos: 'noun' },
+    'announced': { word: 'announced', definition: 'Said something out loud so everyone could hear', pos: 'verb' },
+    'architecture': { word: 'architecture', definition: 'The way a building is designed and built — its shape and style', pos: 'noun' },
+    'adjusting': { word: 'adjusting', definition: 'Changing something a little bit to make it fit or work better', pos: 'verb' },
+    'camouflaged': { word: 'camouflaged', definition: 'Hidden by blending in with the colors and shapes around you', pos: 'adjective' },
+    'commits': { word: 'commits', definition: 'Promises to do something and really means it', pos: 'verb' },
+    'companion': { word: 'companion', definition: 'A friend who goes with you and keeps you company', pos: 'noun' },
+    'connection': { word: 'connection', definition: 'A link between two things or people — how they go together', pos: 'noun' },
+    'conversation': { word: 'conversation', definition: 'When two or more people talk back and forth to each other', pos: 'noun' },
+    'controlled': { word: 'controlled', definition: 'Kept something steady and in charge — not letting it go wild', pos: 'adjective' },
+    'convincing': { word: 'convincing', definition: 'Making someone believe something is true or a good idea', pos: 'adjective' },
+    'cooperate': { word: 'cooperate', definition: 'Working together with someone as a team', pos: 'verb' },
+    'crashed': { word: 'crashed', definition: 'Bumped into something really hard — BANG!', pos: 'verb' },
+    'dangerous': { word: 'dangerous', definition: 'Something that could hurt you — not safe', pos: 'adjective' },
+    'defective': { word: 'defective', definition: 'Broken or not working the right way', pos: 'adjective' },
+    'determine': { word: 'determine', definition: 'To figure something out or make a decision', pos: 'verb' },
+    'destined': { word: 'destined', definition: 'Meant to happen — like it was always part of the plan', pos: 'adjective' },
+    'discovery': { word: 'discovery', definition: 'Finding something new and exciting that you did not know about', pos: 'noun' },
+    'drifted': { word: 'drifted', definition: 'Moved slowly and gently, like floating on water or falling asleep', pos: 'verb' },
+    'efficiently': { word: 'efficiently', definition: 'Getting things done quickly without wasting time or energy', pos: 'adverb' },
+    'elaborate': { word: 'elaborate', definition: 'Very detailed and fancy — with lots of parts or decorations', pos: 'adjective' },
+    'enclosed': { word: 'enclosed', definition: 'Surrounded on all sides — closed in like a box', pos: 'adjective' },
+    'enthusiastically': { word: 'enthusiastically', definition: 'Doing something with LOTS of excitement and energy', pos: 'adverb' },
+    'excuses': { word: 'excuses', definition: 'Reasons you give to explain why you did or did not do something', pos: 'noun' },
+    'expelled': { word: 'expelled', definition: 'Kicked out of a place and told you cannot come back', pos: 'verb' },
+    'experiment': { word: 'experiment', definition: 'A test you do to find out if something works or is true', pos: 'noun' },
+    'experiments': { word: 'experiments', definition: 'Tests you do to learn something new by trying things out', pos: 'noun' },
+    'expensive': { word: 'expensive', definition: 'Costs a LOT of money — not cheap at all', pos: 'adjective' },
+    'filmed': { word: 'filmed', definition: 'Recorded a video using a camera or phone', pos: 'verb' },
+    'flickering': { word: 'flickering', definition: 'A light going on and off quickly — blinking and shaky', pos: 'verb' },
+    'frequently': { word: 'frequently', definition: 'Happening a lot — over and over again', pos: 'adverb' },
+    'generous': { word: 'generous', definition: 'Happy to share and give things to others', pos: 'adjective' },
+    'gobbled': { word: 'gobbled', definition: 'Ate something super fast — like you were starving!', pos: 'verb' },
+    'hologram': { word: 'hologram', definition: 'A picture made of light that looks 3D — like it is floating in the air', pos: 'noun' },
+    'hovered': { word: 'hovered', definition: 'Floated in one spot in the air without moving much', pos: 'verb' },
+    'identical': { word: 'identical', definition: 'Exactly the same — like two matching puzzle pieces', pos: 'adjective' },
+    'identities': { word: 'identities', definition: 'Who people really are — their names and what makes them special', pos: 'noun' },
+    'interrupted': { word: 'interrupted', definition: 'Started talking when someone else was still speaking', pos: 'verb' },
+    'invisible': { word: 'invisible', definition: 'Cannot be seen — like you turned completely see-through', pos: 'adjective' },
+    'knowledgeable': { word: 'knowledgeable', definition: 'Knowing a lot about something — really smart about it', pos: 'adjective' },
+    'labyrinth': { word: 'labyrinth', definition: 'A big maze with lots of twists and turns that is hard to find your way through', pos: 'noun' },
+    'library': { word: 'library', definition: 'A place full of books where you can read and borrow them for free', pos: 'noun' },
+    'martial': { word: 'martial', definition: 'Having to do with fighting or self-defense — like karate or kung fu', pos: 'adjective' },
+    'motionless': { word: 'motionless', definition: 'Not moving at all — completely still like a statue', pos: 'adjective' },
+    'naturally': { word: 'naturally', definition: 'In a normal, easy way — without having to try hard', pos: 'adverb' },
+    'nutrition': { word: 'nutrition', definition: 'The healthy stuff in food that helps your body grow strong', pos: 'noun' },
+    'outdated': { word: 'outdated', definition: 'Old and not used anymore — there is a newer version now', pos: 'adjective' },
+    'panicking': { word: 'panicking', definition: 'Freaking out because you are really scared and do not know what to do', pos: 'verb' },
+    'performing': { word: 'performing', definition: 'Doing something in front of people — like a show or trick', pos: 'verb' },
+    'personality': { word: 'personality', definition: 'The way someone acts and feels that makes them who they are', pos: 'noun' },
+    'physically': { word: 'physically', definition: 'Having to do with your body — like running, jumping, or touching', pos: 'adverb' },
+    'playlist': { word: 'playlist', definition: 'A list of songs you picked to listen to one after another', pos: 'noun' },
+    'privacy': { word: 'privacy', definition: 'Being alone and having your own space where nobody is watching', pos: 'noun' },
+    'protected': { word: 'protected', definition: 'Kept safe so nothing bad could happen', pos: 'verb' },
+    'recognized': { word: 'recognized', definition: 'Knew who or what something was because you saw it before', pos: 'verb' },
+    'regardless': { word: 'regardless', definition: 'No matter what — it does not change the answer', pos: 'adverb' },
+    'resourceful': { word: 'resourceful', definition: 'Really good at solving problems with whatever you have around you', pos: 'adjective' },
+    'ricocheted': { word: 'ricocheted', definition: 'Bounced off something and flew in a different direction', pos: 'verb' },
+    'scorch': { word: 'scorch', definition: 'To burn something a little on the outside with heat', pos: 'verb' },
+    'sensitive': { word: 'sensitive', definition: 'Feeling things strongly — can get hurt easily by words or touch', pos: 'adjective' },
+    'signatures': { word: 'signatures', definition: 'The special way you write your name — your own style', pos: 'noun' },
+    'slouched': { word: 'slouched', definition: 'Sat or stood with your shoulders drooping forward — looking tired or sad', pos: 'verb' },
+    'specifically': { word: 'specifically', definition: 'Exactly and clearly — talking about one certain thing', pos: 'adverb' },
+    'sprinted': { word: 'sprinted', definition: 'Ran as fast as you possibly could', pos: 'verb' },
+    'strategy': { word: 'strategy', definition: 'A smart plan for how to win or solve something', pos: 'noun' },
+    'stealth': { word: 'stealth', definition: 'Moving quietly and secretly so nobody notices you — like a ninja', pos: 'noun' },
+    'teased': { word: 'teased', definition: 'Made fun of someone in a joking or mean way', pos: 'verb' },
+    'temporarily': { word: 'temporarily', definition: 'Only for a short time — not forever', pos: 'adverb' },
+    'terrifying': { word: 'terrifying', definition: 'SO scary it makes your heart pound and your legs shake', pos: 'adjective' },
+    'thorough': { word: 'thorough', definition: 'Checking everything carefully and not missing a single thing', pos: 'adjective' },
+    'transform': { word: 'transform', definition: 'To change into something completely different', pos: 'verb' },
+    'revealed': { word: 'revealed', definition: 'Showed something that was hidden — the secret came out!', pos: 'verb' },
+    'treasure': { word: 'treasure', definition: 'Something really valuable and special — like gold or jewels', pos: 'noun' },
+    'uncomfortable': { word: 'uncomfortable', definition: 'Not feeling good — like something is bugging you or does not fit right', pos: 'adjective' },
+    'unnatural': { word: 'unnatural', definition: 'Not normal — something that does not happen in nature', pos: 'adjective' },
+    'valuable': { word: 'valuable', definition: 'Worth a lot — really important or costs a lot of money', pos: 'adjective' },
+    'vibrations': { word: 'vibrations', definition: 'Tiny shaking movements back and forth — like a phone buzzing', pos: 'noun' },
+    'wobbly': { word: 'wobbly', definition: 'Shaky and unsteady — moving side to side like it might fall', pos: 'adjective' }
   };
 
   // ─── Shuffle answer options so correct answer isn't always B ───
@@ -832,15 +950,87 @@ const QuizEngine = (function() {
       return;
     }
 
-    // Fetch from API
+    // Try API, but fall back to a generated definition if API is unavailable or returns a generic message
     try {
       const passage = currentQuiz?.questions?.[currentQuestion]?.passage_excerpt || '';
       const def = await API.defineWord(word, passage, currentStudent?.grade || '4th');
-      definitionCache[word.toLowerCase()] = def;
-      renderDefinitionTooltip(tooltip, def);
+      // Check if the API returned a real definition or a useless fallback
+      const defText = (def.definition || '').toLowerCase();
+      if (defText.includes('ask a grown-up') || defText.includes('look this word up') || defText.includes('dictionary') || defText.includes('ask your teacher') || !def.definition) {
+        // API returned a useless fallback — use our own smart fallback
+        const smartDef = generateSmartDefinition(word, passage);
+        definitionCache[word.toLowerCase()] = smartDef;
+        renderDefinitionTooltip(tooltip, smartDef);
+      } else {
+        definitionCache[word.toLowerCase()] = def;
+        renderDefinitionTooltip(tooltip, def);
+      }
     } catch(e) {
-      tooltip.innerHTML = `<div class="vocab-tooltip-word">${escapeHtml(word)}</div><div class="vocab-tooltip-def">Definition not available</div>`;
+      // API failed entirely — use smart fallback
+      const passage = currentQuiz?.questions?.[currentQuestion]?.passage_excerpt || '';
+      const smartDef = generateSmartDefinition(word, passage);
+      definitionCache[word.toLowerCase()] = smartDef;
+      renderDefinitionTooltip(tooltip, smartDef);
     }
+  }
+
+  // Generate a kid-friendly definition for words not in the dictionary
+  function generateSmartDefinition(word, passage) {
+    const w = word.toLowerCase();
+    // Common suffix patterns to generate meaningful definitions
+    const suffixDefs = [
+      { suffix: 'ing', hint: 'This is an action word (something you can do)' },
+      { suffix: 'ed', hint: 'This describes something that already happened' },
+      { suffix: 'ly', hint: 'This word describes HOW something is done' },
+      { suffix: 'tion', hint: 'This is a thing or idea' },
+      { suffix: 'sion', hint: 'This is a thing or idea' },
+      { suffix: 'ment', hint: 'This is a thing or a result of doing something' },
+      { suffix: 'ness', hint: 'This describes a quality or feeling' },
+      { suffix: 'ful', hint: 'This means full of something' },
+      { suffix: 'less', hint: 'This means without something' },
+      { suffix: 'able', hint: 'This means something CAN be done' },
+      { suffix: 'ible', hint: 'This means something CAN be done' },
+      { suffix: 'ous', hint: 'This describes something that has a lot of a quality' },
+      { suffix: 'ive', hint: 'This describes a quality or tendency' },
+      { suffix: 'al', hint: 'This describes something related to a topic' },
+      { suffix: 'er', hint: 'This could be a person who does something, or mean "more" of something' },
+      { suffix: 'est', hint: 'This means "the most" of something' },
+    ];
+
+    let partOfSpeech = '';
+    let defText = '';
+
+    // Try suffix-based smart hints
+    for (const { suffix, hint } of suffixDefs) {
+      if (w.endsWith(suffix) && w.length > suffix.length + 2) {
+        defText = hint;
+        if (['ing', 'ed'].includes(suffix)) partOfSpeech = 'verb';
+        else if (['ly'].includes(suffix)) partOfSpeech = 'adverb';
+        else if (['tion', 'sion', 'ment', 'ness'].includes(suffix)) partOfSpeech = 'noun';
+        else if (['ful', 'less', 'able', 'ible', 'ous', 'ive', 'al'].includes(suffix)) partOfSpeech = 'adjective';
+        break;
+      }
+    }
+
+    // If we have passage context, add a helpful tip
+    let tip = '';
+    if (passage && passage.toLowerCase().includes(w)) {
+      tip = 'Read the sentence around this word for clues about what it means!';
+    } else {
+      tip = 'Look at how this word is used in the answer choice — the other words nearby can help you figure it out!';
+    }
+
+    if (!defText) {
+      defText = 'This is an important word in the story. Try to figure out what it means from the words around it!';
+    }
+
+    return {
+      word: word,
+      definition: defText,
+      part_of_speech: partOfSpeech,
+      example: '',
+      tip: tip
+    };
   }
 
   function renderDefinitionTooltip(tooltip, def) {

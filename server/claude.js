@@ -37,9 +37,9 @@ For each question, provide:
 - options: Exactly 4 answer choices (array of strings)
 - correct_answer: Index of correct answer (0-3). IMPORTANT: Vary the position of the correct answer across questions — do NOT always put the correct answer at the same index. Spread correct answers roughly evenly across 0, 1, 2, and 3.
 - strategy_type: One of "finding-details", "making-inferences", "context-clues", "identifying-theme", "personal-connection", "cause-and-effect", "character-analysis"
-- strategy_tip: A helpful tip teaching students HOW to find the answer (2-3 sentences, written for a child). Focus on the reading STRATEGY, not the answer itself.
+- strategy_tip: A helpful tip teaching students HOW to find the answer (2-3 sentences, written for a child). Focus on the reading STRATEGY, not the answer itself. IMPORTANT: Always reference a specific page number from the chapter (e.g., "Go back to page 12 and look for..." or "On page 8, the author describes..."). If you don't know the exact page, reference the position in the entry (e.g., "Look at the very first page of this entry..." or "Near the end of this entry on the last page...").
 - explanation: Why the correct answer is right (2-3 sentences, friendly tone)
-- vocabulary_words: Array of important words in the question that students might need defined (0-3 words)
+- vocabulary_words: Array of important/descriptive words in the answer choices that students might need defined (0-3 words). IMPORTANT: At least 2 out of 5 questions MUST have vocabulary_words. Include descriptive action words (like "dangling", "crouched", "swooped"), vivid adjectives, or any word a 6-8 year old might not know.
 
 CRITICAL — ANSWER LENGTH BALANCE: The correct answer must NOT be consistently longer than the wrong answers. Follow these rules strictly:
 - All 4 answer choices for each question should be similar in length (within ~20% of each other).
@@ -218,7 +218,8 @@ function fallbackQuiz(chapterTitle) {
 }
 
 function fallbackDefinition(word) {
-  return { word, definition: `This is a cool word! Ask a grown-up or your teacher what "${word}" means.`, part_of_speech: '', example: '', tip: `Try saying "${word}" out loud — sometimes hearing a word helps you figure it out!` };
+  // Return a signal that the client should use its own smart definition generator
+  return { word, definition: '', part_of_speech: '', example: '', tip: '' };
 }
 
 function fallbackStrategy(type) {
