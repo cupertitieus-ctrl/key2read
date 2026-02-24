@@ -81,7 +81,8 @@
     radial-gradient(ellipse 60% 50% at 80% 10%, rgba(124,58,237,.04) 0%, transparent 50%),
     radial-gradient(ellipse 60% 50% at 20% 10%, rgba(229,161,0,.04) 0%, transparent 50%),
     linear-gradient(180deg, #fff 0%, var(--g50) 100%);
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
   position: relative;
 }
 
