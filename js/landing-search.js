@@ -110,18 +110,28 @@
   // ════════════════════════════════════
   //  BOOK LIBRARY GRID
   // ════════════════════════════════════
+  // Sort: Book 1 first (randomized), then rest (randomized)
+  function sortBooksForDisplay(bookList) {
+    const book1 = bookList.filter(b => b.book_number === 1);
+    const rest = bookList.filter(b => b.book_number !== 1);
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+    return [...shuffle(book1), ...shuffle(rest)];
+  }
+
   function initLibrary() {
     const grid = document.getElementById('library-grid');
     const paginationEl = document.getElementById('library-pagination');
     if (!grid || !paginationEl) return;
     if (books.length === 0) return;
 
-    // Shuffle books using Fisher-Yates
-    shuffledBooks = [...books];
-    for (let i = shuffledBooks.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffledBooks[i], shuffledBooks[j]] = [shuffledBooks[j], shuffledBooks[i]];
-    }
+    // Book 1 titles first (randomized), then rest (randomized)
+    shuffledBooks = sortBooksForDisplay([...books]);
 
     currentPage = 0;
     renderLibraryPage(grid, paginationEl);
@@ -132,7 +142,25 @@
     const start = currentPage * BOOKS_PER_PAGE;
     const pageBooks = shuffledBooks.slice(start, start + BOOKS_PER_PAGE);
 
-    grid.innerHTML = pageBooks.map(b => `
+    grid.innerHTML = pageBooks.map(b => {
+      const comingSoon = b.has_quizzes === false;
+      if (comingSoon) {
+        return `
+      <div class="library-book library-book-coming-soon">
+        <div class="coming-soon-overlay">Coming Soon</div>
+        <div class="library-book-cover">
+          ${b.cover_url
+            ? `<img src="${escapeAttr(b.cover_url)}" alt="${escapeAttr(b.title)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+            : ''}
+          <div class="library-book-cover-fallback" ${b.cover_url ? 'style="display:none"' : ''}>${escapeHtml((b.title || '').charAt(0))}</div>
+        </div>
+        <div class="library-book-info">
+          <div class="library-book-title">${escapeHtml(b.title)}</div>
+          <div class="library-book-author">${escapeHtml(b.author || '')}</div>
+        </div>
+      </div>`;
+      }
+      return `
       <a class="library-book" href="pages/dashboard.html?book=${b.id}">
         <div class="library-book-cover">
           ${b.cover_url
@@ -144,8 +172,8 @@
           <div class="library-book-title">${escapeHtml(b.title)}</div>
           <div class="library-book-author">${escapeHtml(b.author || '')}</div>
         </div>
-      </a>
-    `).join('');
+      </a>`;
+    }).join('');
 
     // Pagination controls
     const chevronLeft = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';

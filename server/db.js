@@ -142,9 +142,42 @@ async function updateReadingLevel(studentId, newScore, source) {
     .insert({ student_id: studentId, level: parseFloat(level), lexile: newScore, source: source || 'quiz' });
 }
 
+// Book 1 titles — the first book a reader should start with
+const BOOK_NUMBER_MAP = {
+  56: 1,  // Purple Space Chickens (first in series)
+  61: 1,  // Don't Trust the Nacho Hamster
+  62: 1,  // Fluff and Robodog
+  63: 1,  // Tryouts
+  64: 1,  // Life of a Sparkly Turtle
+  65: 1,  // Sprinkles and Unicorn
+  66: 1,  // Diary of a Famous Cat: Now I Have A Name
+  68: 1,  // Dragon Diaries
+};
+
 async function getBooks() {
-  const { data } = await supabase.from('books').select('*').order('title');
-  return data || [];
+  const { data: books } = await supabase.from('books').select('*').order('title');
+  if (!books || books.length === 0) return [];
+
+  // Determine which books have quiz questions
+  const { data: quizBooks } = await supabase
+    .from('chapters')
+    .select('book_id, quiz_questions(id)')
+    .not('quiz_questions', 'is', null);
+
+  const booksWithQuizzes = new Set();
+  if (quizBooks) {
+    quizBooks.forEach(ch => {
+      if (ch.quiz_questions && ch.quiz_questions.length > 0) {
+        booksWithQuizzes.add(ch.book_id);
+      }
+    });
+  }
+
+  return books.map(b => ({
+    ...b,
+    book_number: BOOK_NUMBER_MAP[b.id] || 2,
+    has_quizzes: booksWithQuizzes.has(b.id)
+  }));
 }
 
 async function getBookChapters(bookId) {

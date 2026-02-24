@@ -552,6 +552,30 @@
   }
 }
 
+/* ─── COMING SOON OVERLAY ─── */
+.book-card-coming-soon {
+  opacity: 0.5;
+  pointer-events: none;
+  position: relative;
+  cursor: default;
+}
+
+.coming-soon-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--g600);
+  border-radius: inherit;
+  z-index: 2;
+  letter-spacing: 0.02em;
+}
+
 /* --- Tables --- */
 .data-table-wrap {
   background: #fff;

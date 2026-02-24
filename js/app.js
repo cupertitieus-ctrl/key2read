@@ -102,6 +102,22 @@ let selectedBookId = null; // For book detail view
 let bookChapters = []; // Chapters for selected book
 let completedChapters = []; // Chapter numbers the student has completed for current book
 
+// Sort books: Book 1 first (randomized), then rest (randomized)
+function sortBooksForDisplay(bookList) {
+  const book1 = bookList.filter(b => b.book_number === 1);
+  const rest = bookList.filter(b => b.book_number !== 1);
+  // Fisher-Yates shuffle both groups
+  for (let i = book1.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [book1[i], book1[j]] = [book1[j], book1[i]];
+  }
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]];
+  }
+  return [...book1, ...rest];
+}
+
 let quizHistory = [];
 
 // ---- Growth Data (6 months: Sep-Feb) ----
@@ -1208,8 +1224,10 @@ function renderGuestBookCard(b) {
   const coverUrl = b.cover_url || '';
   const level = displayGradeLevel(b.grade_level || b.lexile_level || '');
   const genre = b.genre || '';
+  const comingSoon = b.has_quizzes === false;
   return `
-    <div class="book-card" onclick="openBook(${b.id})">
+    <div class="book-card${comingSoon ? ' book-card-coming-soon' : ''}" ${comingSoon ? '' : `onclick="openBook(${b.id})"`}>
+      ${comingSoon ? '<div class="coming-soon-overlay">Coming Soon</div>' : ''}
       <div class="book-card-cover">
         ${coverUrl
           ? `<img src="${coverUrl}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
@@ -1293,8 +1311,10 @@ function renderStudentBookCard(b) {
   const coverUrl = b.cover_url || '';
   const level = displayGradeLevel(b.grade_level || b.lexile_level || '');
   const genre = b.genre || '';
+  const comingSoon = b.has_quizzes === false;
   return `
-    <div class="book-card" onclick="openBook(${b.id})" style="cursor:pointer">
+    <div class="book-card${comingSoon ? ' book-card-coming-soon' : ''}" ${comingSoon ? '' : `onclick="openBook(${b.id})" style="cursor:pointer"`}>
+      ${comingSoon ? '<div class="coming-soon-overlay">Coming Soon</div>' : ''}
       <div class="book-card-cover" style="height:200px">
         ${coverUrl
           ? `<img src="${coverUrl}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
@@ -1368,8 +1388,10 @@ function renderLibrary() {
         const coverUrl = b.cover_url || '';
         const level = displayGradeLevel(b.grade_level || b.lexile_level || '');
         const genre = b.genre || '';
+        const comingSoon = b.has_quizzes === false;
         return `
-        <div class="book-card" onclick="openBook(${b.id})">
+        <div class="book-card${comingSoon ? ' book-card-coming-soon' : ''}" ${comingSoon ? '' : `onclick="openBook(${b.id})"`}>
+          ${comingSoon ? '<div class="coming-soon-overlay">Coming Soon</div>' : ''}
           <div class="book-card-cover">
             ${coverUrl
               ? `<img src="${coverUrl}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
@@ -3262,9 +3284,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentUser = null;
   }
 
-  // Load books from API
+  // Load books from API and sort: Book 1 first (randomized), then rest (randomized)
   try {
     books = await API.getBooks();
+    books = sortBooksForDisplay(books);
   } catch(e) { console.warn('Could not load books:', e); }
 
   // Guest mode — skip teacher/student data loading
