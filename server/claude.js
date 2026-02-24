@@ -13,57 +13,214 @@ function isConfigured() {
   return process.env.CLAUDE_API_KEY && process.env.CLAUDE_API_KEY !== 'your-claude-api-key-here';
 }
 
-// Generate 5 quiz questions for a book chapter
-async function generateChapterQuiz(bookTitle, bookAuthor, chapterNumber, chapterTitle, chapterSummary, gradeLevel) {
-  if (!isConfigured()) return fallbackQuiz(chapterTitle);
-  const c = getClient();
-  const resp = await c.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 3000,
-    messages: [{ role: 'user', content: `You are creating a reading comprehension quiz for ${gradeLevel} grade students about "${bookTitle}" by ${bookAuthor}, Chapter ${chapterNumber}: "${chapterTitle}".
+// ═══════════════════════════════════════════════════════════════
+// UNIVERSAL QUESTION GENERATION FRAMEWORK
+// Applies to ALL books, ALL quizzes, Ages 6-8 Default
+// ═══════════════════════════════════════════════════════════════
 
+const FIVE_QUESTION_CATEGORIES = `Generate exactly 5 multiple-choice questions. Each question MUST be a specific type in this exact order:
+
+Question 1 — LITERAL COMPREHENSION: "What happened?"
+  Tests recall of specific events, characters, or settings from the chapter.
+  question_type: "literal"
+  strategy_type: "finding-details"
+
+Question 2 — CAUSE/EFFECT OR MOTIVATION: "Why did it happen?"
+  Tests reasoning about WHY something happened or WHY a character made a choice.
+  question_type: "cause-effect"
+  strategy_type: "cause-and-effect"
+
+Question 3 — VOCABULARY SKILL: Word meaning in context
+  Tests understanding of a Tier 2 academic word (like "investigate", "suspicious", "extraordinary") or an important story-specific word. The question should ask what the word means OR how it is used.
+  question_type: "vocabulary"
+  strategy_type: "context-clues"
+
+Question 4 — INFERENCE OR FEELING: "What can we figure out?"
+  Tests reading between the lines — what clues tell us about characters' feelings, motivations, or what might happen next.
+  question_type: "inference"
+  strategy_type: "making-inferences"
+
+Question 5 — BEST ANSWER REASONING: "Which is the BEST answer?"
+  Exactly ONE per quiz. The question text MUST include the word "BEST". All 4 answer choices should be somewhat reasonable, but ONE must be clearly the strongest and most supported by the text. This teaches decision-making and evidence-based reasoning.
+  question_type: "best-answer"
+  strategy_type: "best-answer-reasoning"`;
+
+const SEVEN_QUESTION_CATEGORIES = `Generate exactly 7 multiple-choice questions. Each question MUST be a specific type in this exact order:
+
+Question 1 — LITERAL COMPREHENSION (What): "What happened?"
+  Tests recall of a specific event or action from the chapter.
+  question_type: "literal"
+  strategy_type: "finding-details"
+
+Question 2 — LITERAL COMPREHENSION (Who/Where/When): Tests recall of characters, settings, or timing.
+  question_type: "literal"
+  strategy_type: "finding-details"
+
+Question 3 — CAUSE/EFFECT OR MOTIVATION: "Why did it happen?"
+  Tests reasoning about causes, effects, or character decisions.
+  question_type: "cause-effect"
+  strategy_type: "cause-and-effect"
+
+Question 4 — VOCABULARY SKILL: Word meaning in context
+  Tests understanding of a Tier 2 academic word or important story-specific word.
+  question_type: "vocabulary"
+  strategy_type: "context-clues"
+
+Question 5 — INFERENCE OR FEELING: "What can we figure out?"
+  Tests reading between the lines about feelings or motivations.
+  question_type: "inference"
+  strategy_type: "making-inferences"
+
+Question 6 — CRITICAL THINKING / PROBLEM SOLVING: "What should happen next?" or "What would be the best thing to do?"
+  Tests the student's ability to think about solutions or predict outcomes based on story clues.
+  question_type: "inference"
+  strategy_type: "character-analysis"
+
+Question 7 — BEST ANSWER REASONING: "Which is the BEST answer?"
+  Exactly ONE per quiz. The question text MUST include the word "BEST". All 4 choices somewhat reasonable, one clearly strongest.
+  question_type: "best-answer"
+  strategy_type: "best-answer-reasoning"`;
+
+const VOCABULARY_FRAMEWORK = `
+═══ VOCABULARY FRAMEWORK (MANDATORY) ═══
+
+WORD TIERS — Classify every vocabulary candidate:
+• Tier 1 — Everyday words (dog, run, big, said, went) → NEVER underline these
+• Tier 2 — Academic words (extremely, investigate, suspicious, convinced, deliberately) → PRIORITIZE these
+• Tier 3 — Story-specific content words (alley, telescope, mayor, hibernate) → Use ONLY if important to understanding the story
+
+WORD VALUE TEST — Only underline a word if AT LEAST 2 of these are true:
+1. Affects understanding of the passage
+2. Likely unfamiliar to a 7-year-old
+3. Useful beyond this story (transferable)
+4. Represents a reading skill (adjective, strong verb, tone word, thinking word)
+If fewer than 2 → do NOT include it in vocabulary_words.
+
+NEVER underline: pronouns (something, it, they), filler words, words clearly below grade level, proper nouns.
+
+DEFINITION RULE: Any vocabulary word MUST have a definition simpler than the word itself. If you can't explain it in words a 7-year-old understands → pick a different word.
+
+SKILL TARGETING — Prefer these word types:
+• Adjectives (enormous, peculiar, determined)
+• Strong verbs (lunged, scrambled, investigated)
+• Tone words (nervous, confident, suspicious)
+• Intensifiers (extremely, barely, suddenly)
+• Thinking words (decide, realize, notice, discover)`;
+
+const ANSWER_RULES = `
+═══ ANSWER CHOICE RULES ═══
+
+Every question must have exactly 4 answer choices following these rules:
+1. ONE clearly correct or BEST answer
+2. NO obvious throwaway wrong answers — every wrong answer must be plausible
+3. Wrong answers should be based on common misunderstandings children make (misreading, confusing characters, surface-level thinking)
+4. All 4 choices must be within ~20% of each other in character length
+5. Correct answer position MUST be varied — spread across 0, 1, 2, 3 across the quiz. Never put the correct answer at the same position more than twice.
+6. Each answer choice must start with DIFFERENT words — never 3+ options starting with the same phrase
+7. When vocabulary words appear in answer choices, at least 2 choices must contain vocabulary-level words (so underlines don't give away the answer)`;
+
+const BEST_ANSWER_RULES = `
+═══ BEST ANSWER QUESTION (Special Rules) ═══
+
+For the BEST answer question:
+• Question text MUST contain the word "BEST" (e.g., "Which is the BEST reason..." or "What is the BEST way to describe...")
+• All 4 options should seem somewhat reasonable on the surface
+• ONE must be clearly the strongest, most complete, and best supported by the text
+• The explanation MUST:
+  1. State why the best answer is the strongest
+  2. Briefly explain why each other option is weaker
+  3. Use age-appropriate language (ages 6-8)
+• NEVER say "all answers are correct"
+• This question teaches children to evaluate evidence and make supported choices`;
+
+const QUALITY_GATE = `
+═══ QUALITY TEST (Every Question Must Pass) ═══
+
+Before including a question, verify it passes AT LEAST ONE:
+□ Does it require THINKING? (not just remembering a word from the text)
+□ Does it test UNDERSTANDING of the story?
+□ Does it BUILD VOCABULARY skills?
+□ Does it BUILD REASONING skills?
+If a question passes NONE of these → REJECT it and write a better one.
+
+HARD RULES — Never include:
+✗ Trivial detail questions ("What color was the shirt?")
+✗ Memory-only questions that test nothing
+✗ Meaningless underlining of common words
+✗ Trick questions or "gotcha" wording
+✗ Sarcasm or abstract language inappropriate for ages 6-8
+✗ Questions where only ONE sentence of the chapter matters
+✗ Definitions harder than the target word`;
+
+// Generate quiz questions for a book chapter using the Universal Framework
+async function generateChapterQuiz(bookTitle, bookAuthor, chapterNumber, chapterTitle, chapterSummary, gradeLevel, questionCount = 5) {
+  if (!isConfigured()) return fallbackQuiz(chapterTitle, questionCount);
+  const c = getClient();
+  const categories = questionCount === 7 ? SEVEN_QUESTION_CATEGORIES : FIVE_QUESTION_CATEGORIES;
+  const maxTokens = questionCount === 7 ? 5500 : 4000;
+
+  const prompt = `You are creating a reading comprehension quiz for children ages 6-8 (${gradeLevel || '2nd-3rd'} grade) about "${bookTitle}" by ${bookAuthor}.
+Chapter ${chapterNumber}: "${chapterTitle}"
 Chapter summary: ${chapterSummary}
 
-Generate exactly 5 multiple-choice questions. Each question must be a different type:
-1. RECALL - Tests memory of specific details from the chapter
-2. INFERENCE - Requires reading between the lines
-3. VOCABULARY - Tests understanding of a key word from the chapter in context
-4. THEME - Asks about the big idea, lesson, or theme
-5. PERSONAL - Connects the chapter to the student's own life/experience
+═══ CORE MISSION ═══
+Create quiz questions that: measure comprehension accurately, build vocabulary intentionally, develop critical thinking, strengthen problem-solving skills, and teach reasoning (not guessing). Every question must serve a learning purpose — no filler.
 
-For each question, provide:
-- question_text: The question
-- passage_excerpt: A short relevant quote or passage (1-2 sentences). Leave empty for personal questions.
-- options: Exactly 4 answer choices (array of strings)
-- correct_answer: Index of correct answer (0-3). IMPORTANT: Vary the position of the correct answer across questions — do NOT always put the correct answer at the same index. Spread correct answers roughly evenly across 0, 1, 2, and 3.
-- strategy_type: One of "finding-details", "making-inferences", "context-clues", "identifying-theme", "personal-connection", "cause-and-effect", "character-analysis"
-- strategy_tip: A simple hint telling the student which page to look at. Format: "Go to page X to find the answer." Just give the page number — do NOT describe what to look for or give any additional clues. If you don't know the exact page, use the chapter's starting page number.
-- explanation: Why the correct answer is right (2-3 sentences, friendly tone)
-- vocabulary_words: Array of important/descriptive words in the answer choices that students might need defined (0-3 words). IMPORTANT: At least 2 out of 5 questions MUST have vocabulary_words. Include descriptive action words (like "dangling", "crouched", "swooped"), vivid adjectives, or any word a 6-8 year old might not know.
+${categories}
 
-CRITICAL — ANSWER LENGTH BALANCE: The correct answer must NOT be consistently longer than the wrong answers. Follow these rules strictly:
-- All 4 answer choices for each question should be similar in length (within ~20% of each other).
-- If the correct answer needs more detail, add similar detail to at least 2 wrong answers so they are equally long.
-- Vary which option is longest across questions — sometimes a wrong answer should be the longest.
-- Never make the correct answer the only one with a full sentence while wrong answers are short phrases.
-- Wrong answers (distractors) must be plausible and well-crafted, not obviously short throwaway options.
+${VOCABULARY_FRAMEWORK}
 
-IMPORTANT: When answer choices contain vocabulary words that will be underlined, ensure at least 2 answer choices include vocabulary-level words — never just the correct answer alone. Distribute vocabulary naturally so students cannot identify the correct answer by vocabulary highlighting alone.
+${ANSWER_RULES}
 
-IMPORTANT — SENTENCE VARIETY: Vary the sentence starters across answer choices. Do NOT begin all 4 options with the same words. In particular:
-- NEVER start 3+ answer choices with "The narrator" — use the character's name, pronouns ("He", "She"), or rephrase entirely.
-- Mix up phrasing: use action-first ("Running to the door, he..."), reason-first ("Because the egg was glowing..."), or emotion-first ("Excited by the discovery...") structures.
-- Each of the 4 options should begin with different words.
+${BEST_ANSWER_RULES}
 
-Respond in valid JSON format:
-{ "questions": [ { "question_number": 1, "question_type": "recall", "question_text": "...", "passage_excerpt": "...", "options": ["A","B","C","D"], "correct_answer": 0, "strategy_type": "...", "strategy_tip": "...", "explanation": "...", "vocabulary_words": ["word1"] } ] }` }]
+${QUALITY_GATE}
+
+═══ ADDITIONAL RULES ═══
+• strategy_tip: Format MUST be "Reread this chapter to find the answer." (Do NOT reference specific page numbers — those will be added separately.)
+• explanation: 2-3 sentences, friendly and encouraging tone. For the BEST answer question, also explain why the other options are weaker.
+• passage_excerpt: A short relevant quote from the chapter (1-2 sentences). May be empty if the question is about the whole chapter.
+• vocabulary_words: Array of 0-3 Tier 2/3 words from the answer choices. At least 2 out of ${questionCount} questions MUST have vocabulary_words.
+• At least 2 questions must require thinking beyond a single sentence of the chapter.
+
+═══ OUTPUT FORMAT ═══
+Respond in valid JSON only. No text before or after the JSON.
+{
+  "questions": [
+    {
+      "question_number": 1,
+      "question_type": "literal",
+      "question_text": "...",
+      "passage_excerpt": "...",
+      "options": ["A", "B", "C", "D"],
+      "correct_answer": 0,
+      "strategy_type": "finding-details",
+      "strategy_tip": "Reread this chapter to find the answer.",
+      "explanation": "...",
+      "vocabulary_words": ["word1"]
+    }
+  ]
+}`;
+
+  const resp = await c.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: maxTokens,
+    messages: [{ role: 'user', content: prompt }]
   });
   try {
     const text = resp.content[0].text;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      // Basic validation
+      if (parsed.questions && parsed.questions.length === questionCount) {
+        return parsed;
+      }
+      console.warn(`Quiz generation returned ${parsed.questions?.length || 0} questions, expected ${questionCount}`);
+      if (parsed.questions && parsed.questions.length > 0) return parsed;
+    }
   } catch (e) { console.error('Quiz generation parse error:', e); }
-  return fallbackQuiz(chapterTitle);
+  return fallbackQuiz(chapterTitle, questionCount);
 }
 
 // Personalize a question for a specific student based on their interests
@@ -207,14 +364,28 @@ function calculateReadingLevelChange(currentScore, bookLexile, correctCount, tot
 }
 
 // Fallbacks when Claude API is not configured
-function fallbackQuiz(chapterTitle) {
-  return { questions: [
-    { question_number: 1, question_type: 'recall', question_text: `What happened in "${chapterTitle}"?`, passage_excerpt: '', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answer: 0, strategy_type: 'finding-details', strategy_tip: 'Look for specific details mentioned in the text.', explanation: 'Check the chapter for key events.', vocabulary_words: [] },
-    { question_number: 2, question_type: 'inference', question_text: 'What can you figure out from reading between the lines?', passage_excerpt: '', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answer: 0, strategy_type: 'making-inferences', strategy_tip: 'Think about what the author implies but doesn\'t say directly.', explanation: 'Use clues in the text to make your best guess.', vocabulary_words: [] },
-    { question_number: 3, question_type: 'vocabulary', question_text: 'What does the key vocabulary word mean in context?', passage_excerpt: '', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answer: 0, strategy_type: 'context-clues', strategy_tip: 'Look at the words around the unfamiliar word for clues.', explanation: 'Context clues help you understand new words.', vocabulary_words: [] },
-    { question_number: 4, question_type: 'theme', question_text: 'What is the main lesson or theme of this chapter?', passage_excerpt: '', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answer: 0, strategy_type: 'identifying-theme', strategy_tip: 'Think about the big idea — what does the author want you to learn?', explanation: 'The theme is the message the author wants to share.', vocabulary_words: [] },
-    { question_number: 5, question_type: 'personal', question_text: 'How does this chapter connect to your own life?', passage_excerpt: '', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answer: 0, strategy_type: 'personal-connection', strategy_tip: 'Think about your own experiences that are similar.', explanation: 'Making personal connections helps you understand the story better.', vocabulary_words: [] }
-  ]};
+function fallbackQuiz(chapterTitle, questionCount = 5) {
+  const fiveQuestions = [
+    { question_number: 1, question_type: 'literal', question_text: `What happened in "${chapterTitle}"?`, passage_excerpt: '', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answer: 0, strategy_type: 'finding-details', strategy_tip: 'Reread this chapter to find the answer.', explanation: 'Check the chapter for key events.', vocabulary_words: [] },
+    { question_number: 2, question_type: 'cause-effect', question_text: 'Why did the main event in this chapter happen?', passage_excerpt: '', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answer: 0, strategy_type: 'cause-and-effect', strategy_tip: 'Reread this chapter to find the answer.', explanation: 'Look for words like "because" or "so" to find the reason.', vocabulary_words: [] },
+    { question_number: 3, question_type: 'vocabulary', question_text: 'What does the key vocabulary word mean in context?', passage_excerpt: '', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answer: 0, strategy_type: 'context-clues', strategy_tip: 'Reread this chapter to find the answer.', explanation: 'Context clues help you understand new words.', vocabulary_words: [] },
+    { question_number: 4, question_type: 'inference', question_text: 'What can you figure out from reading between the lines?', passage_excerpt: '', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answer: 0, strategy_type: 'making-inferences', strategy_tip: 'Reread this chapter to find the answer.', explanation: 'Use clues in the text to make your best guess.', vocabulary_words: [] },
+    { question_number: 5, question_type: 'best-answer', question_text: 'Which is the BEST way to describe what this chapter is about?', passage_excerpt: '', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answer: 0, strategy_type: 'best-answer-reasoning', strategy_tip: 'Reread this chapter to find the answer.', explanation: 'Think about which answer is the strongest and most complete.', vocabulary_words: [] }
+  ];
+
+  if (questionCount === 7) {
+    return { questions: [
+      { question_number: 1, question_type: 'literal', question_text: `What happened in "${chapterTitle}"?`, passage_excerpt: '', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answer: 0, strategy_type: 'finding-details', strategy_tip: 'Reread this chapter to find the answer.', explanation: 'Check the chapter for key events.', vocabulary_words: [] },
+      { question_number: 2, question_type: 'literal', question_text: 'Who was involved in this chapter, and where did it take place?', passage_excerpt: '', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answer: 0, strategy_type: 'finding-details', strategy_tip: 'Reread this chapter to find the answer.', explanation: 'Look for character names and settings.', vocabulary_words: [] },
+      { question_number: 3, question_type: 'cause-effect', question_text: 'Why did the main event in this chapter happen?', passage_excerpt: '', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answer: 0, strategy_type: 'cause-and-effect', strategy_tip: 'Reread this chapter to find the answer.', explanation: 'Look for words like "because" or "so" to find the reason.', vocabulary_words: [] },
+      { question_number: 4, question_type: 'vocabulary', question_text: 'What does the key vocabulary word mean in context?', passage_excerpt: '', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answer: 0, strategy_type: 'context-clues', strategy_tip: 'Reread this chapter to find the answer.', explanation: 'Context clues help you understand new words.', vocabulary_words: [] },
+      { question_number: 5, question_type: 'inference', question_text: 'What can you figure out from reading between the lines?', passage_excerpt: '', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answer: 0, strategy_type: 'making-inferences', strategy_tip: 'Reread this chapter to find the answer.', explanation: 'Use clues in the text to make your best guess.', vocabulary_words: [] },
+      { question_number: 6, question_type: 'inference', question_text: 'What would be the best thing for the character to do next?', passage_excerpt: '', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answer: 0, strategy_type: 'character-analysis', strategy_tip: 'Reread this chapter to find the answer.', explanation: 'Think about what the character has learned and how they might act.', vocabulary_words: [] },
+      { question_number: 7, question_type: 'best-answer', question_text: 'Which is the BEST way to describe what this chapter is about?', passage_excerpt: '', options: ['Option A', 'Option B', 'Option C', 'Option D'], correct_answer: 0, strategy_type: 'best-answer-reasoning', strategy_tip: 'Reread this chapter to find the answer.', explanation: 'Think about which answer is the strongest and most complete.', vocabulary_words: [] }
+    ]};
+  }
+
+  return { questions: fiveQuestions };
 }
 
 function fallbackDefinition(word) {
@@ -230,7 +401,8 @@ function fallbackStrategy(type) {
     'identifying-theme': { strategy_name: 'Big Idea Finder', steps: ['Think about what the main character learned', 'Ask yourself: "What lesson does the author want me to learn?"', 'Choose the answer that fits the WHOLE chapter, not just one part'], example: 'If a character learns to be honest after lying, the theme might be "honesty is important."', encouragement: 'Think big! The theme is the life lesson hiding in the story.' },
     'personal-connection': { strategy_name: 'Connect to You', steps: ['Think about a time you felt the same way as a character', 'Remember a similar experience from your life', 'Connect YOUR feelings to the character\'s feelings'], example: 'If a character is nervous about a test, think about when YOU felt nervous.', encouragement: 'Your experiences make you a better reader!' },
     'cause-and-effect': { strategy_name: 'Why Did It Happen?', steps: ['Find the event the question is asking about', 'Ask "WHY did this happen?" or "WHAT happened because of this?"', 'Look for signal words like "because," "so," "therefore"'], example: 'The ice cream melted (effect) BECAUSE it was left in the sun (cause).', encouragement: 'Everything happens for a reason — find the connection!' },
-    'character-analysis': { strategy_name: 'Character Explorer', steps: ['Look at what the character SAYS and DOES', 'Think about WHY they act that way', 'Consider how their feelings change during the chapter'], example: 'If a character shares their lunch, that action tells us they are kind and generous.', encouragement: 'Characters are like real people — their actions reveal who they are!' }
+    'character-analysis': { strategy_name: 'Character Explorer', steps: ['Look at what the character SAYS and DOES', 'Think about WHY they act that way', 'Consider how their feelings change during the chapter'], example: 'If a character shares their lunch, that action tells us they are kind and generous.', encouragement: 'Characters are like real people — their actions reveal who they are!' },
+    'best-answer-reasoning': { strategy_name: 'Best Answer Finder', steps: ['Read ALL the answer choices carefully', 'Think about which one is the STRONGEST or MOST complete', 'Ask yourself: "Why is this answer better than the others?"'], example: 'If one answer covers more of the story while another only mentions one small part, the bigger answer is usually the BEST.', encouragement: 'You\'re learning to think like a detective — weighing the evidence!' }
   };
   return strategies[type] || strategies['finding-details'];
 }

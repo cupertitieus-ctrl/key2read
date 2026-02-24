@@ -29,7 +29,8 @@ const QuizEngine = (function() {
     'identifying-theme': '💡',
     'personal-connection': '💭',
     'cause-and-effect': '⚡',
-    'character-analysis': '🎭'
+    'character-analysis': '🎭',
+    'best-answer-reasoning': '🏆'
   };
 
   const STRATEGY_NAMES = {
@@ -39,7 +40,8 @@ const QuizEngine = (function() {
     'identifying-theme': 'Big Idea Finder',
     'personal-connection': 'Connect to You',
     'cause-and-effect': 'Cause & Effect',
-    'character-analysis': 'Character Explorer'
+    'character-analysis': 'Character Explorer',
+    'best-answer-reasoning': 'Best Answer Finder'
   };
 
   const QUESTION_TYPE_LABELS = {
@@ -47,7 +49,10 @@ const QuizEngine = (function() {
     'inference': 'Inference',
     'vocabulary': 'Vocabulary',
     'theme': 'Theme & Analysis',
-    'personal': 'Personal Connection'
+    'personal': 'Personal Connection',
+    'literal': 'Comprehension',
+    'cause-effect': 'Cause & Effect',
+    'best-answer': 'Best Answer'
   };
 
   // ─── Contextual Vocabulary Dictionary ───

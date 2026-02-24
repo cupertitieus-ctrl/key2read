@@ -419,7 +419,9 @@ app.get('/api/books/:bookId/chapters/:num/quiz', async (req, res) => {
 
   // Generate quiz using Claude API
   const book = await db.getBookById(bookId);
-  const generated = await claude.generateChapterQuiz(book.title, book.author, chapterNum, chapter.title, chapter.summary, book.grade_level);
+  const allChapters = await db.getBookChapters(bookId);
+  const questionCount = allChapters.length <= 9 ? 7 : 5;
+  const generated = await claude.generateChapterQuiz(book.title, book.author, chapterNum, chapter.title, chapter.summary, book.grade_level, questionCount);
 
   // Save generated questions to DB
   for (const q of generated.questions) {
