@@ -426,14 +426,19 @@ const QuizEngine = (function() {
     const questionVocab = q.vocabulary_words || [];
     const chapterVocab = getChapterVocabWords();
     const perQuestionVocab = q._chapterVocab ? parseVocabList(q._chapterVocab) : [];
-    const vocabWords = [...new Set([...questionVocab, ...chapterVocab, ...perQuestionVocab])];
 
-    let markedText = markContextualVocab(markExplicitVocab(escapeHtml(questionText), vocabWords));
+    // For vocabulary questions, suppress tooltips for the tested word(s)
+    // so the definition doesn't give away the answer
+    const testedWords = q.question_type === 'vocabulary' ? questionVocab.map(w => w.toLowerCase()) : [];
+    const vocabWords = [...new Set([...questionVocab, ...chapterVocab, ...perQuestionVocab])]
+      .filter(w => !testedWords.includes(w.toLowerCase()));
+
+    let markedText = markContextualVocab(markExplicitVocab(escapeHtml(questionText), vocabWords), testedWords);
 
     // Mark vocab in passage too
     let markedPassage = '';
     if (q.passage_excerpt) {
-      markedPassage = markContextualVocab(markExplicitVocab(escapeHtml(q.passage_excerpt), vocabWords));
+      markedPassage = markContextualVocab(markExplicitVocab(escapeHtml(q.passage_excerpt), vocabWords), testedWords);
     }
 
     const answerForThis = answers[currentQuestion];
@@ -465,7 +470,7 @@ const QuizEngine = (function() {
             ${(() => {
               // Mark vocab in all options, then ensure at least 2 have underlines
               const opts = q.options || [];
-              const markedOpts = opts.map(opt => markContextualVocab(markExplicitVocab(escapeHtml(opt), vocabWords)));
+              const markedOpts = opts.map(opt => markContextualVocab(markExplicitVocab(escapeHtml(opt), vocabWords), testedWords));
               const hasVocab = markedOpts.map(m => m.includes('vocab-word'));
               const vocabCount = hasVocab.filter(Boolean).length;
 
@@ -484,7 +489,7 @@ const QuizEngine = (function() {
                 }
                 if (bestIdx >= 0 && bestWord) {
                   markedOpts[bestIdx] = markContextualVocab(
-                    markExplicitVocab(escapeHtml(opts[bestIdx]), [...vocabWords, bestWord])
+                    markExplicitVocab(escapeHtml(opts[bestIdx]), [...vocabWords, bestWord]), testedWords
                   );
                 }
               }
@@ -1064,8 +1069,9 @@ const QuizEngine = (function() {
     return html;
   }
 
-  function markContextualVocab(html) {
-    const contextualWords = Object.keys(CONTEXTUAL_VOCAB);
+  function markContextualVocab(html, skipWords = []) {
+    const contextualWords = Object.keys(CONTEXTUAL_VOCAB)
+      .filter(w => !skipWords.includes(w.toLowerCase()));
     if (contextualWords.length === 0) return html;
     // Split by existing vocab-word spans to avoid double-wrapping
     const parts = html.split(/(<span class="vocab-word[^"]*"[^>]*>.*?<\/span>)/g);
