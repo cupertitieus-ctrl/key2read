@@ -610,13 +610,8 @@ const QuizEngine = (function() {
         });
         const score = (correctCount / currentQuiz.questions.length) * 100;
         const localHintCount = hintShown.filter(Boolean).length;
-        // Per-quiz keys: pass (>=80%) + 0 hints = 3, <=3 hints = 2, >3 hints = 1, fail = 0
-        let keysEarned = 0;
-        if (score >= 80) {
-          if (localHintCount === 0) keysEarned = 3;
-          else if (localHintCount <= 3) keysEarned = 2;
-          else keysEarned = 1;
-        }
+        // 5 keys per quiz, minus 1 for each "try again" used; 0 if under 80%
+        let keysEarned = score >= 80 ? Math.max(0, 5 - localHintCount) : 0;
         quizResults = {
           score, correctCount, totalQuestions: currentQuiz.questions.length,
           readingLevelChange: Math.round((score / 100 - 0.65) * 20),
