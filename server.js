@@ -530,12 +530,13 @@ app.post('/api/quiz/submit', async (req, res) => {
   for (let i = 0; i < questions.length; i++) {
     const q = questions[i];
     const opts = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []);
-    const studentAnswer = answers[i];
-    const isCorrect = studentAnswer === q.correct_answer;
+    const studentAnswer = answers[i]; // answer text (from shuffled client options)
+    const correctText = opts[q.correct_answer] || '';
+    const isCorrect = studentAnswer === correctText;
     if (isCorrect) correctCount++;
     if (q.strategy_type && !strategiesUsed.includes(q.strategy_type)) strategiesUsed.push(q.strategy_type);
 
-    const feedback = await claude.getAnswerFeedback(q.question_text, opts[studentAnswer] || 'No answer', opts[q.correct_answer], isCorrect, q.strategy_type, student.grade);
+    const feedback = await claude.getAnswerFeedback(q.question_text, studentAnswer || 'No answer', correctText, isCorrect, q.strategy_type, student.grade);
     results.push({ questionId: q.id, isCorrect, feedback: feedback.feedback, strategyReminder: feedback.strategy_reminder });
   }
 

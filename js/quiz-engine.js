@@ -592,10 +592,15 @@ const QuizEngine = (function() {
           throw new Error('guest-local');
         }
         const hintCount = hintShown.filter(Boolean).length;
+        // Map shuffled indices → answer text so server can compare against original options
+        const answerTexts = currentQuiz.questions.map((q, i) => {
+          const idx = answers[i];
+          return idx !== undefined && q?.options ? (q.options[idx] || '') : '';
+        });
         quizResults = await API.submitQuiz({
           studentId: currentStudent.id,
           chapterId: currentQuiz.chapter.id,
-          answers,
+          answers: answerTexts,
           timeTaken,
           hintCount
         });
