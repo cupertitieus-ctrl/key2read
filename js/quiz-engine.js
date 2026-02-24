@@ -397,7 +397,8 @@ const QuizEngine = (function() {
     'uncertain': { word: 'uncertain', definition: 'Not sure about something — you do not know yet', pos: 'adjective' },
     'unoriginal': { word: 'unoriginal', definition: 'Not new or creative — something that has been done before', pos: 'adjective' },
     'appreciates': { word: 'appreciates', definition: 'Feels thankful for something — knows it is special', pos: 'verb' },
-    'positive': { word: 'positive', definition: 'Good and happy — looking on the bright side', pos: 'adjective' }
+    'positive': { word: 'positive', definition: 'Good and happy — looking on the bright side', pos: 'adjective' },
+    'remember': { word: 'remember', definition: 'When you think about someone or something from before', pos: 'verb' }
   };
 
   // ─── Shuffle answer options so correct answer isn't always B ───
