@@ -1438,14 +1438,13 @@ function renderBookDetail() {
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
           ${b.grade_level ? `<span class="badge badge-blue">${displayGradeLevel(b.grade_level)}</span>` : ''}
           ${b.genre ? `<span class="badge badge-outline">${b.genre}</span>` : ''}
-          <span class="badge badge-outline">${chapCount} Chapters</span>
+          <span class="badge badge-outline">${chapCount} ${/diary|diaries/i.test(b.title) ? 'Entries' : 'Chapters'}</span>
         </div>
-        ${chapCount > 1 && ![51,52,53,54,55,56,57,58,59,60,61,62,63,64].includes(b.id) ? `<button class="btn btn-primary" onclick="launchFullBookQuiz(${b.id}, ${sid})">Take Full Book Quiz (All ${chapCount} Chapters)</button>` : ''}
       </div>
     </div>
 
     <div style="margin-top:28px">
-      <h3 style="margin-bottom:20px;font-size:1.25rem;font-weight:700">Chapters</h3>
+      <h3 style="margin-bottom:20px;font-size:1.25rem;font-weight:700">${/diary|diaries/i.test(b.title) ? 'Entries' : 'Chapters'}</h3>
       ${bookChapters.length === 0 ? `
         <div class="list-card" style="padding:32px;text-align:center;color:var(--g400)">
           <p>Loading chapters...</p>
@@ -1465,8 +1464,8 @@ function renderBookDetail() {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                   </div>
                   <div>
-                    <span class="list-item-name" style="color:var(--g400)">Chapter ${ch.chapter_number}: ${ch.title}</span>
-                    <span class="list-item-sub">Complete Chapter ${ch.chapter_number - 1} first!</span>
+                    <span class="list-item-name" style="color:var(--g400)">${/diary|diaries/i.test(b.title) ? 'Entry' : 'Chapter'} ${ch.chapter_number}: ${ch.title}</span>
+                    <span class="list-item-sub">Complete ${/diary|diaries/i.test(b.title) ? 'Entry' : 'Chapter'} ${ch.chapter_number - 1} first!</span>
                   </div>
                 </div>
                 <div class="list-item-right">
@@ -1482,7 +1481,7 @@ function renderBookDetail() {
                   ${isCompleted ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ch.chapter_number}
                 </div>
                 <div>
-                  <span class="list-item-name">Chapter ${ch.chapter_number}: ${ch.title}</span>
+                  <span class="list-item-name">${/diary|diaries/i.test(b.title) ? 'Entry' : 'Chapter'} ${ch.chapter_number}: ${ch.title}</span>
                   <span class="list-item-sub">${isCompleted ? '✅ Completed!' : (ch.summary ? ch.summary.substring(0, 80) + '...' : '5 questions')}</span>
                 </div>
               </div>

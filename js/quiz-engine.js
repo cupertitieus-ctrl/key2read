@@ -273,7 +273,7 @@ const QuizEngine = (function() {
             </button>
             <div class="quiz-book-info">
               <div class="quiz-book-title">${escapeHtml(currentQuiz.book?.title || 'Book Quiz')}</div>
-              <div class="quiz-chapter-label">${ch.chapter_number > 0 ? `Chapter ${ch.chapter_number}: ` : ''}${escapeHtml(ch.title)}</div>
+              <div class="quiz-chapter-label">${ch.chapter_number > 0 ? `${/diary|diaries/i.test(currentQuiz.book?.title || '') ? 'Entry' : 'Chapter'} ${ch.chapter_number}: ` : ''}${escapeHtml(ch.title)}</div>
             </div>
           </div>
           <div class="quiz-progress">
@@ -383,7 +383,7 @@ const QuizEngine = (function() {
         <div class="quiz-intro">
           <div class="quiz-intro-icon">📖</div>
           <h2>${escapeHtml(currentQuiz.book?.title || 'Book Quiz')}</h2>
-          <p class="quiz-intro-chapter">${ch.chapter_number > 0 ? `Chapter ${ch.chapter_number}: ` : ''}${escapeHtml(ch.title)}</p>
+          <p class="quiz-intro-chapter">${ch.chapter_number > 0 ? `${/diary|diaries/i.test(currentQuiz.book?.title || '') ? 'Entry' : 'Chapter'} ${ch.chapter_number}: ` : ''}${escapeHtml(ch.title)}</p>
           ${currentStudent ? `<p class="quiz-intro-student">Personalized for ${escapeHtml(currentStudent.name)}</p>` : ''}
           <div class="quiz-intro-info">
             <div class="quiz-intro-stat">
@@ -466,7 +466,7 @@ const QuizEngine = (function() {
           <div class="quiz-results-actions" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
             <button class="btn btn-outline" onclick="QuizEngine.exit()">Back to Book</button>
             ${r.score < 100 ? `<button class="btn btn-outline" onclick="QuizEngine.retake()">Retake Quiz</button>` : ''}
-            ${QuizEngine._nextChapter ? `<button class="btn btn-primary" onclick="QuizEngine.nextChapter()">Next Chapter →</button>` : ''}
+            ${QuizEngine._nextChapter ? `<button class="btn btn-primary" onclick="QuizEngine.nextChapter()">Next ${/diary|diaries/i.test(currentQuiz.book?.title || '') ? 'Entry' : 'Chapter'} →</button>` : ''}
           </div>
         </div>
       </div>

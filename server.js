@@ -417,8 +417,8 @@ app.get('/api/books/:bookId/chapters/:num/quiz', async (req, res) => {
 app.get('/api/books/:bookId/full-quiz', async (req, res) => {
   const bookId = parseInt(req.params.bookId);
 
-  // Books without full book quizzes (Charlie Picasso series, Purple Space Chickens series, Nacho Hamster, Fluff & Robodog, Tryouts, Sparkly Turtle)
-  const noFullQuiz = [51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64];
+  // Books without full book quizzes (all books)
+  const noFullQuiz = [51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69];
   if (noFullQuiz.includes(bookId)) return res.status(404).json({ error: 'Full book quiz is not available for this book' });
 
   try {
