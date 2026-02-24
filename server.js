@@ -380,6 +380,34 @@ app.get('/api/students/:id/performance', async (req, res) => {
   }
 });
 
+// ─── CLASS ANALYTICS (batch summary for Students table) ───
+app.get('/api/class/:classId/analytics', async (req, res) => {
+  try {
+    const analytics = await db.getClassAnalytics(parseInt(req.params.classId));
+    res.json(analytics);
+  } catch (e) {
+    console.error('Class analytics error:', e);
+    res.status(500).json({ error: 'Failed to load class analytics' });
+  }
+});
+
+// ─── TEACHER QUIZ MODE ───
+app.post('/api/teacher/start-quiz-mode', async (req, res) => {
+  try {
+    const user = req.session?.user;
+    if (!user || (user.role !== 'teacher' && user.role !== 'owner' && user.role !== 'principal')) {
+      return res.status(403).json({ error: 'Only teachers can use quiz mode' });
+    }
+    const classId = user.classId || 1;
+    const teacherStudent = await db.getOrCreateTeacherStudent(user.id, classId);
+    if (!teacherStudent) return res.status(500).json({ error: 'Failed to create teacher demo student' });
+    res.json({ studentId: teacherStudent.id, student: teacherStudent });
+  } catch (e) {
+    console.error('Teacher quiz mode error:', e);
+    res.status(500).json({ error: 'Failed to start quiz mode' });
+  }
+});
+
 // ─── CHAPTER PROGRESS ───
 app.get('/api/students/:id/completed-chapters/:bookId', async (req, res) => {
   const studentId = parseInt(req.params.id);
@@ -607,6 +635,9 @@ app.post('/api/quiz/submit', async (req, res) => {
     attemptData: attemptData || [],
     vocabLookups: vocabLookups || []
   });
+
+  // Precompute and store analytics summary for this student (non-blocking)
+  db.updateStudentAnalytics(studentId).catch(e => console.error('Analytics update error:', e));
 
   res.json({
     score, correctCount, totalQuestions: questions.length,

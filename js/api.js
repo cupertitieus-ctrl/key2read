@@ -35,6 +35,10 @@ const API = {
   logout: () => API.post('/api/auth/logout', {}),
   getClassCode: () => API.get('/api/class/code'),
   validateClassCode: (code) => API.get(`/api/class/validate/${code}`),
+  getClassAnalytics: (classId) => API.get(`/api/class/${classId}/analytics`),
+
+  // Teacher
+  startTeacherQuiz: () => API.post('/api/teacher/start-quiz-mode', {}),
 
   // Students
   getStudents: (classId) => API.get(`/api/students?classId=${classId}`),

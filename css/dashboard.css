@@ -277,6 +277,61 @@
   color: var(--g700);
 }
 
+/* Header profile (top-right) */
+.header-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 4px 4px;
+  border-radius: var(--radius-sm);
+  margin-left: 8px;
+}
+.header-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.header-user-info { min-width: 0; }
+.header-user-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--navy);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+.header-user-role {
+  font-size: 0.6875rem;
+  color: var(--g500);
+}
+.header-logout-btn {
+  background: none;
+  border: none;
+  color: var(--g400);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.header-logout-btn:hover { color: var(--red); background: var(--g100); }
+.header-logout-btn svg { width: 18px; height: 18px; }
+@media (max-width: 768px) {
+  .header-user-info { display: none; }
+  .header-profile { gap: 6px; }
+}
+
 .header-icon-btn svg {
   width: 20px;
   height: 20px;
@@ -832,7 +887,7 @@
   background: #fff;
   border: 1px solid var(--g200);
   border-radius: var(--radius-md);
-  overflow: hidden;
+  overflow-x: auto;
   box-shadow: var(--sh-sm);
 }
 
@@ -873,6 +928,44 @@
 .data-table tbody tr:last-child td {
   border-bottom: none;
 }
+
+/* ── Analytics Skills Pills ── */
+.skill-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.skill-pill--strong { background: #dcfce7; color: #15803d; }
+.skill-pill--developing { background: #fef9c3; color: #a16207; }
+.skill-pill--needs-support { background: #fee2e2; color: #dc2626; }
+.skill-pill--nodata { background: var(--g100); color: var(--g400); }
+.skill-pill--loading { background: var(--g100); color: var(--g300); min-width: 48px; text-align: center; }
+
+/* Reading Score trend arrows */
+.trend-arrow { font-size: 0.7rem; margin-left: 4px; }
+.trend-arrow.trend-up { color: #16a34a; }
+.trend-arrow.trend-down { color: #dc2626; }
+.trend-arrow.trend-stable { color: #9ca3af; }
+
+/* Reading score cell */
+.reading-score-cell { white-space: nowrap; }
+
+/* Vocab count cell */
+.vocab-count-cell { white-space: nowrap; font-size: 0.8125rem; color: var(--g600); }
+
+/* Table header tooltips */
+.th-has-tooltip { white-space: nowrap; }
+.th-info { cursor: help; font-size: 0.7rem; opacity: 0.4; margin-left: 3px; vertical-align: middle; }
+.th-info:hover { opacity: 1; }
+
+/* Analytics table responsive */
+.students-analytics-table th,
+.students-analytics-table td { font-size: 0.8125rem; padding: 10px 12px; }
+.students-analytics-table th:first-child,
+.students-analytics-table td:first-child { min-width: 160px; }
 
 /* Student cell */
 .student-cell {
@@ -3617,6 +3710,135 @@
   color: var(--navy);
   font-weight: 700;
 }
+
+/* --- Score Explanation Panel --- */
+.score-explain-toggle {
+  background: none;
+  border: none;
+  color: var(--blue);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-top: 4px;
+  font-weight: 500;
+}
+.score-explain-toggle:hover { text-decoration: underline; }
+.score-explanation {
+  animation: fadeIn 0.2s ease;
+  margin-top: 16px;
+}
+.score-explanation-inner {
+  background: #f8f9ff;
+  border: 1px solid var(--g200);
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
+  font-size: 0.8125rem;
+  color: var(--g700);
+  line-height: 1.6;
+}
+.score-explanation-inner h4 { margin: 0 0 8px; color: var(--navy); font-size: 0.9375rem; }
+.score-explanation-inner ul { margin: 8px 0; padding-left: 20px; }
+.score-explanation-inner li { margin-bottom: 4px; }
+.score-explanation-inner p { margin: 8px 0; }
+
+/* --- Component Explanation Sections --- */
+.explain-section {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--g150, #eee);
+}
+.explain-heading {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--g500);
+  margin-bottom: 4px;
+}
+.explain-list {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 0.75rem;
+  color: var(--g600);
+  line-height: 1.6;
+}
+.explain-list li { margin-bottom: 2px; }
+.explain-note {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--g500);
+  padding: 6px 10px;
+  background: var(--g50, #fafafa);
+  border-radius: 6px;
+}
+.explain-focus {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  color: #9a3412;
+  line-height: 1.5;
+}
+
+/* --- Completed Books Grid (Teacher Certificate View) --- */
+.completed-books-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  animation: fadeInUp 0.5s ease;
+}
+.completed-book-card {
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border: 1px solid var(--g150);
+}
+.completed-book-cover {
+  position: relative;
+  height: 120px;
+  background: var(--g100);
+  overflow: hidden;
+}
+.completed-book-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.completed-book-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--green);
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+.completed-book-info {
+  padding: 12px;
+}
+.completed-book-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+.completed-book-score {
+  font-size: 0.75rem;
+  color: var(--g500);
+  margin-bottom: 8px;
+}
+.completed-book-actions {
+  display: flex;
+  gap: 6px;
+}
+.completed-book-actions .btn { font-size: 0.6875rem; padding: 4px 10px; }
 
 /* --- Key Activity Section --- */
 .key-activity-section {

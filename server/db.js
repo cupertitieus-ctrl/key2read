@@ -1163,6 +1163,340 @@ function buildEmptyComponents() {
   };
 }
 
+// ─── CLASS ANALYTICS (batch summary for Students table) ───
+
+async function getClassAnalytics(classId) {
+  // Try to read precomputed analytics columns first (fast path)
+  const { data: precomputed, error: preErr } = await supabase
+    .from('students')
+    .select('id, name, initials, color, grade, reading_score, accuracy, quizzes_completed, comprehension_label, comprehension_pct, reasoning_label, reasoning_pct, vocab_words_learned, independence_label, persistence_label, score_trend')
+    .eq('class_id', classId || 1)
+    .or('is_teacher_demo.is.null,is_teacher_demo.eq.false')
+    .order('name');
+
+  // If precomputed columns exist, return them directly (no live computation)
+  if (!preErr && precomputed && precomputed.length > 0 && precomputed[0].comprehension_label !== undefined) {
+    return precomputed.map(s => ({
+      id: s.id,
+      name: s.name,
+      initials: s.initials,
+      color: s.color,
+      readingScore: s.reading_score || 500,
+      scoreTrend: s.score_trend || 'stable',
+      comprehension: s.comprehension_label || 'No Data',
+      comprehensionPct: s.comprehension_pct,
+      reasoning: s.reasoning_label || 'No Data',
+      reasoningPct: s.reasoning_pct,
+      vocabWordsLearned: s.vocab_words_learned || 0,
+      independence: s.independence_label || 'No Data',
+      persistence: s.persistence_label || 'No Data'
+    }));
+  }
+
+  // Fallback: columns don't exist yet — compute from quiz data (one-time until migration runs)
+  // 1. Get all students in the class (exclude teacher demo accounts)
+  const { data: studentRows } = await supabase
+    .from('students')
+    .select('id, name, initials, color, grade, reading_score, accuracy, quizzes_completed')
+    .eq('class_id', classId || 1)
+    .order('name');
+  const students = studentRows || [];
+  if (students.length === 0) return [];
+
+  const studentIds = students.map(s => s.id);
+
+  // 2. Batch fetch all quiz_results for these students
+  const { data: allResults } = await supabase
+    .from('quiz_results')
+    .select('id, student_id, chapter_id, answers, score, correct_count, total_questions, hints_used, attempt_data, vocab_lookups, completed_at')
+    .in('student_id', studentIds)
+    .order('completed_at', { ascending: true });
+  const results = allResults || [];
+
+  // 3. Collect unique chapter_ids from results
+  const chapterIds = [...new Set(results.map(r => r.chapter_id))];
+
+  // 4. Batch fetch quiz_questions for those chapters
+  let questionsByChapter = {};
+  if (chapterIds.length > 0) {
+    const { data: allQuestions } = await supabase
+      .from('quiz_questions')
+      .select('id, chapter_id, question_number, question_type, correct_answer, options')
+      .in('chapter_id', chapterIds)
+      .order('question_number');
+    for (const q of (allQuestions || [])) {
+      if (!questionsByChapter[q.chapter_id]) questionsByChapter[q.chapter_id] = [];
+      questionsByChapter[q.chapter_id].push(q);
+    }
+  }
+
+  // 5. Group results by student
+  const resultsByStudent = {};
+  for (const r of results) {
+    if (!resultsByStudent[r.student_id]) resultsByStudent[r.student_id] = [];
+    resultsByStudent[r.student_id].push(r);
+  }
+
+  // 6. Time boundaries for trend calculation
+  const now = new Date();
+  const dayOfWeek = now.getUTCDay();
+  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const thisMonday = new Date(now);
+  thisMonday.setUTCDate(now.getUTCDate() - daysSinceMonday);
+  thisMonday.setUTCHours(0, 0, 0, 0);
+  const lastMonday = new Date(thisMonday);
+  lastMonday.setUTCDate(thisMonday.getUTCDate() - 7);
+
+  // 7. Compute analytics per student
+  return students.map(s => {
+    const studentResults = resultsByStudent[s.id] || [];
+    const recent = studentResults.slice(-20); // last 20 quizzes
+
+    // --- Per-question-type accuracy ---
+    const typeStats = { literal: { correct: 0, total: 0 }, 'cause-effect': { correct: 0, total: 0 },
+      vocabulary: { correct: 0, total: 0 }, inference: { correct: 0, total: 0 }, 'best-answer': { correct: 0, total: 0 } };
+
+    for (const r of recent) {
+      const questions = questionsByChapter[r.chapter_id] || [];
+      const answers = Array.isArray(r.answers) ? r.answers : [];
+      for (let i = 0; i < questions.length && i < answers.length; i++) {
+        const q = questions[i];
+        const qType = q.question_type || 'literal';
+        const opts = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []);
+        const correctText = opts[q.correct_answer] || '';
+        const isCorrect = answers[i] === correctText;
+        if (typeStats[qType]) {
+          typeStats[qType].total++;
+          if (isCorrect) typeStats[qType].correct++;
+        }
+      }
+    }
+
+    // Comprehension = literal accuracy
+    const compTotal = typeStats.literal.total;
+    const compPct = compTotal > 0 ? Math.round(typeStats.literal.correct / compTotal * 100) : null;
+    const comprehension = compPct === null ? 'No Data' : compPct >= 75 ? 'Strong' : compPct >= 50 ? 'Developing' : 'Needs Support';
+
+    // Reasoning = inference + cause-effect + best-answer combined
+    const reasonTotal = typeStats.inference.total + typeStats['cause-effect'].total + typeStats['best-answer'].total;
+    const reasonCorrect = typeStats.inference.correct + typeStats['cause-effect'].correct + typeStats['best-answer'].correct;
+    const reasonPct = reasonTotal > 0 ? Math.round(reasonCorrect / reasonTotal * 100) : null;
+    const reasoning = reasonPct === null ? 'No Data' : reasonPct >= 75 ? 'Strong' : reasonPct >= 50 ? 'Developing' : 'Needs Support';
+
+    // Vocabulary words learned (unique vocab lookups across all quizzes)
+    const allVocab = studentResults.flatMap(r => Array.isArray(r.vocab_lookups) ? r.vocab_lookups : []);
+    const vocabWordsLearned = [...new Set(allVocab.map(w => (w || '').toLowerCase()).filter(Boolean))].length;
+
+    // Independence: hint usage rate across recent quizzes
+    const hintRates = recent.map(r => {
+      const hints = r.hints_used || 0;
+      const numQ = r.total_questions || 5;
+      return hints / numQ;
+    });
+    const avgHintRate = hintRates.length > 0 ? hintRates.reduce((a, b) => a + b, 0) / hintRates.length : 0;
+    const independence = recent.length === 0 ? 'No Data' : avgHintRate <= 0.2 ? 'High' : avgHintRate <= 0.5 ? 'Improving' : 'Needs Support';
+
+    // Persistence: first-attempt mastery rate
+    const allAttempts = recent.filter(r => r.attempt_data && Array.isArray(r.attempt_data) && r.attempt_data.length > 0)
+      .flatMap(r => r.attempt_data);
+    const firstTryCorrect = allAttempts.filter(a => a === 1).length;
+    const firstAttemptPct = allAttempts.length > 0 ? Math.round(firstTryCorrect / allAttempts.length * 100) : null;
+    const persistence = firstAttemptPct === null ? 'No Data' : firstAttemptPct >= 70 ? 'High' : firstAttemptPct >= 40 ? 'Moderate' : 'Low';
+
+    // Reading Score trend
+    const thisWeekResults = studentResults.filter(r => new Date(r.completed_at) >= thisMonday);
+    const lastWeekResults = studentResults.filter(r => {
+      const d = new Date(r.completed_at);
+      return d >= lastMonday && d < thisMonday;
+    });
+    const thisWeekChange = thisWeekResults.reduce((sum, r) => sum + (r.score || 0), 0);
+    const lastWeekChange = lastWeekResults.reduce((sum, r) => sum + (r.score || 0), 0);
+    const thisWeekAvg = thisWeekResults.length > 0 ? thisWeekChange / thisWeekResults.length : null;
+    const lastWeekAvg = lastWeekResults.length > 0 ? lastWeekChange / lastWeekResults.length : null;
+    let scoreTrend = 'stable';
+    if (thisWeekAvg !== null && lastWeekAvg !== null) {
+      if (thisWeekAvg > lastWeekAvg + 5) scoreTrend = 'up';
+      else if (thisWeekAvg < lastWeekAvg - 5) scoreTrend = 'down';
+    }
+
+    return {
+      id: s.id,
+      name: s.name,
+      initials: s.initials,
+      color: s.color,
+      readingScore: s.reading_score || 500,
+      scoreTrend,
+      comprehension,
+      comprehensionPct: compPct,
+      reasoning,
+      reasoningPct: reasonPct,
+      vocabWordsLearned,
+      independence,
+      persistence
+    };
+  });
+}
+
+// ─── UPDATE STUDENT ANALYTICS (called after quiz submission) ───
+
+async function updateStudentAnalytics(studentId) {
+  try {
+    // Fetch recent quiz results for this student
+    const { data: allResults } = await supabase
+      .from('quiz_results')
+      .select('id, chapter_id, answers, score, correct_count, total_questions, hints_used, attempt_data, vocab_lookups, completed_at')
+      .eq('student_id', studentId)
+      .order('completed_at', { ascending: true });
+    const results = allResults || [];
+    if (results.length === 0) return;
+
+    const recent = results.slice(-20);
+
+    // Collect chapter_ids and fetch questions for per-type accuracy
+    const chapterIds = [...new Set(recent.map(r => r.chapter_id))];
+    const questionsByChapter = {};
+    if (chapterIds.length > 0) {
+      const { data: allQ } = await supabase
+        .from('quiz_questions')
+        .select('id, chapter_id, question_number, question_type, correct_answer, options')
+        .in('chapter_id', chapterIds)
+        .order('question_number');
+      for (const q of (allQ || [])) {
+        if (!questionsByChapter[q.chapter_id]) questionsByChapter[q.chapter_id] = [];
+        questionsByChapter[q.chapter_id].push(q);
+      }
+    }
+
+    // Per-question-type accuracy
+    const typeStats = { literal: { correct: 0, total: 0 }, 'cause-effect': { correct: 0, total: 0 },
+      vocabulary: { correct: 0, total: 0 }, inference: { correct: 0, total: 0 }, 'best-answer': { correct: 0, total: 0 } };
+
+    for (const r of recent) {
+      const questions = questionsByChapter[r.chapter_id] || [];
+      const answers = Array.isArray(r.answers) ? r.answers : [];
+      for (let i = 0; i < questions.length && i < answers.length; i++) {
+        const q = questions[i];
+        const qType = q.question_type || 'literal';
+        const opts = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []);
+        const correctText = opts[q.correct_answer] || '';
+        const isCorrect = answers[i] === correctText;
+        if (typeStats[qType]) {
+          typeStats[qType].total++;
+          if (isCorrect) typeStats[qType].correct++;
+        }
+      }
+    }
+
+    // Comprehension = literal accuracy
+    const compTotal = typeStats.literal.total;
+    const compPct = compTotal > 0 ? Math.round(typeStats.literal.correct / compTotal * 100) : null;
+    const comprehension = compPct === null ? null : compPct >= 75 ? 'Strong' : compPct >= 50 ? 'Developing' : 'Needs Support';
+
+    // Reasoning = inference + cause-effect + best-answer
+    const reasonTotal = typeStats.inference.total + typeStats['cause-effect'].total + typeStats['best-answer'].total;
+    const reasonCorrect = typeStats.inference.correct + typeStats['cause-effect'].correct + typeStats['best-answer'].correct;
+    const reasonPct = reasonTotal > 0 ? Math.round(reasonCorrect / reasonTotal * 100) : null;
+    const reasoning = reasonPct === null ? null : reasonPct >= 75 ? 'Strong' : reasonPct >= 50 ? 'Developing' : 'Needs Support';
+
+    // Vocabulary words learned
+    const allVocab = results.flatMap(r => Array.isArray(r.vocab_lookups) ? r.vocab_lookups : []);
+    const vocabWordsLearned = [...new Set(allVocab.map(w => (w || '').toLowerCase()).filter(Boolean))].length;
+
+    // Independence
+    const hintRates = recent.map(r => (r.hints_used || 0) / (r.total_questions || 5));
+    const avgHintRate = hintRates.reduce((a, b) => a + b, 0) / hintRates.length;
+    const independence = avgHintRate <= 0.2 ? 'High' : avgHintRate <= 0.5 ? 'Improving' : 'Needs Support';
+
+    // Persistence
+    const allAttempts = recent.filter(r => r.attempt_data && Array.isArray(r.attempt_data) && r.attempt_data.length > 0)
+      .flatMap(r => r.attempt_data);
+    const firstTryCorrect = allAttempts.filter(a => a === 1).length;
+    const firstAttemptPct = allAttempts.length > 0 ? Math.round(firstTryCorrect / allAttempts.length * 100) : null;
+    const persistence = firstAttemptPct === null ? null : firstAttemptPct >= 70 ? 'High' : firstAttemptPct >= 40 ? 'Moderate' : 'Low';
+
+    // Score trend
+    const now = new Date();
+    const dayOfWeek = now.getUTCDay();
+    const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const thisMonday = new Date(now);
+    thisMonday.setUTCDate(now.getUTCDate() - daysSinceMonday);
+    thisMonday.setUTCHours(0, 0, 0, 0);
+    const lastMonday = new Date(thisMonday);
+    lastMonday.setUTCDate(thisMonday.getUTCDate() - 7);
+
+    const thisWeekResults = results.filter(r => new Date(r.completed_at) >= thisMonday);
+    const lastWeekResults = results.filter(r => { const d = new Date(r.completed_at); return d >= lastMonday && d < thisMonday; });
+    const thisWeekAvg = thisWeekResults.length > 0 ? thisWeekResults.reduce((s, r) => s + r.score, 0) / thisWeekResults.length : null;
+    const lastWeekAvg = lastWeekResults.length > 0 ? lastWeekResults.reduce((s, r) => s + r.score, 0) / lastWeekResults.length : null;
+    let scoreTrend = 'stable';
+    if (thisWeekAvg !== null && lastWeekAvg !== null) {
+      if (thisWeekAvg > lastWeekAvg + 5) scoreTrend = 'up';
+      else if (thisWeekAvg < lastWeekAvg - 5) scoreTrend = 'down';
+    }
+
+    // Write precomputed analytics to the students table
+    const { error } = await supabase.from('students').update({
+      comprehension_label: comprehension,
+      comprehension_pct: compPct,
+      reasoning_label: reasoning,
+      reasoning_pct: reasonPct,
+      vocab_words_learned: vocabWordsLearned,
+      independence_label: independence,
+      persistence_label: persistence,
+      score_trend: scoreTrend,
+      analytics_updated_at: new Date().toISOString()
+    }).eq('id', studentId);
+
+    if (error) {
+      // Columns might not exist yet — silently ignore
+      if (error.message && error.message.includes('does not exist')) {
+        // Migration hasn't been run yet — skip analytics update
+      } else {
+        console.error('updateStudentAnalytics error:', error.message);
+      }
+    }
+  } catch(e) {
+    console.error('updateStudentAnalytics exception:', e.message);
+  }
+}
+
+// ─── TEACHER QUIZ MODE (shadow student) ───
+
+async function getOrCreateTeacherStudent(userId, classId) {
+  // Check if teacher already has a shadow student
+  const { data: existing } = await supabase
+    .from('students')
+    .select('*')
+    .eq('class_id', classId)
+    .eq('is_teacher_demo', true)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (existing) return existing;
+
+  // Create a new shadow student for the teacher
+  const { data: user } = await supabase.from('users').select('name').eq('id', userId).single();
+  const teacherName = user?.name || 'Teacher';
+
+  const { data: newStudent, error } = await supabase.from('students').insert({
+    name: `${teacherName} (Demo)`,
+    initials: teacherName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
+    color: '#6366f1',
+    grade: '4th',
+    class_id: classId,
+    user_id: userId,
+    is_teacher_demo: true,
+    reading_score: 500,
+    accuracy: 0,
+    quizzes_completed: 0,
+    keys_earned: 0,
+    onboarded: 1
+  }).select().single();
+
+  if (error) console.error('Create teacher student error:', error);
+  return newStudent;
+}
+
 // Export everything
 module.exports = {
   supabase,
@@ -1203,7 +1537,10 @@ module.exports = {
   deductStudentKeys,
   getFavoriteBooks,
   toggleFavoriteBook,
-  getStudentPerformance
+  getStudentPerformance,
+  getClassAnalytics,
+  updateStudentAnalytics,
+  getOrCreateTeacherStudent
 };
 
 async function getFullBookQuiz(bookId) {

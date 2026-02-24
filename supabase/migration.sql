@@ -55,6 +55,16 @@ CREATE TABLE students (
   accuracy REAL DEFAULT 0,
   quizzes_completed INTEGER DEFAULT 0,
   onboarded INTEGER DEFAULT 0,
+  is_teacher_demo BOOLEAN DEFAULT FALSE,
+  comprehension_label TEXT DEFAULT NULL,
+  comprehension_pct INTEGER DEFAULT NULL,
+  reasoning_label TEXT DEFAULT NULL,
+  reasoning_pct INTEGER DEFAULT NULL,
+  vocab_words_learned INTEGER DEFAULT 0,
+  independence_label TEXT DEFAULT NULL,
+  persistence_label TEXT DEFAULT NULL,
+  score_trend TEXT DEFAULT 'stable',
+  analytics_updated_at TIMESTAMPTZ DEFAULT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

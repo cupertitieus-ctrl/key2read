@@ -75,14 +75,6 @@ const interestCategories = [
 let students = [];
 let assignments = [];
 
-const templates = [
-  { id: 't1', type: 'quiz',       name: 'Comprehension Quick Check', desc: 'A fast 10-question comprehension check for any book.', questions: 10, time: '15 min', level: 'Any' },
-  { id: 't2', type: 'assessment', name: 'Reading Level Benchmark',   desc: 'Full benchmark assessment for determining reading level.', questions: 20, time: '30 min', level: 'Auto' },
-  { id: 't3', type: 'quiz',       name: 'Deep Comprehension Quiz',   desc: 'In-depth quiz covering inference, theme, and vocabulary.', questions: 15, time: '25 min', level: '3.0\u20138.0' },
-  { id: 't4', type: 'assessment', name: 'Fluency & Comprehension',   desc: 'Measures both fluency and reading comprehension together.', questions: 12, time: '20 min', level: '1.0\u20133.5' },
-  { id: 't5', type: 'challenge',  name: 'Genre Explorer Challenge',  desc: 'Challenge students to explore a new genre with guided questions.', questions: 10, time: '15 min', level: 'Any' },
-  { id: 't6', type: 'assessment', name: 'Vocabulary in Context',     desc: 'Assess vocabulary understanding within reading passages.', questions: 15, time: '20 min', level: '2.0\u20136.0' },
-];
 
 let goals = [];
 
@@ -129,7 +121,6 @@ let growthData = {};
 let page = 'quizzes';
 let detailId = null;
 let studentId = null;
-let templateFilter = 'all';
 let onboardingStep = 0;
 let onboardingStudent = null;
 let selectedInterests = [];
@@ -395,7 +386,6 @@ function renderSidebar() {
       { id: 'students',   icon: IC.users, label: 'Students',             badge: students.length > 0 ? String(students.length) : '', badgeCls: 'blue' },
       { id: 'goals',      icon: IC.trend, label: 'Class Goals' },
       { id: 'reports',    icon: IC.chart, label: 'Growth Reports' },
-      { id: 'templates',  icon: IC.grid,  label: 'Quiz Templates' },
       { section: 'Management' },
       { id: 'store',      icon: IC.bag,   label: 'Class Store',          badge: String(storeItems.length), badgeCls: 'gold' },
       { id: 'library',    icon: IC.book,  label: 'Book Library' },
@@ -437,12 +427,6 @@ function renderSidebar() {
   } else {
     html += `
     <div class="sidebar-footer">
-      <div class="sidebar-avatar">${userInitials}</div>
-      <div style="flex:1;min-width:0">
-        <div class="sidebar-user-name">${userName}</div>
-        <div class="sidebar-user-role">${roleLabel}</div>
-      </div>
-      <button class="sidebar-logout-btn" onclick="handleLogout()" title="Log out">${IC.logout}</button>
     </div>`;
   }
 
@@ -471,17 +455,29 @@ function renderHeader() {
   dashboard.style.gridTemplateRows = '';
   main.style.gridRow = '';
   main.style.maxHeight = '';
+  const hUserName = currentUser?.name || 'User';
+  const hInitials = hUserName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  const hRole = userRole === 'student' ? (currentUser?.grade || '4th') + ' Grade Student' :
+                userRole === 'owner' ? 'Platform Owner' :
+                userRole === 'principal' ? 'School Principal' :
+                userRole === 'parent' ? 'Parent' :
+                (currentUser?.grade || '4th') + ' Grade Teacher';
   document.getElementById('dash-header').innerHTML = `
     <div class="header-tabs">
-      <button class="header-tab active">Reading</button>
     </div>
     <div class="header-search">
       ${IC.search}
       <input type="text" placeholder="Search students, books, quizzes...">
     </div>
     <div class="header-actions">
-      <button class="header-icon-btn">${IC.bell}<span class="notif-dot"></span></button>
-      <button class="header-icon-btn">${IC.gear}</button>
+      <div class="header-profile">
+        <div class="header-avatar">${hInitials}</div>
+        <div class="header-user-info">
+          <div class="header-user-name">${escapeHtml(hUserName)}</div>
+          <div class="header-user-role">${hRole}</div>
+        </div>
+        <button class="header-logout-btn" onclick="handleLogout()" title="Log out">${IC.logout}</button>
+      </div>
     </div>`;
 }
 
@@ -540,7 +536,6 @@ function renderMain() {
       if (studentId !== null) { el.innerHTML = renderStudentProfile(); break; }
       el.innerHTML = renderStudents();
       break;
-    case 'templates':  el.innerHTML = renderTemplates(); break;
     case 'goals':      el.innerHTML = renderGoals(); break;
     case 'store':      el.innerHTML = userRole === 'student' ? renderStudentStore() : renderStore(); break;
     case 'library':    el.innerHTML = renderLibrary(); initLibrarySearch(); break;
@@ -597,6 +592,24 @@ async function launchQuiz(bookId, chapterNum, sid) {
       keys: currentUser.keys_earned || 0,
       quizzes: currentUser.quizzes_completed || 0
     };
+  }
+  // Teacher quiz mode — create/get shadow student
+  if (!s && (userRole === 'teacher' || userRole === 'owner' || userRole === 'principal')) {
+    try {
+      const result = await API.startTeacherQuiz();
+      s = {
+        id: result.studentId,
+        name: result.student?.name || 'Teacher Demo',
+        grade: '4th',
+        reading_score: result.student?.reading_score || 500,
+        accuracy: result.student?.accuracy || 0,
+        keys: result.student?.keys_earned || 0,
+        quizzes: result.student?.quizzes_completed || 0
+      };
+      sid = result.studentId;
+    } catch(e) {
+      console.error('Teacher quiz mode error:', e);
+    }
   }
   // Guests get no student object — quiz uses local scoring
   page = 'quiz-player';
@@ -713,14 +726,27 @@ function renderQuizzes() {
         <div class="gs-step">
           <div class="gs-step-num">3</div>
           <div>
-            <strong>Assign quizzes</strong>
-            <p>Browse ${books.length} books in the library and assign reading quizzes.</p>
+            <strong>Students read &amp; take quizzes</strong>
+            <p>Students pick books from the library, read chapters, and take quizzes after each one.</p>
+          </div>
+        </div>
+        <div class="gs-step">
+          <div class="gs-step-num">4</div>
+          <div>
+            <strong>Track growth</strong>
+            <p>Watch your students' reading scores, comprehension, vocabulary, and independence grow on this dashboard.</p>
+          </div>
+        </div>
+        <div class="gs-step">
+          <div class="gs-step-num">5</div>
+          <div>
+            <strong>Celebrate success</strong>
+            <p>Print certificates when students complete books!</p>
           </div>
         </div>
       </div>
       <div style="display:flex;gap:12px;margin-top:24px">
         <button class="btn btn-primary" onclick="navigate('library')">${IC.book} Browse Book Library</button>
-        <button class="btn btn-outline" onclick="navigate('templates')">${IC.grid} Quiz Templates</button>
       </div>
     </div>`;
     return html;
@@ -731,8 +757,7 @@ function renderQuizzes() {
     <div class="page-header">
       <h1>Quizzes & Assessments <span class="badge badge-blue">${assignments.length}</span></h1>
       <div class="page-header-actions">
-        <button class="btn btn-outline btn-sm" onclick="openModal('assign')">Assign Assessment</button>
-        <button class="btn btn-primary btn-sm" onclick="navigate('templates')">Browse Templates</button>
+        <button class="btn btn-ghost btn-sm" onclick="openModal('dashboard-help')" title="How this dashboard works">&#10067; How it works</button>
       </div>
     </div>
 
@@ -859,7 +884,12 @@ function renderStudents() {
   if (students.length === 0) {
     const classCode = currentUser?.classCode || '';
     return `
-      <div class="page-header"><h1>Students <span class="badge badge-blue">0</span></h1></div>
+      <div class="page-header">
+        <h1>Students <span class="badge badge-blue">0</span></h1>
+        <div class="page-header-actions">
+          <button class="btn btn-outline btn-sm" onclick="refreshStudentList()">&#8635; Refresh</button>
+        </div>
+      </div>
       <div class="empty-state">
         <div class="empty-state-icon">${IC.users}</div>
         <h2>No Students Yet</h2>
@@ -868,48 +898,62 @@ function renderStudents() {
       </div>`;
   }
 
-  const sorted = [...students].sort((a, b) => b.score - a.score);
+  const sorted = [...students].sort((a, b) => (b.score || 0) - (a.score || 0));
+
   return `
     <div class="page-header">
       <h1>Students <span class="badge badge-blue">${students.length}</span></h1>
+      <div class="page-header-actions">
+        <button class="btn btn-outline btn-sm" onclick="refreshStudentList()">&#8635; Refresh</button>
+      </div>
     </div>
 
     <div class="data-table-wrap">
-      <table class="data-table">
+      <table class="data-table students-analytics-table">
         <thead>
           <tr>
             <th>Student</th>
-            <th>Level</th>
-            <th>Score</th>
-            <th>Accuracy</th>
-            <th>Interests</th>
-            <th>Keys</th>
-            <th>Streak</th>
+            <th class="th-has-tooltip">Reading Score <span class="th-info" title="Overall reading ability on a 0-1000 scale">&#9432;</span></th>
+            <th class="th-has-tooltip">Comprehension <span class="th-info" title="How well the student understands what they read">&#9432;</span></th>
+            <th class="th-has-tooltip">Reasoning <span class="th-info" title="Ability to make inferences, find causes, and choose best answers">&#9432;</span></th>
+            <th class="th-has-tooltip">Vocabulary Growth <span class="th-info" title="Number of unique words the student has explored">&#9432;</span></th>
+            <th class="th-has-tooltip">Independence <span class="th-info" title="How often the student works without using hints">&#9432;</span></th>
+            <th class="th-has-tooltip">Persistence <span class="th-info" title="Whether the student keeps trying after getting an answer wrong">&#9432;</span></th>
           </tr>
         </thead>
         <tbody>
           ${sorted.map(s => {
-            const sb = scoreBadge(s.accuracy);
-            const intCell = s.interests && s.interests.onboarded
-              ? `<div class="interest-tags-compact">${interestTagsCompact(s, 2)}</div>`
-              : `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); onboardingStudent=${s.id}; onboardingStep=0; selectedInterests=[]; openModal('onboarding',${s.id})">${IC.heart} Set Up</button>`;
+            // Read precomputed analytics from the student record (stored at quiz submission time)
+            const raw = s._raw || {};
+            const scoreTrend = raw.score_trend || 'stable';
+            const trendArrow = scoreTrend === 'up' ? '<span class="trend-arrow trend-up">&#9650;</span>' : scoreTrend === 'down' ? '<span class="trend-arrow trend-down">&#9660;</span>' : '<span class="trend-arrow trend-stable">&#9472;</span>';
+            const compLabel = raw.comprehension_label || null;
+            const reasonLabel = raw.reasoning_label || null;
+            const vocabCount = raw.vocab_words_learned || 0;
+            const indLabel = raw.independence_label || null;
+            const persLabel = raw.persistence_label || null;
             return `
             <tr onclick="navigate('students',null,${s.id})">
               <td><div class="student-cell">${avatar(s)} <span class="student-name">${s.name}</span> ${warnTag(s)}</div></td>
-              <td>${s.level}</td>
-              <td><strong>${s.score}</strong></td>
-              <td>
-                <span class="score-badge ${sb.cls}">${s.accuracy}% ${sb.label}</span>
-                <div class="mini-progress"><div class="mini-progress-bar" style="width:${s.accuracy}%;background:${sb.barColor}"></div></div>
-              </td>
-              <td>${intCell}</td>
-              <td>${keysDisp(s.keys)}</td>
-              <td>${streakDisp(s.streak)}</td>
+              <td class="reading-score-cell"><strong>${s.score || 500}</strong> ${trendArrow}</td>
+              <td>${skillPill(compLabel)}</td>
+              <td>${skillPill(reasonLabel)}</td>
+              <td class="vocab-count-cell">${vocabCount > 0 ? vocabCount + ' words' : skillPill(null)}</td>
+              <td>${skillPill(indLabel)}</td>
+              <td>${skillPill(persLabel)}</td>
             </tr>`;
           }).join('')}
         </tbody>
       </table>
     </div>`;
+}
+
+function skillPill(label) {
+  if (!label) return '<span class="skill-pill skill-pill--nodata">No Data</span>';
+  const cls = label === 'Strong' || label === 'High' ? 'strong' :
+              label === 'Developing' || label === 'Improving' || label === 'Moderate' ? 'developing' :
+              'needs-support';
+  return '<span class="skill-pill skill-pill--' + cls + '">' + label + '</span>';
 }
 
 // ---- Page: Student Profile (Individual Student Dashboard) ----
@@ -948,8 +992,11 @@ async function loadStudentPerformance(s) {
   if (!container) return;
 
   try {
-    const perf = await API.getStudentPerformance(s.id);
-    container.innerHTML = renderPerformanceDashboard(s, perf);
+    const [perf, bookProgress] = await Promise.all([
+      API.getStudentPerformance(s.id),
+      API.getBookProgress(s.id).catch(() => [])
+    ]);
+    container.innerHTML = renderPerformanceDashboard(s, perf, bookProgress);
   } catch(e) {
     console.error('Performance load error:', e);
     // Fallback to basic stats
@@ -957,7 +1004,7 @@ async function loadStudentPerformance(s) {
   }
 }
 
-function renderPerformanceDashboard(s, perf) {
+function renderPerformanceDashboard(s, perf, bookProgress) {
   const trendIcon = perf.trend === 'improving' ? `<span class="trend-up">&#9650;</span>` :
                     perf.trend === 'declining' ? `<span class="trend-down">&#9660;</span>` :
                     `<span class="trend-stable">&#9472;</span>`;
@@ -1050,6 +1097,7 @@ function renderPerformanceDashboard(s, perf) {
         <div class="overview-score-main">
           <div class="overview-score-number">${perf.readingScore}</div>
           <div class="overview-score-label">Reading Score</div>
+          <button class="score-explain-toggle" onclick="toggleScoreExplanation()">&#128269; How is this calculated?</button>
         </div>
         <div class="overview-score-meta">
           <div class="overview-change">
@@ -1059,6 +1107,21 @@ function renderPerformanceDashboard(s, perf) {
           <div class="overview-trend">Trend: ${trendLabel}</div>
           <div class="overview-sparkline">${sparkline}</div>
         </div>
+      </div>
+    </div>
+
+    <div class="score-explanation" id="score-explanation" style="display:none">
+      <div class="score-explanation-inner">
+        <h4>&#128202; How the Reading Score Works</h4>
+        <p>Your student's Reading Score (0&ndash;1000) combines five areas of reading growth:</p>
+        <ul>
+          <li><strong>Comprehension (30%)</strong> &mdash; How well they understand what they read</li>
+          <li><strong>Quiz Effort (20%)</strong> &mdash; Whether they take their time and answer thoughtfully</li>
+          <li><strong>Independence (20%)</strong> &mdash; How often they work without using hints</li>
+          <li><strong>Vocabulary (15%)</strong> &mdash; How many new words they explore and learn</li>
+          <li><strong>Persistence (15%)</strong> &mdash; Whether they keep trying after getting answers wrong</li>
+        </ul>
+        <p>A score of <strong>500</strong> is average for a new reader. Scores improve as students read more, answer questions carefully, and build good habits.</p>
       </div>
     </div>
 
@@ -1092,53 +1155,184 @@ function renderPerformanceDashboard(s, perf) {
       </div>
     </div>
 
-    ${quizHistoryHtml}`;
+    ${quizHistoryHtml}
+
+    ${(() => {
+      const isTeacherView = userRole === 'teacher' || userRole === 'owner' || userRole === 'principal' || userRole === 'parent';
+      if (!isTeacherView || !bookProgress) return '';
+      const completedBooks = (bookProgress || []).filter(p => p.isComplete);
+      if (completedBooks.length === 0) {
+        return `
+          <div class="section-header" style="margin-top:24px"><h3>&#127942; Completed Books</h3></div>
+          <div class="info-panel" style="text-align:center;padding:24px">
+            <p style="color:var(--g500);margin:0">No books completed yet. Certificates will appear here as ${escapeHtml(s.name)} finishes books.</p>
+          </div>`;
+      }
+      const history = perf.quizHistory || [];
+      return `
+        <div class="section-header" style="margin-top:24px"><h3>&#127942; Completed Books &amp; Certificates</h3></div>
+        <div class="completed-books-grid">
+          ${completedBooks.map(p => {
+            const b = books.find(bk => bk.id === p.bookId);
+            if (!b) return '';
+            const bookQuizzes = history.filter(q => q.bookTitle === b.title);
+            const avgScore = bookQuizzes.length > 0 ? Math.round(bookQuizzes.reduce((sum, q) => sum + q.score, 0) / bookQuizzes.length) : null;
+            const certParams = JSON.stringify({ studentName: s.name, bookTitle: b.title, bookAuthor: b.author || '', score: avgScore }).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+            return `
+            <div class="completed-book-card">
+              <div class="completed-book-cover">
+                ${b.cover_url ? '<img src="' + b.cover_url + '" alt="' + escapeHtml(b.title) + '" onerror="this.style.display=&quot;none&quot;">' : ''}
+                <div class="completed-book-badge">&#10004; COMPLETED</div>
+              </div>
+              <div class="completed-book-info">
+                <div class="completed-book-title">${escapeHtml(b.title)}</div>
+                ${avgScore !== null ? '<div class="completed-book-score">Avg Score: ' + avgScore + '%</div>' : ''}
+                <div class="completed-book-actions">
+                  <button class="btn btn-sm btn-primary" onclick="printCertificate(JSON.parse(decodeHTMLEntities(this.dataset.params)))" data-params="${certParams}">&#128424; Print</button>
+                  <button class="btn btn-sm btn-outline" onclick="downloadCertificatePDF(JSON.parse(decodeHTMLEntities(this.dataset.params)))" data-params="${certParams}">&#128229; PDF</button>
+                </div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`;
+    })()}`;
+}
+
+function decodeHTMLEntities(str) {
+  const txt = document.createElement('textarea');
+  txt.innerHTML = str;
+  return txt.value;
 }
 
 function renderComponentDetail(key, comp) {
   const d = comp.details || {};
+  const score = comp.score || 0;
+  let statsHtml = '';
+  let measureHtml = '';
+  let improveHtml = '';
+  let focusHtml = '';
+  let noteHtml = '';
+
   switch(key) {
     case 'comprehension':
-      return `<div class="detail-stats">
+      statsHtml = `
         <div class="detail-row"><span>Avg Quiz Score</span><strong>${d.avgQuizScore != null ? d.avgQuizScore + '%' : '—'}</strong></div>
         <div class="detail-row"><span>Best This Week</span><strong>${d.bestThisWeek != null ? Math.round(d.bestThisWeek) + '%' : '—'}</strong></div>
         <div class="detail-row"><span>Lowest This Week</span><strong>${d.lowestThisWeek != null ? Math.round(d.lowestThisWeek) + '%' : '—'}</strong></div>
         <div class="detail-row"><span>Total Quizzes</span><strong>${d.totalQuizzes || 0}</strong></div>
-        <div class="detail-row"><span>Consistency</span><strong>${d.consistency || '—'}</strong></div>
-      </div>`;
+        <div class="detail-row"><span>Consistency</span><strong>${d.consistency || '—'}</strong></div>`;
+      measureHtml = `
+        <li>Understanding of events and story details</li>
+        <li>Cause and effect relationships</li>
+        <li>Character motivation and inference questions</li>
+        <li>Average quiz score, improvement over time, and consistency</li>`;
+      improveHtml = `
+        <li>Answering comprehension questions correctly</li>
+        <li>Showing improvement over time</li>
+        <li>Performing consistently across quizzes</li>`;
+      if (score < 500) focusHtml = 'Work on cause-and-effect questions.';
+      break;
     case 'effort':
-      return `<div class="detail-stats">
+      statsHtml = `
         <div class="detail-row"><span>Avg Time / Question</span><strong>${d.avgTimePerQuestion || 0}s</strong></div>
         <div class="detail-row"><span>Completion Rate</span><strong>${d.completionRate || 0}%</strong></div>
-        <div class="detail-row"><span>Rushing Rate</span><strong>${d.rushingRate || 0}%</strong></div>
-      </div>`;
+        <div class="detail-row"><span>Rushing Rate</span><strong>${d.rushingRate || 0}%</strong></div>`;
+      measureHtml = `
+        <li>Average time spent per question</li>
+        <li>Total quiz completion time</li>
+        <li>Time consistency (not rushing through questions)</li>`;
+      improveHtml = `
+        <li>Steady, thoughtful pacing</li>
+        <li>Avoiding rushed, low-score quizzes</li>
+        <li>Completing quizzes carefully</li>`;
+      noteHtml = 'This score rewards thoughtful effort &mdash; not speed.';
+      if (score < 500) focusHtml = 'Encourage the student to slow down and read each question carefully.';
+      break;
     case 'independence':
-      return `<div class="detail-stats">
+      statsHtml = `
         <div class="detail-row"><span>Avg Hints / Quiz</span><strong>${d.avgHintsPerQuiz != null ? d.avgHintsPerQuiz : '—'}</strong></div>
         <div class="detail-row"><span>Zero-Hint Quizzes</span><strong>${d.zeroHintRate || 0}%</strong></div>
-        <div class="detail-row"><span>Hints This Week</span><strong>${d.hintsThisWeek || 0}</strong></div>
-      </div>`;
+        <div class="detail-row"><span>Hints This Week</span><strong>${d.hintsThisWeek || 0}</strong></div>`;
+      measureHtml = `
+        <li>Average hints used per quiz</li>
+        <li>Trend of hint usage over time</li>
+        <li>Percentage of quizzes completed without hints</li>`;
+      improveHtml = `
+        <li>Using fewer hints over time</li>
+        <li>Completing quizzes independently</li>
+        <li>Reducing reliance on support</li>`;
+      if (score < 500) focusHtml = 'Encourage the student to try answering before using hints.';
+      break;
     case 'vocabulary':
-      return `<div class="detail-stats">
+      statsHtml = `
         <div class="detail-row"><span>Unique Words Explored</span><strong>${d.uniqueWordsLooked || 0}</strong></div>
         <div class="detail-row"><span>Words Repeated</span><strong>${d.wordsRepeated || 0}</strong></div>
-        ${d.recentWords && d.recentWords.length > 0 ? `<div class="detail-row"><span>Recent Words</span><strong>${d.recentWords.join(', ')}</strong></div>` : ''}
-      </div>`;
+        ${d.recentWords && d.recentWords.length > 0 ? `<div class="detail-row"><span>Recent Words</span><strong>${d.recentWords.join(', ')}</strong></div>` : ''}`;
+      measureHtml = `
+        <li>Words tapped for definitions</li>
+        <li>Repeated vocabulary exposures</li>
+        <li>Mastery of previously challenging words</li>`;
+      improveHtml = `
+        <li>Learning new Tier 2 words</li>
+        <li>Reducing repeated hinting on the same words</li>
+        <li>Mastering previously difficult words</li>`;
+      if (!d.uniqueWordsLooked) noteHtml = 'Vocabulary data will build as the student interacts with highlighted words during quizzes.';
+      if (score < 500) focusHtml = 'Encourage tapping and reviewing new words.';
+      break;
     case 'persistence':
-      return `<div class="detail-stats">
+      statsHtml = `
         <div class="detail-row"><span>Avg Attempts / Question</span><strong>${d.avgAttemptsPerQuiz || '—'}</strong></div>
         <div class="detail-row"><span>Improved After Retry</span><strong>${d.improvedAfterRetry || 0}%</strong></div>
-        <div class="detail-row"><span>First-Attempt Mastery</span><strong>${d.firstAttemptMastery || 0}%</strong></div>
-      </div>`;
+        <div class="detail-row"><span>First-Attempt Mastery</span><strong>${d.firstAttemptMastery || 0}%</strong></div>`;
+      measureHtml = `
+        <li>Number of quiz retries ("Try Agains")</li>
+        <li>Improvement after retries</li>
+        <li>Best score achieved</li>`;
+      improveHtml = `
+        <li>Retaking quizzes to improve understanding</li>
+        <li>Increasing score after retry</li>
+        <li>Demonstrating mastery over time</li>`;
+      noteHtml = 'This score rewards growth and perseverance.';
+      if (score < 500) focusHtml = 'Encourage the student to retry quizzes they found challenging.';
+      break;
     default:
       return '';
   }
+
+  return `
+    <div class="detail-stats">${statsHtml}</div>
+    ${noteHtml ? `<div class="explain-note">${noteHtml}</div>` : ''}
+    <div class="explain-section">
+      <div class="explain-heading">How this is measured</div>
+      <ul class="explain-list">${measureHtml}</ul>
+    </div>
+    <div class="explain-section">
+      <div class="explain-heading">What improves this score</div>
+      <ul class="explain-list">${improveHtml}</ul>
+    </div>
+    ${focusHtml ? `<div class="explain-focus">&#128204; <strong>Suggested Focus:</strong> ${focusHtml}</div>` : ''}`;
 }
 
 function toggleComponentDetail(key) {
   const el = document.getElementById('detail-' + key);
   if (!el) return;
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleScoreExplanation() {
+  const el = document.getElementById('score-explanation');
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function refreshStudentList() {
+  try {
+    const rawStudents = await API.getStudents();
+    students = rawStudents.filter(s => !s.is_teacher_demo).map(mapStudentFromAPI);
+    navigate('students');
+  } catch(e) {
+    console.error('Refresh error:', e);
+  }
 }
 
 function renderBasicStudentStats(s) {
@@ -1174,55 +1368,6 @@ function renderBasicStudentStats(s) {
     <div class="info-panel" style="text-align:center;padding:32px">
       <p style="color:var(--g500);margin:0">Could not load detailed performance data. Showing basic stats.</p>
     </div>`;
-}
-
-// ---- Page: Quiz Templates ----
-function renderTemplates() {
-  const filtered = templateFilter === 'all'
-    ? templates
-    : templates.filter(t => t.type === templateFilter);
-
-  const chips = [
-    { id: 'all', label: 'All' },
-    { id: 'quiz', label: 'Quizzes' },
-    { id: 'assessment', label: 'Assessments' },
-    { id: 'challenge', label: 'Challenges' },
-  ];
-
-  return `
-    <div class="page-header">
-      <h1>Quiz Templates</h1>
-      <div class="page-header-actions">
-        <button class="btn btn-primary btn-sm" onclick="openModal('template')">${IC.plus} Create Custom</button>
-      </div>
-    </div>
-
-    <div class="template-filters">
-      ${chips.map(c => `<button class="filter-chip ${templateFilter === c.id ? 'active' : ''}" onclick="setFilter('${c.id}')">${c.label}</button>`).join('')}
-    </div>
-
-    <div class="template-grid">
-      ${filtered.map(t => `
-        <div class="template-card" onclick="openModal('assign','${t.name}')">
-          <div class="template-card-bar ${t.type}"></div>
-          <div class="template-card-body">
-            <span class="badge badge-${t.type === 'quiz' ? 'blue' : t.type === 'assessment' ? 'purple' : 'orange'}">${t.type.charAt(0).toUpperCase() + t.type.slice(1)}</span>
-            <h3>${t.name}</h3>
-            <p>${t.desc}</p>
-            <div class="template-card-meta">
-              <span>${IC.hash} ${t.questions} questions</span>
-              <span>${IC.clock} ${t.time}</span>
-              <span>${IC.layers} ${t.level}</span>
-            </div>
-          </div>
-        </div>
-      `).join('')}
-    </div>`;
-}
-
-function setFilter(f) {
-  templateFilter = f;
-  renderMain();
 }
 
 // ---- Page: Class Goals ----
@@ -1821,8 +1966,9 @@ function renderBookDetail() {
       ` : `
         <div class="list-card">
           ${bookChapters.map((ch, i) => {
+            const isTeacher = userRole === 'teacher' || userRole === 'owner' || userRole === 'principal';
             const isCompleted = completedChapters.includes(ch.chapter_number);
-            const isUnlocked = ch.chapter_number === 1 || completedChapters.includes(ch.chapter_number - 1);
+            const isUnlocked = isTeacher || ch.chapter_number === 1 || completedChapters.includes(ch.chapter_number - 1);
             const isLocked = !isUnlocked && !isCompleted;
 
             if (isLocked) {
@@ -2094,7 +2240,7 @@ function closeCelebration() {
   if (modal) modal.innerHTML = '';
 }
 
-function downloadCertificatePDF() {
+function downloadCertificatePDF(params) {
   if (!window.jspdf || !window.jspdf.jsPDF) {
     alert('PDF library not loaded. Please try again.');
     return;
@@ -2102,10 +2248,10 @@ function downloadCertificatePDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const w = 297, h = 210;
-  const book = books.find(b => b.id === selectedBookId) || { title: 'Book', author: '' };
-  const studentName = currentUser?.name || 'Student';
-  const score = document.querySelector('.celebration-cert-meta span:last-child')?.textContent || '';
-  const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const book = params ? { title: params.bookTitle || 'Book', author: params.bookAuthor || '' } : (books.find(b => b.id === selectedBookId) || { title: 'Book', author: '' });
+  const studentName = params ? params.studentName : (currentUser?.name || 'Student');
+  const score = params ? (params.score ? 'Score: ' + params.score + '%' : '') : (document.querySelector('.celebration-cert-meta span:last-child')?.textContent || '');
+  const dateStr = params ? (params.dateStr || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })) : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
   // Background
   doc.setFillColor(255, 255, 255);
@@ -2190,12 +2336,12 @@ function downloadCertificatePDF() {
   doc.save(`${safeTitle}-Certificate.pdf`);
 }
 
-function printCertificate() {
-  const book = books.find(b => b.id === selectedBookId) || { title: 'Book', author: '' };
-  const studentName = currentUser?.name || 'Student';
-  const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  const scoreEl = document.querySelector('.celebration-cert-meta span:last-child');
-  const score = scoreEl ? scoreEl.textContent : '';
+function printCertificate(params) {
+  const book = params ? { title: params.bookTitle || 'Book', author: params.bookAuthor || '' } : (books.find(b => b.id === selectedBookId) || { title: 'Book', author: '' });
+  const studentName = params ? params.studentName : (currentUser?.name || 'Student');
+  const dateStr = params ? (params.dateStr || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })) : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const scoreEl = params ? null : document.querySelector('.celebration-cert-meta span:last-child');
+  const score = params ? (params.score ? 'Score: ' + params.score + '%' : '') : (scoreEl ? scoreEl.textContent : '');
 
   const html = `<!DOCTYPE html><html><head><title>Certificate</title>
     <style>
@@ -2855,41 +3001,23 @@ function openModal(type, prefill) {
   let html = '';
   const modalRoot = 'modal-root';
 
-  if (type === 'assign') {
+  if (type === 'dashboard-help') {
+    const classCode = currentUser?.classCode || '';
     html = `
       <div class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal modal-lg" onclick="event.stopPropagation()">
+        <div class="modal modal-lg" onclick="event.stopPropagation()" style="max-width:520px">
           <div class="modal-header">
-            <h3>Assign Assessment</h3>
+            <h3>&#128218; How This Dashboard Works</h3>
             <button class="modal-close" onclick="closeModal()">${IC.x}</button>
           </div>
-          <div class="modal-body">
-            <div class="form-group">
-              <label class="form-label">Assessment Name</label>
-              <input type="text" class="form-input" value="${prefill || ''}" placeholder="e.g. Charlotte's Web Quiz">
+          <div class="modal-body" style="padding:20px 24px">
+            <div class="getting-started-steps" style="margin:0">
+              <div class="gs-step"><div class="gs-step-num">1</div><div><strong>Share Your Class Code</strong><p>Give students the code <strong>${classCode}</strong> so they can join your class.</p></div></div>
+              <div class="gs-step"><div class="gs-step-num">2</div><div><strong>Students Sign Up</strong><p>They go to the signup page, choose "Student", and enter the class code.</p></div></div>
+              <div class="gs-step"><div class="gs-step-num">3</div><div><strong>Students Read &amp; Take Quizzes</strong><p>Students pick books from the library, read chapters, and take quizzes after each one.</p></div></div>
+              <div class="gs-step"><div class="gs-step-num">4</div><div><strong>Track Growth</strong><p>Watch your students' reading scores, comprehension, vocabulary, and independence grow on this dashboard.</p></div></div>
+              <div class="gs-step"><div class="gs-step-num">5</div><div><strong>Celebrate Success</strong><p>Print certificates when students complete books! You can find these on each student's profile page.</p></div></div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Assign To</label>
-              <select class="form-select">
-                <option>Entire Class</option>
-                <option>Reading Group A</option>
-                <option>Struggling Readers</option>
-                <option>Individual Student</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Due Date</label>
-              <input type="date" class="form-input">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Instructions (optional)</label>
-              <textarea class="form-input" placeholder="Add any special instructions for students..."></textarea>
-            </div>
-
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="closeModal()">Assign</button>
           </div>
         </div>
       </div>`;
@@ -3256,6 +3384,10 @@ function renderStudentQuizzes() {
   // Books the student has started (at least one quiz)
   const startedBooks = books.filter(b => progressMap[b.id]);
 
+  // Separate incomplete and favorite books
+  const incompleteBooks = startedBooks.filter(b => !progressMap[b.id]?.isComplete);
+  const favBooks = books.filter(b => studentFavorites.some(fid => Number(fid) === Number(b.id)));
+
   return `
     <div class="page-header"><h1>My Quizzes</h1></div>
     <div class="stat-cards" style="grid-template-columns: repeat(2, 1fr)">
@@ -3263,8 +3395,30 @@ function renderStudentQuizzes() {
       <div class="stat-card"><div class="stat-card-label">Keys Earned</div><div class="stat-card-value">${s.keys}</div></div>
     </div>
 
+    ${incompleteBooks.length > 0 ? `
+    <div style="margin-top:28px">
+      <h3 style="margin:0 0 16px;font-size:1rem;font-weight:700">&#128218; Books That Still Need Completion</h3>
+      <div class="book-progress-grid">
+        ${incompleteBooks.map(b => {
+          const prog = progressMap[b.id];
+          return `
+          <div class="book-progress-card" onclick="openBook(${b.id})" style="cursor:pointer">
+            <div class="book-progress-cover">
+              ${b.cover_url ? `<img src="${b.cover_url}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+              <div class="book-progress-cover-fallback" ${b.cover_url ? 'style="display:none"' : ''}>
+                <span>${b.title}</span>
+              </div>
+            </div>
+            <div class="book-progress-info">
+              <div class="book-progress-title">${b.title}</div>
+              <div class="book-progress-status">${prog.completedChapters}/${prog.totalChapters} chapters</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : ''}
+
     ${(() => {
-      const favBooks = books.filter(b => studentFavorites.some(fid => Number(fid) === Number(b.id)));
       if (favBooks.length > 0) {
         return `<div style="margin-top:28px">
           <h3 style="margin:0 0 16px;font-size:1rem;font-weight:700">&#10084;&#65039; My Favorites</h3>
@@ -3303,37 +3457,6 @@ function renderStudentQuizzes() {
       }
     })()}
 
-    ${startedBooks.length > 0 ? `
-    <div style="margin-top:28px">
-      <h3 style="margin:0 0 16px;font-size:1rem;font-weight:700">My Books</h3>
-      <div class="book-progress-grid">
-        ${startedBooks.map(b => {
-          const prog = progressMap[b.id];
-          const isComplete = prog && prog.isComplete;
-          return `
-          <div class="book-progress-card" onclick="openBook(${b.id})" style="cursor:pointer">
-            <div class="book-progress-cover">
-              ${b.cover_url ? `<img src="${b.cover_url}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
-              <div class="book-progress-cover-fallback" ${b.cover_url ? 'style="display:none"' : ''}>
-                <span>${b.title}</span>
-              </div>
-              ${isComplete ? `
-              <div class="book-completed-overlay">
-                <div class="book-completed-badge">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  <span>COMPLETED</span>
-                </div>
-              </div>` : ''}
-            </div>
-            <div class="book-progress-info">
-              <div class="book-progress-title">${b.title}</div>
-              <div class="book-progress-status">${isComplete ? '✅ All done!' : `${prog.completedChapters}/${prog.totalChapters} chapters`}</div>
-            </div>
-          </div>`;
-        }).join('')}
-      </div>
-    </div>` : ''}
-
     ${assignments.length > 0 ? `
     <div class="list-card" style="margin-top:24px">
       <div style="padding:16px 20px;border-bottom:1px solid var(--g150);font-weight:700;color:var(--navy)">Assigned To You</div>
@@ -3350,7 +3473,7 @@ function renderStudentQuizzes() {
       `).join('')}
     </div>` : !hasQuizzes ? `
     <div class="empty-state" style="margin-top:24px">
-      <div class="empty-state-icon" style="font-size:2rem">📋</div>
+      <div class="empty-state-icon" style="font-size:2rem">&#128203;</div>
       <h2>No Quizzes Yet</h2>
       <p>Pick a book from the dashboard and start reading!</p>
       <button class="btn btn-primary" onclick="navigate('student-dashboard')">Browse Books</button>
@@ -3859,7 +3982,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (currentUser.classId) {
       try {
         const rawStudents = await API.getStudents(currentUser.classId);
-        students = rawStudents.map(mapStudentFromAPI);
+        students = rawStudents.filter(s => !s.is_teacher_demo).map(mapStudentFromAPI);
       } catch(e) { console.warn('Could not load students:', e); }
 
       // Load assignments for this teacher's class
@@ -3955,7 +4078,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (currentUser.classId) {
       try {
         const rawStudents = await API.getStudents(currentUser.classId);
-        students = rawStudents.map(mapStudentFromAPI);
+        students = rawStudents.filter(s => !s.is_teacher_demo).map(mapStudentFromAPI);
       } catch(e) { console.warn('Could not load children:', e); }
     }
   }
