@@ -416,6 +416,11 @@ app.get('/api/books/:bookId/chapters/:num/quiz', async (req, res) => {
 // ─── Full Book Quiz (20 questions across all chapters) ───
 app.get('/api/books/:bookId/full-quiz', async (req, res) => {
   const bookId = parseInt(req.params.bookId);
+
+  // Books without full book quizzes (Purple Space Chickens series & Nacho Hamster)
+  const noFullQuiz = [56, 57, 58, 59, 60, 61];
+  if (noFullQuiz.includes(bookId)) return res.status(404).json({ error: 'Full book quiz is not available for this book' });
+
   try {
     const { chapters, allQuestions } = await db.getFullBookQuiz(bookId);
     if (!chapters.length || !allQuestions.length) return res.status(404).json({ error: 'No quiz data found' });
