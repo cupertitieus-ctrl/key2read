@@ -271,26 +271,33 @@
 }
 
 .library-book-coming-soon {
-  opacity: 0.5;
   pointer-events: none;
-  position: relative;
   cursor: default;
 }
 
-.library-book-coming-soon .coming-soon-overlay {
+.library-book-cover {
+  position: relative;
+  overflow: hidden;
+}
+
+.library-book-coming-soon .coming-soon-ribbon {
   position: absolute;
-  inset: 0;
-  background: rgba(255,255,255,0.65);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  top: 10px;
+  right: -28px;
+  width: 110px;
+  padding: 3px 0;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  text-align: center;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 1rem;
-  color: var(--g600);
-  border-radius: inherit;
-  z-index: 2;
-  letter-spacing: 0.02em;
+  font-size: 0.5rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transform: rotate(45deg);
+  z-index: 3;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  line-height: 1.4;
 }
 
 .library-pagination {

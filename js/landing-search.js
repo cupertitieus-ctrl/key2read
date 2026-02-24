@@ -110,10 +110,8 @@
   // ════════════════════════════════════
   //  BOOK LIBRARY GRID
   // ════════════════════════════════════
-  // Sort: Book 1 first (randomized), then rest (randomized)
+  // Sort: Live Book 1 first (randomized), then live rest (randomized), then Coming Soon last
   function sortBooksForDisplay(bookList) {
-    const book1 = bookList.filter(b => b.book_number === 1);
-    const rest = bookList.filter(b => b.book_number !== 1);
     function shuffle(arr) {
       for (let i = arr.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -121,7 +119,10 @@
       }
       return arr;
     }
-    return [...shuffle(book1), ...shuffle(rest)];
+    const book1Live = bookList.filter(b => b.book_number === 1 && b.has_quizzes !== false);
+    const restLive = bookList.filter(b => b.book_number !== 1 && b.has_quizzes !== false);
+    const comingSoon = bookList.filter(b => b.has_quizzes === false);
+    return [...shuffle(book1Live), ...shuffle(restLive), ...shuffle(comingSoon)];
   }
 
   function initLibrary() {
@@ -147,12 +148,12 @@
       if (comingSoon) {
         return `
       <div class="library-book library-book-coming-soon">
-        <div class="coming-soon-overlay">Coming Soon</div>
         <div class="library-book-cover">
           ${b.cover_url
             ? `<img src="${escapeAttr(b.cover_url)}" alt="${escapeAttr(b.title)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
             : ''}
           <div class="library-book-cover-fallback" ${b.cover_url ? 'style="display:none"' : ''}>${escapeHtml((b.title || '').charAt(0))}</div>
+          <div class="coming-soon-ribbon">Coming Soon</div>
         </div>
         <div class="library-book-info">
           <div class="library-book-title">${escapeHtml(b.title)}</div>

@@ -102,20 +102,19 @@ let selectedBookId = null; // For book detail view
 let bookChapters = []; // Chapters for selected book
 let completedChapters = []; // Chapter numbers the student has completed for current book
 
-// Sort books: Book 1 first (randomized), then rest (randomized)
+// Sort books: Book 1 with quizzes first (randomized), then Book 2+ with quizzes, then Coming Soon at end
 function sortBooksForDisplay(bookList) {
-  const book1 = bookList.filter(b => b.book_number === 1);
-  const rest = bookList.filter(b => b.book_number !== 1);
-  // Fisher-Yates shuffle both groups
-  for (let i = book1.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [book1[i], book1[j]] = [book1[j], book1[i]];
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
   }
-  for (let i = rest.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [rest[i], rest[j]] = [rest[j], rest[i]];
-  }
-  return [...book1, ...rest];
+  const book1Live = bookList.filter(b => b.book_number === 1 && b.has_quizzes !== false);
+  const restLive = bookList.filter(b => b.book_number !== 1 && b.has_quizzes !== false);
+  const comingSoon = bookList.filter(b => b.has_quizzes === false);
+  return [...shuffle(book1Live), ...shuffle(restLive), ...shuffle(comingSoon)];
 }
 
 let quizHistory = [];
@@ -1227,8 +1226,8 @@ function renderGuestBookCard(b) {
   const comingSoon = b.has_quizzes === false;
   return `
     <div class="book-card${comingSoon ? ' book-card-coming-soon' : ''}" ${comingSoon ? '' : `onclick="openBook(${b.id})"`}>
-      ${comingSoon ? '<div class="coming-soon-overlay">Coming Soon</div>' : ''}
       <div class="book-card-cover">
+        ${comingSoon ? '<div class="coming-soon-ribbon">Coming Soon</div>' : ''}
         ${coverUrl
           ? `<img src="${coverUrl}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
           : ''}
@@ -1314,8 +1313,8 @@ function renderStudentBookCard(b) {
   const comingSoon = b.has_quizzes === false;
   return `
     <div class="book-card${comingSoon ? ' book-card-coming-soon' : ''}" ${comingSoon ? '' : `onclick="openBook(${b.id})" style="cursor:pointer"`}>
-      ${comingSoon ? '<div class="coming-soon-overlay">Coming Soon</div>' : ''}
       <div class="book-card-cover" style="height:200px">
+        ${comingSoon ? '<div class="coming-soon-ribbon">Coming Soon</div>' : ''}
         ${coverUrl
           ? `<img src="${coverUrl}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
           : ''}
@@ -1391,8 +1390,8 @@ function renderLibrary() {
         const comingSoon = b.has_quizzes === false;
         return `
         <div class="book-card${comingSoon ? ' book-card-coming-soon' : ''}" ${comingSoon ? '' : `onclick="openBook(${b.id})"`}>
-          ${comingSoon ? '<div class="coming-soon-overlay">Coming Soon</div>' : ''}
           <div class="book-card-cover">
+            ${comingSoon ? '<div class="coming-soon-ribbon">Coming Soon</div>' : ''}
             ${coverUrl
               ? `<img src="${coverUrl}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
               : ''}
