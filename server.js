@@ -547,9 +547,9 @@ app.post('/api/quiz/submit', async (req, res) => {
 
   const score = (correctCount / questions.length) * 100;
   const levelChange = claude.calculateReadingLevelChange(student.reading_score, chapter?.books?.lexile_level || 600, correctCount, questions.length);
-  // 5 keys per quiz, minus 1 for each "try again" used; 0 if under 80%
+  // 5 keys if pass (>=80%), 4 if used try-again at all, 0 if fail
   const hints = hintCount || 0;
-  let keysEarned = score >= 80 ? Math.max(0, 5 - hints) : 0;
+  let keysEarned = score >= 80 ? (hints > 0 ? 4 : 5) : 0;
 
   const newScore = Math.max(200, student.reading_score + levelChange);
   await db.updateReadingLevel(studentId, newScore, 'quiz');
