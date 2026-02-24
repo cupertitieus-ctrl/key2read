@@ -41,6 +41,8 @@ For each question, provide:
 - explanation: Why the correct answer is right (2-3 sentences, friendly tone)
 - vocabulary_words: Array of important words in the question that students might need defined (0-3 words)
 
+IMPORTANT: When answer choices contain vocabulary words that will be underlined, ensure at least 2 answer choices include vocabulary-level words — never just the correct answer alone. Distribute vocabulary naturally so students cannot identify the correct answer by vocabulary highlighting alone.
+
 Respond in valid JSON format:
 { "questions": [ { "question_number": 1, "question_type": "recall", "question_text": "...", "passage_excerpt": "...", "options": ["A","B","C","D"], "correct_answer": 0, "strategy_type": "...", "strategy_tip": "...", "explanation": "...", "vocabulary_words": ["word1"] } ] }` }]
   });

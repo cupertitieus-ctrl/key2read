@@ -287,21 +287,29 @@ const QuizEngine = (function() {
           <div class="quiz-question-text">${markedText}</div>
 
           <div class="quiz-options">
-            ${(q.options || []).map((opt, i) => {
-              const letter = String.fromCharCode(65 + i);
-              const wasWrong = wrongPicks[currentQuestion] && wrongPicks[currentQuestion].has(i);
-              let cls = 'quiz-option';
-              if (answered && answerForThis === i) cls += ' correct';
-              if (answered && i === q.correct_answer && answerForThis !== i) cls += ' correct-reveal';
-              if (!answered && wasWrong) cls += ' incorrect disabled-wrong';
-              if (!answered && !wasWrong && answerForThis === i) cls += ' selected';
-              const isDisabled = answered || wasWrong;
-              return `<button class="${cls}" onclick="QuizEngine.selectAnswer(${i})" ${isDisabled ? 'disabled' : ''}>
-                <span class="quiz-option-letter">${letter}</span>
-                <span class="quiz-option-text">${markContextualVocab(markExplicitVocab(escapeHtml(opt), vocabWords))}</span>
-                ${answered && i === q.correct_answer ? '<svg class="quiz-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
-              </button>`;
-            }).join('')}
+            ${(() => {
+              // Check how many options would get vocab underlines — skip marking if only 1 would
+              const opts = q.options || [];
+              const markedOpts = opts.map(opt => markContextualVocab(markExplicitVocab(escapeHtml(opt), vocabWords)));
+              const vocabCounts = markedOpts.filter(m => m.includes('vocab-word')).length;
+              const useVocab = vocabCounts !== 1; // only mark if 0 or 2+ options have vocab
+              return opts.map((opt, i) => {
+                const letter = String.fromCharCode(65 + i);
+                const wasWrong = wrongPicks[currentQuestion] && wrongPicks[currentQuestion].has(i);
+                let cls = 'quiz-option';
+                if (answered && answerForThis === i) cls += ' correct';
+                if (answered && i === q.correct_answer && answerForThis !== i) cls += ' correct-reveal';
+                if (!answered && wasWrong) cls += ' incorrect disabled-wrong';
+                if (!answered && !wasWrong && answerForThis === i) cls += ' selected';
+                const isDisabled = answered || wasWrong;
+                const optText = useVocab ? markedOpts[i] : escapeHtml(opt);
+                return `<button class="${cls}" onclick="QuizEngine.selectAnswer(${i})" ${isDisabled ? 'disabled' : ''}>
+                  <span class="quiz-option-letter">${letter}</span>
+                  <span class="quiz-option-text">${optText}</span>
+                  ${answered && i === q.correct_answer ? '<svg class="quiz-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+                </button>`;
+              }).join('');
+            })()}
           </div>
 
           ${!answered && !showRetryModal ? `
