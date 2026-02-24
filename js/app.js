@@ -436,7 +436,7 @@ function renderHeader() {
     main.style.maxHeight = '';
     header.innerHTML = `
       <div style="display:flex;align-items:center;padding-left:8px">
-        <img src="/public/logo.png" alt="key2read" style="height:36px;width:auto;cursor:pointer" onclick="navigate('guest-browse')">
+        <img src="/public/logo.png" alt="key2read" style="height:52px;width:auto;cursor:pointer" onclick="navigate('guest-browse')">
       </div>
       <div></div>
       <div></div>`;
@@ -1440,12 +1440,12 @@ function renderBookDetail() {
           ${b.genre ? `<span class="badge badge-outline">${b.genre}</span>` : ''}
           <span class="badge badge-outline">${chapCount} Chapters</span>
         </div>
-        ${chapCount > 1 && ![56,57,58,59,60,61].includes(b.id) ? `<button class="btn btn-primary" onclick="launchFullBookQuiz(${b.id}, ${sid})">Take Full Book Quiz (All ${chapCount} Chapters)</button>` : ''}
+        ${chapCount > 1 && ![51,52,53,54,55,56,57,58,59,60,61].includes(b.id) ? `<button class="btn btn-primary" onclick="launchFullBookQuiz(${b.id}, ${sid})">Take Full Book Quiz (All ${chapCount} Chapters)</button>` : ''}
       </div>
     </div>
 
     <div style="margin-top:28px">
-      <h3 style="margin-bottom:16px;font-size:1rem;font-weight:700">Chapters</h3>
+      <h3 style="margin-bottom:20px;font-size:1.25rem;font-weight:700">Chapters</h3>
       ${bookChapters.length === 0 ? `
         <div class="list-card" style="padding:32px;text-align:center;color:var(--g400)">
           <p>Loading chapters...</p>
@@ -1461,7 +1461,7 @@ function renderBookDetail() {
               return `
               <div class="list-item" style="cursor:not-allowed;opacity:0.5">
                 <div class="list-item-info" style="display:flex;align-items:center;gap:12px;flex-direction:row">
-                  <div style="width:36px;height:36px;border-radius:50%;background:var(--g200);color:var(--g400);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.875rem;flex-shrink:0">
+                  <div style="width:44px;height:44px;border-radius:50%;background:var(--g200);color:var(--g400);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.875rem;flex-shrink:0">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                   </div>
                   <div>
@@ -1478,7 +1478,7 @@ function renderBookDetail() {
             return `
             <div class="list-item" style="cursor:pointer" onclick="launchQuiz(${b.id}, ${ch.chapter_number}, ${sid})">
               <div class="list-item-info" style="display:flex;align-items:center;gap:12px;flex-direction:row">
-                <div style="width:36px;height:36px;border-radius:50%;background:${isCompleted ? 'var(--green-p, #dcfce7)' : 'var(--blue-p)'};color:${isCompleted ? 'var(--green, #16a34a)' : 'var(--blue)'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.875rem;flex-shrink:0">
+                <div style="width:44px;height:44px;border-radius:50%;background:${isCompleted ? 'var(--green-p, #dcfce7)' : 'var(--blue-p)'};color:${isCompleted ? 'var(--green, #16a34a)' : 'var(--blue)'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.875rem;flex-shrink:0">
                   ${isCompleted ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ch.chapter_number}
                 </div>
                 <div>

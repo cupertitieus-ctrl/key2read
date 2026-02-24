@@ -485,17 +485,17 @@ const QuizEngine = (function() {
     overlay.id = 'vocab-helper-popup';
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.2s ease';
     overlay.innerHTML = `
-      <div style="background:#fff;border-radius:20px;max-width:440px;width:100%;padding:36px 32px 28px;text-align:center;box-shadow:0 24px 48px rgba(0,0,0,0.15);position:relative;animation:scaleIn 0.25s ease">
-        <div style="font-size:2.5rem;margin-bottom:12px">👋</div>
-        <h2 style="font-family:var(--font-display,sans-serif);font-size:1.4rem;font-weight:800;color:#1a1a2e;margin-bottom:12px;letter-spacing:-0.02em">Before You Begin!</h2>
-        <p style="color:#555;font-size:0.95rem;line-height:1.6;margin-bottom:8px">
+      <div style="background:#fff;border-radius:20px;max-width:480px;width:100%;padding:44px 36px 32px;text-align:center;box-shadow:0 24px 48px rgba(0,0,0,0.15);position:relative;animation:scaleIn 0.25s ease">
+        <div style="font-size:3rem;margin-bottom:16px">👋</div>
+        <h2 style="font-family:var(--font-display,sans-serif);font-size:1.75rem;font-weight:800;color:#1a1a2e;margin-bottom:14px;letter-spacing:-0.02em">Before You Begin!</h2>
+        <p style="color:#555;font-size:1.1rem;line-height:1.7;margin-bottom:10px">
           Some words in the quiz may be <span style="text-decoration:underline;text-decoration-color:#7C3AED;text-underline-offset:3px;font-weight:600">underlined</span>. If you tap an underlined word, you'll see a simple explanation to help you understand the question better.
         </p>
-        <p style="color:#555;font-size:0.95rem;line-height:1.6;margin-bottom:24px">
+        <p style="color:#555;font-size:1.1rem;line-height:1.7;margin-bottom:28px">
           These underlines are here to help you think and solve problems.
         </p>
-        <p style="color:#7C3AED;font-weight:700;font-size:1rem;margin-bottom:24px">Ready? Let's start!</p>
-        <button id="vocab-popup-start" class="btn btn-primary btn-lg" style="width:100%;margin-bottom:16px;font-size:1rem;padding:14px 24px">Start Quiz</button>
+        <p style="color:#7C3AED;font-weight:700;font-size:1.2rem;margin-bottom:28px">Ready? Let's start!</p>
+        <button id="vocab-popup-start" class="btn btn-primary btn-lg" style="width:100%;margin-bottom:16px;font-size:1.125rem;padding:16px 28px">Start Quiz</button>
         <label style="display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;color:#888;font-size:0.8rem">
           <input type="checkbox" id="vocab-popup-dismiss" style="width:16px;height:16px;cursor:pointer">
           Don't show this again
