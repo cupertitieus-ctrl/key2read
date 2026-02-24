@@ -31,7 +31,7 @@ app.use(session({
 // Serve only public-safe directories (not server/, package.json, .env, etc.)
 app.use('/css', express.static(path.join(__dirname, 'css')));
 app.use('/js', express.static(path.join(__dirname, 'js')));
-app.use('/pages', express.static(path.join(__dirname, 'pages')));
+app.use('/pages', express.static(path.join(__dirname, 'pages'), { extensions: ['html'] }));
 app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use('/index.html', express.static(path.join(__dirname, 'index.html')));
 
@@ -562,6 +562,17 @@ app.post('/api/quiz/submit', async (req, res) => {
   // 5 keys if pass (>=80%), 4 if used try-again at all, 0 if fail
   const hints = hintCount || 0;
   let keysEarned = score >= 80 ? (hints > 0 ? 4 : 5) : 0;
+
+  // Prevent retake key duplication: if student already passed this chapter, no additional keys
+  const { data: existingResults } = await db.supabase
+    .from('quiz_results')
+    .select('id, score, keys_earned')
+    .eq('student_id', studentId)
+    .eq('chapter_id', chapterId)
+    .gte('score', 80);
+  if (existingResults && existingResults.length > 0) {
+    keysEarned = 0; // Already earned keys for this chapter
+  }
 
   const newScore = Math.max(200, student.reading_score + levelChange);
   await db.updateReadingLevel(studentId, newScore, 'quiz');

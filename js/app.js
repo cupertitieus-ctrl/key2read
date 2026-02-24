@@ -619,7 +619,12 @@ async function launchQuiz(bookId, chapterNum, sid) {
       }
       // Check if ALL chapters for this book are now completed
       if (completedChapters.length >= bookChapters.length && bookChapters.length > 0) {
+        if (currentUser.weeklyStats) currentUser.weeklyStats.booksCompletedThisWeek = (currentUser.weeklyStats.booksCompletedThisWeek || 0) + 1;
         try { setTimeout(() => showBookCompletionCelebration(book, results), 600); } catch(err) { console.error('Celebration error:', err); }
+      }
+      // Refresh book progress from server so My Quizzes and dashboard stay in sync
+      if (currentUser?.studentId) {
+        API.getBookProgress(currentUser.studentId).then(bp => { currentUser.bookProgress = bp; }).catch(() => {});
       }
     }, nextChapterInfo);
     QuizEngine.render();
@@ -1707,7 +1712,12 @@ async function launchFullBookQuiz(bookId, sid) {
         }
       }
       // Full book quiz = book is complete
+      if (currentUser?.weeklyStats) currentUser.weeklyStats.booksCompletedThisWeek = (currentUser.weeklyStats.booksCompletedThisWeek || 0) + 1;
       try { setTimeout(() => showBookCompletionCelebration(book, results), 600); } catch(err) { console.error('Celebration error:', err); }
+      // Refresh book progress from server
+      if (currentUser?.studentId) {
+        API.getBookProgress(currentUser.studentId).then(bp => { currentUser.bookProgress = bp; }).catch(() => {});
+      }
     }, null);
     QuizEngine.render();
   } catch(e) {

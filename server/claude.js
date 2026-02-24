@@ -41,7 +41,16 @@ For each question, provide:
 - explanation: Why the correct answer is right (2-3 sentences, friendly tone)
 - vocabulary_words: Array of important words in the question that students might need defined (0-3 words)
 
+CRITICAL — ANSWER LENGTH BALANCE: The correct answer must NOT be consistently longer than the wrong answers. Follow these rules strictly:
+- All 4 answer choices for each question should be similar in length (within ~20% of each other).
+- If the correct answer needs more detail, add similar detail to at least 2 wrong answers so they are equally long.
+- Vary which option is longest across questions — sometimes a wrong answer should be the longest.
+- Never make the correct answer the only one with a full sentence while wrong answers are short phrases.
+- Wrong answers (distractors) must be plausible and well-crafted, not obviously short throwaway options.
+
 IMPORTANT: When answer choices contain vocabulary words that will be underlined, ensure at least 2 answer choices include vocabulary-level words — never just the correct answer alone. Distribute vocabulary naturally so students cannot identify the correct answer by vocabulary highlighting alone.
+
+IMPORTANT: Vary the sentence starters across answer choices. Do NOT begin all 4 options with the same words (e.g., all starting with "The narrator" or "He felt"). Use diverse phrasing.
 
 Respond in valid JSON format:
 { "questions": [ { "question_number": 1, "question_type": "recall", "question_text": "...", "passage_excerpt": "...", "options": ["A","B","C","D"], "correct_answer": 0, "strategy_type": "...", "strategy_tip": "...", "explanation": "...", "vocabulary_words": ["word1"] } ] }` }]
