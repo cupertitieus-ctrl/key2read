@@ -30,7 +30,11 @@ app.use(session({
 
 // Serve only public-safe directories (not server/, package.json, .env, etc.)
 app.use('/css', express.static(path.join(__dirname, 'css')));
-app.use('/js', express.static(path.join(__dirname, 'js')));
+app.use('/js', express.static(path.join(__dirname, 'js'), {
+  setHeaders: (res) => {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  }
+}));
 app.use('/pages', express.static(path.join(__dirname, 'pages'), { extensions: ['html'] }));
 app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use('/index.html', express.static(path.join(__dirname, 'index.html')));
