@@ -3399,3 +3399,304 @@
     font-size: 0.9375rem;
   }
 }
+
+/* ===== INDIVIDUAL STUDENT DASHBOARD ===== */
+
+/* --- Loading Spinner --- */
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--g200);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.perf-loading {
+  animation: fadeIn 0.3s ease;
+}
+
+/* --- Student Overview (Score Header) --- */
+.student-overview {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px 28px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  animation: fadeInUp 0.4s ease;
+}
+
+.overview-score-section {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.overview-score-main {
+  text-align: center;
+  min-width: 120px;
+}
+
+.overview-score-number {
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--navy);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.overview-score-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--g400);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+}
+
+.overview-score-meta {
+  flex: 1;
+}
+
+.overview-change {
+  font-size: 0.9375rem;
+  color: var(--g600);
+  margin-bottom: 4px;
+}
+
+.overview-change-secondary {
+  font-size: 0.8125rem;
+  color: var(--g400);
+}
+
+.overview-trend {
+  font-size: 0.8125rem;
+  color: var(--g500);
+  margin-bottom: 8px;
+}
+
+.overview-sparkline {
+  margin-top: 4px;
+}
+
+/* --- Section Headers --- */
+.section-header {
+  margin-bottom: 12px;
+}
+
+.section-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0;
+}
+
+/* --- Score Breakdown Grid --- */
+.score-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  animation: fadeInUp 0.5s ease;
+}
+
+/* --- Component Card --- */
+.component-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.component-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.component-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.component-icon {
+  display: flex;
+  align-items: center;
+}
+
+.component-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.component-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--g600);
+  flex: 1;
+}
+
+.component-weight {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--g400);
+  background: var(--g100);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.component-score-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.component-score {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--navy);
+  line-height: 1;
+}
+
+.component-insight {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--g500);
+  line-height: 1.4;
+}
+
+/* --- Trend Indicators --- */
+.trend-up {
+  color: var(--green);
+  font-weight: 700;
+}
+
+.trend-down {
+  color: var(--red);
+  font-weight: 700;
+}
+
+.trend-stable {
+  color: var(--g400);
+  font-weight: 700;
+}
+
+/* --- Component Detail Panel --- */
+.component-detail {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--g150, #eee);
+  animation: fadeIn 0.2s ease;
+}
+
+.detail-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8125rem;
+}
+
+.detail-row span {
+  color: var(--g500);
+}
+
+.detail-row strong {
+  color: var(--navy);
+  font-weight: 700;
+}
+
+/* --- Key Activity Section --- */
+.key-activity-section {
+  display: flex;
+  gap: 20px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 18px 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  animation: fadeInUp 0.6s ease;
+}
+
+.key-stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.key-stat-icon {
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+}
+
+.key-stat-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.key-stat-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--navy);
+}
+
+.key-stat-label {
+  font-size: 0.75rem;
+  color: var(--g400);
+}
+
+/* --- Animations --- */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* --- Responsive: Student Dashboard --- */
+@media (max-width: 900px) {
+  .score-breakdown-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .overview-score-section {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .key-activity-section {
+    flex-direction: column;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 600px) {
+  .score-breakdown-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-overview {
+    padding: 18px 16px;
+  }
+
+  .overview-score-number {
+    font-size: 2.25rem;
+  }
+}

@@ -376,6 +376,14 @@ function renderSidebar() {
       { section: 'Tools' },
       { id: 'principal-settings',  icon: IC.gear,   label: 'School Settings' },
     ];
+  } else if (userRole === 'parent') {
+    items = [
+      { section: 'My Family' },
+      { id: 'students',   icon: IC.users, label: 'My Children',    badge: students.length > 0 ? String(students.length) : '', badgeCls: 'blue' },
+      { id: 'reports',    icon: IC.chart, label: 'Growth Reports' },
+      { section: 'Resources' },
+      { id: 'library',    icon: IC.book,  label: 'Book Library' },
+    ];
   } else if (userRole === 'guest') {
     items = [
       { id: 'guest-browse', icon: IC.book, label: 'Browse Books' },
@@ -904,12 +912,13 @@ function renderStudents() {
     </div>`;
 }
 
-// ---- Page: Student Profile ----
+// ---- Page: Student Profile (Individual Student Dashboard) ----
 function renderStudentProfile() {
   const s = students.find(x => x.id === studentId);
   if (!s) return '<p>Student not found.</p>';
-  const sb = scoreBadge(s.accuracy);
-  const gd = growthData[s.id];
+
+  // Show loading skeleton, then fetch performance data async
+  setTimeout(() => loadStudentPerformance(s), 0);
 
   return `
     <button class="back-btn" onclick="navigate('students')">${IC.arrowLeft} Back to Students</button>
@@ -919,25 +928,232 @@ function renderStudentProfile() {
       <div class="profile-info">
         <h2>${s.name} ${warnTag(s)}</h2>
         <div class="profile-meta">
-          <span>Level ${s.level}</span>
           <span>Grade: ${s.grade}</span>
+          <span>Level ${s.level}</span>
           <span>Joined: ${s.joined}</span>
         </div>
       </div>
     </div>
 
+    <div id="student-perf-container">
+      <div class="perf-loading" style="text-align:center;padding:48px">
+        <div class="spinner"></div>
+        <p style="color:var(--g400);margin-top:12px">Loading performance data...</p>
+      </div>
+    </div>`;
+}
+
+async function loadStudentPerformance(s) {
+  const container = document.getElementById('student-perf-container');
+  if (!container) return;
+
+  try {
+    const perf = await API.getStudentPerformance(s.id);
+    container.innerHTML = renderPerformanceDashboard(s, perf);
+  } catch(e) {
+    console.error('Performance load error:', e);
+    // Fallback to basic stats
+    container.innerHTML = renderBasicStudentStats(s);
+  }
+}
+
+function renderPerformanceDashboard(s, perf) {
+  const trendIcon = perf.trend === 'improving' ? `<span class="trend-up">&#9650;</span>` :
+                    perf.trend === 'declining' ? `<span class="trend-down">&#9660;</span>` :
+                    `<span class="trend-stable">&#9472;</span>`;
+  const trendLabel = perf.trend === 'improving' ? 'Improving' : perf.trend === 'declining' ? 'Declining' : 'Stable';
+  const changeSign = perf.scoreChangeThisWeek >= 0 ? '+' : '';
+  const lastChangeSign = perf.scoreChangeLastWeek >= 0 ? '+' : '';
+
+  // Component config
+  const compConfig = {
+    comprehension: { name: 'Comprehension', icon: IC.bookOpen, color: 'var(--blue)', borderColor: 'var(--blue)' },
+    effort:        { name: 'Quiz Effort', icon: IC.clock, color: 'var(--green)', borderColor: 'var(--green)' },
+    independence:  { name: 'Independence', icon: IC.star, color: 'var(--orange)', borderColor: 'var(--orange)' },
+    vocabulary:    { name: 'Vocabulary', icon: IC.hash, color: 'var(--purple)', borderColor: 'var(--purple)' },
+    persistence:   { name: 'Persistence', icon: IC.fire, color: 'var(--gold)', borderColor: 'var(--gold)' }
+  };
+
+  // Sparkline
+  const sparkline = perf.sparklineData && perf.sparklineData.length >= 2
+    ? miniChart(perf.sparklineData, 'var(--blue)', 120, 32)
+    : '<span style="color:var(--g400);font-size:0.8125rem">Not enough data yet</span>';
+
+  // Component cards
+  const componentCards = Object.entries(perf.components).map(([key, comp]) => {
+    const cfg = compConfig[key];
+    const tIcon = comp.trend === 'up' ? `<span class="trend-up">&#9650;</span>` :
+                  comp.trend === 'down' ? `<span class="trend-down">&#9660;</span>` :
+                  `<span class="trend-stable">&#9472;</span>`;
+    return `
+      <div class="component-card" onclick="toggleComponentDetail('${key}')" style="border-top:3px solid ${cfg.borderColor}">
+        <div class="component-card-header">
+          <span class="component-icon" style="color:${cfg.color}">${cfg.icon}</span>
+          <span class="component-name">${cfg.name}</span>
+          <span class="component-weight">${comp.weight}%</span>
+        </div>
+        <div class="component-score-row">
+          <span class="component-score">${comp.score}</span>
+          ${tIcon}
+        </div>
+        <div class="component-insight">${comp.insight}</div>
+        <div class="component-detail" id="detail-${key}" style="display:none">
+          ${renderComponentDetail(key, comp)}
+        </div>
+      </div>`;
+  }).join('');
+
+  // Key Activity
+  const keyActivity = perf.keyActivity || {};
+
+  // Quiz History
+  const quizHistoryHtml = perf.quizHistory && perf.quizHistory.length > 0 ? `
+    <div class="section-header" style="margin-top:24px"><h3>Quiz History</h3></div>
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Book / Chapter</th>
+            <th>Score</th>
+            <th>Hints</th>
+            <th>Time</th>
+            <th>Keys</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${perf.quizHistory.map(q => {
+            const qsb = scoreBadge(q.score);
+            const date = q.completedAt ? new Date(q.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+            const mins = q.timeTaken ? Math.floor(q.timeTaken / 60) : 0;
+            const secs = q.timeTaken ? q.timeTaken % 60 : 0;
+            return `
+            <tr>
+              <td>${date}</td>
+              <td><strong>${q.bookTitle}</strong> — Ch. ${q.chapterNumber}</td>
+              <td><span class="score-badge ${qsb.cls}">${Math.round(q.score)}% ${qsb.label}</span></td>
+              <td>${q.hintsUsed > 0 ? q.hintsUsed : '<span style="color:var(--g400)">0</span>'}</td>
+              <td>${mins}:${secs.toString().padStart(2,'0')}</td>
+              <td>${keysDisp(q.keysEarned)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>` : `
+    <div class="info-panel" style="text-align:center;padding:32px;margin-top:24px">
+      <p style="color:var(--g500);margin:0">${IC.bookOpen} No quiz history yet. Quizzes will appear here as ${s.name} completes them.</p>
+    </div>`;
+
+  return `
+    <div class="student-overview">
+      <div class="overview-score-section">
+        <div class="overview-score-main">
+          <div class="overview-score-number">${perf.readingScore}</div>
+          <div class="overview-score-label">Reading Score</div>
+        </div>
+        <div class="overview-score-meta">
+          <div class="overview-change">
+            ${trendIcon} <strong>${changeSign}${perf.scoreChangeThisWeek}</strong> this week
+            <span class="overview-change-secondary">(${lastChangeSign}${perf.scoreChangeLastWeek} last week)</span>
+          </div>
+          <div class="overview-trend">Trend: ${trendLabel}</div>
+          <div class="overview-sparkline">${sparkline}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-header"><h3>Score Breakdown</h3></div>
+    <div class="score-breakdown-grid">
+      ${componentCards}
+    </div>
+
+    <div class="section-header" style="margin-top:24px"><h3>Key Activity</h3></div>
+    <div class="key-activity-section">
+      <div class="key-stat">
+        <span class="key-stat-icon">${IC.key}</span>
+        <div>
+          <div class="key-stat-value">${keyActivity.balance || 0}</div>
+          <div class="key-stat-label">Balance</div>
+        </div>
+      </div>
+      <div class="key-stat">
+        <span class="key-stat-icon trend-up">+</span>
+        <div>
+          <div class="key-stat-value">${keyActivity.earnedThisWeek || 0}</div>
+          <div class="key-stat-label">Earned This Week</div>
+        </div>
+      </div>
+      <div class="key-stat">
+        <span class="key-stat-icon trend-down">-</span>
+        <div>
+          <div class="key-stat-value">${keyActivity.spentThisWeek || 0}</div>
+          <div class="key-stat-label">Spent This Week</div>
+        </div>
+      </div>
+    </div>
+
+    ${quizHistoryHtml}`;
+}
+
+function renderComponentDetail(key, comp) {
+  const d = comp.details || {};
+  switch(key) {
+    case 'comprehension':
+      return `<div class="detail-stats">
+        <div class="detail-row"><span>Avg Quiz Score</span><strong>${d.avgQuizScore != null ? d.avgQuizScore + '%' : '—'}</strong></div>
+        <div class="detail-row"><span>Best This Week</span><strong>${d.bestThisWeek != null ? Math.round(d.bestThisWeek) + '%' : '—'}</strong></div>
+        <div class="detail-row"><span>Lowest This Week</span><strong>${d.lowestThisWeek != null ? Math.round(d.lowestThisWeek) + '%' : '—'}</strong></div>
+        <div class="detail-row"><span>Total Quizzes</span><strong>${d.totalQuizzes || 0}</strong></div>
+        <div class="detail-row"><span>Consistency</span><strong>${d.consistency || '—'}</strong></div>
+      </div>`;
+    case 'effort':
+      return `<div class="detail-stats">
+        <div class="detail-row"><span>Avg Time / Question</span><strong>${d.avgTimePerQuestion || 0}s</strong></div>
+        <div class="detail-row"><span>Completion Rate</span><strong>${d.completionRate || 0}%</strong></div>
+        <div class="detail-row"><span>Rushing Rate</span><strong>${d.rushingRate || 0}%</strong></div>
+      </div>`;
+    case 'independence':
+      return `<div class="detail-stats">
+        <div class="detail-row"><span>Avg Hints / Quiz</span><strong>${d.avgHintsPerQuiz != null ? d.avgHintsPerQuiz : '—'}</strong></div>
+        <div class="detail-row"><span>Zero-Hint Quizzes</span><strong>${d.zeroHintRate || 0}%</strong></div>
+        <div class="detail-row"><span>Hints This Week</span><strong>${d.hintsThisWeek || 0}</strong></div>
+      </div>`;
+    case 'vocabulary':
+      return `<div class="detail-stats">
+        <div class="detail-row"><span>Unique Words Explored</span><strong>${d.uniqueWordsLooked || 0}</strong></div>
+        <div class="detail-row"><span>Words Repeated</span><strong>${d.wordsRepeated || 0}</strong></div>
+        ${d.recentWords && d.recentWords.length > 0 ? `<div class="detail-row"><span>Recent Words</span><strong>${d.recentWords.join(', ')}</strong></div>` : ''}
+      </div>`;
+    case 'persistence':
+      return `<div class="detail-stats">
+        <div class="detail-row"><span>Avg Attempts / Question</span><strong>${d.avgAttemptsPerQuiz || '—'}</strong></div>
+        <div class="detail-row"><span>Improved After Retry</span><strong>${d.improvedAfterRetry || 0}%</strong></div>
+        <div class="detail-row"><span>First-Attempt Mastery</span><strong>${d.firstAttemptMastery || 0}%</strong></div>
+      </div>`;
+    default:
+      return '';
+  }
+}
+
+function toggleComponentDetail(key) {
+  const el = document.getElementById('detail-' + key);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function renderBasicStudentStats(s) {
+  // Fallback if performance API fails
+  return `
     <div class="profile-stats">
       <div class="profile-stat-card">
         <div class="stat-icon blue">${IC.barChart}</div>
         <div class="profile-stat-value">${s.score}</div>
         <div class="profile-stat-label">Reading Score</div>
-        ${gd ? `<div style="margin-top:6px">${miniChart(gd.scores, 'var(--blue)')}</div>` : ''}
       </div>
       <div class="profile-stat-card">
         <div class="stat-icon green">${IC.check}</div>
         <div class="profile-stat-value">${s.accuracy}%</div>
         <div class="profile-stat-label">Accuracy</div>
-        ${gd ? `<div style="margin-top:6px">${miniChart(gd.accuracy, 'var(--green)')}</div>` : ''}
       </div>
       <div class="profile-stat-card">
         <div class="stat-icon gold">${IC.key}</div>
@@ -955,42 +1171,9 @@ function renderStudentProfile() {
         <div class="profile-stat-label">Quizzes</div>
       </div>
     </div>
-
-    ${quizHistory.length > 0 ? `
-    <div class="data-table-wrap">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Book / Assessment</th>
-            <th>Origin</th>
-            <th>Score</th>
-            <th>Keys</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${quizHistory.map(q => {
-            const qsb = scoreBadge(q.score);
-            return `
-            <tr>
-              <td>${q.date}</td>
-              <td><strong>${q.name}</strong></td>
-              <td>
-                ${q.origin === 'student'
-                  ? `<span class="origin-badge student">${IC.bookOpen} Student Initiated</span>`
-                  : `<span class="origin-badge teacher">${IC.target} Teacher Assigned</span>`
-                }
-              </td>
-              <td><span class="score-badge ${qsb.cls}">${q.score}% ${qsb.label}</span></td>
-              <td>${keysDisp(q.keys)}</td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
-    </div>` : `
     <div class="info-panel" style="text-align:center;padding:32px">
-      <p style="color:var(--g500);margin:0">${IC.bookOpen} No quiz history yet. Quizzes will appear here as ${s.name} completes them.</p>
-    </div>`}`;
+      <p style="color:var(--g500);margin:0">Could not load detailed performance data. Showing basic stats.</p>
+    </div>`;
 }
 
 // ---- Page: Quiz Templates ----
@@ -3765,6 +3948,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch(e) { console.warn('Could not load owner data:', e); }
   } else if (userRole === 'principal') {
     page = 'principal-dashboard';
+  } else if (userRole === 'parent') {
+    page = 'students';
+
+    // Load children for this parent's class
+    if (currentUser.classId) {
+      try {
+        const rawStudents = await API.getStudents(currentUser.classId);
+        students = rawStudents.map(mapStudentFromAPI);
+      } catch(e) { console.warn('Could not load children:', e); }
+    }
   }
 
   renderSidebar();

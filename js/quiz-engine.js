@@ -800,7 +800,9 @@ const QuizEngine = (function() {
           chapterId: currentQuiz.chapter.id,
           answers: answerTexts,
           timeTaken,
-          hintCount
+          hintCount,
+          attemptData: attempts.slice(0, currentQuiz.questions.length),
+          vocabLookups: Object.keys(definitionCache)
         });
       } catch(e) {
         // Fallback local scoring

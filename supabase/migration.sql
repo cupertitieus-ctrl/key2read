@@ -147,6 +147,9 @@ CREATE TABLE quiz_results (
   keys_earned INTEGER DEFAULT 0,
   time_taken_seconds INTEGER DEFAULT 0,
   strategies_used JSONB DEFAULT '[]'::jsonb,
+  hints_used INTEGER DEFAULT 0,
+  attempt_data JSONB DEFAULT '[]'::jsonb,
+  vocab_lookups JSONB DEFAULT '[]'::jsonb,
   completed_at TIMESTAMPTZ DEFAULT NOW()
 );
 

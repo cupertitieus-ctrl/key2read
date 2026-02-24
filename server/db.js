@@ -223,7 +223,10 @@ async function saveQuizResult(resultData) {
     reading_level_change: resultData.readingLevelChange,
     keys_earned: resultData.keysEarned,
     time_taken_seconds: resultData.timeTaken || 0,
-    strategies_used: resultData.strategiesUsed || []
+    strategies_used: resultData.strategiesUsed || [],
+    hints_used: resultData.hintsUsed || 0,
+    attempt_data: resultData.attemptData || [],
+    vocab_lookups: resultData.vocabLookups || []
   }).select().single();
 
   if (error) console.error('saveQuizResult error:', error);
@@ -736,6 +739,430 @@ async function countBooksCompleted(studentId) {
   return count;
 }
 
+// ─── STUDENT PERFORMANCE (Reading Score 0-1000) ───
+
+async function getStudentPerformance(studentId) {
+  // 1. Fetch all quiz results with chapter/book joins
+  const { data: allResults } = await supabase
+    .from('quiz_results')
+    .select(`
+      id, score, correct_count, total_questions, time_taken_seconds,
+      reading_level_change, keys_earned, hints_used, attempt_data, vocab_lookups,
+      strategies_used, completed_at,
+      chapters!inner (
+        title, chapter_number, book_id,
+        books!inner ( title, lexile_level )
+      )
+    `)
+    .eq('student_id', studentId)
+    .order('completed_at', { ascending: true });
+
+  const results = allResults || [];
+
+  // 2. Fetch reading level history for sparkline
+  const { data: historyData } = await supabase
+    .from('reading_level_history')
+    .select('level, lexile, source, recorded_at')
+    .eq('student_id', studentId)
+    .order('recorded_at', { ascending: true });
+  const history = historyData || [];
+
+  // 3. Fetch student info
+  const student = await getStudent(studentId);
+
+  // 4. Fetch weekly stats
+  const weeklyStats = await getWeeklyStats(studentId);
+
+  // If no quiz results, return empty performance
+  if (results.length === 0) {
+    return {
+      readingScore: student?.reading_score || 500,
+      scoreChangeThisWeek: 0,
+      scoreChangeLastWeek: 0,
+      trend: 'stable',
+      sparklineData: [],
+      components: buildEmptyComponents(),
+      keyActivity: {
+        balance: student?.keys_earned || 0,
+        earnedThisWeek: weeklyStats.keysThisWeek || 0,
+        spentThisWeek: 0
+      },
+      weeklyStats,
+      quizHistory: []
+    };
+  }
+
+  // ─── Time boundaries ───
+  const now = new Date();
+  const dayOfWeek = now.getUTCDay();
+  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const thisMonday = new Date(now);
+  thisMonday.setUTCDate(now.getUTCDate() - daysSinceMonday);
+  thisMonday.setUTCHours(0, 0, 0, 0);
+
+  const lastMonday = new Date(thisMonday);
+  lastMonday.setUTCDate(thisMonday.getUTCDate() - 7);
+
+  const thisWeekResults = results.filter(r => new Date(r.completed_at) >= thisMonday);
+  const lastWeekResults = results.filter(r => {
+    const d = new Date(r.completed_at);
+    return d >= lastMonday && d < thisMonday;
+  });
+
+  // Use last 20 quizzes for scoring (recent performance)
+  const recent = results.slice(-20);
+  const recentScores = recent.map(r => r.score);
+
+  // ─── 1) COMPREHENSION (30%) ───
+  const comprehension = calcComprehension(recentScores, thisWeekResults, lastWeekResults);
+
+  // ─── 2) QUIZ EFFORT (20%) ───
+  const effort = calcEffort(recent, thisWeekResults, lastWeekResults);
+
+  // ─── 3) SUPPORT & INDEPENDENCE (20%) ───
+  const independence = calcIndependence(recent, thisWeekResults, lastWeekResults);
+
+  // ─── 4) VOCABULARY DEVELOPMENT (15%) ───
+  const vocabulary = calcVocabulary(results, thisWeekResults, lastWeekResults);
+
+  // ─── 5) MASTERY & PERSISTENCE (15%) ───
+  const persistence = calcPersistence(recent, thisWeekResults, lastWeekResults);
+
+  // ─── COMPOSITE READING SCORE ───
+  const compositeScore = Math.round(
+    comprehension.score * 0.30 +
+    effort.score * 0.20 +
+    independence.score * 0.20 +
+    vocabulary.score * 0.15 +
+    persistence.score * 0.15
+  );
+
+  // Week-over-week change
+  const thisWeekScoreChange = thisWeekResults.reduce((sum, r) => sum + (r.reading_level_change || 0), 0);
+  const lastWeekScoreChange = lastWeekResults.reduce((sum, r) => sum + (r.reading_level_change || 0), 0);
+
+  // Sparkline: reading scores over time from history
+  const sparklineData = history.slice(-12).map(h => h.lexile || Math.round(h.level * 160));
+
+  // Trend
+  let trend = 'stable';
+  if (thisWeekScoreChange > 5) trend = 'improving';
+  else if (thisWeekScoreChange < -5) trend = 'declining';
+
+  // Quiz history for the table (most recent 20)
+  const quizHistory = results.slice(-20).reverse().map(r => ({
+    id: r.id,
+    bookTitle: r.chapters?.books?.title || '',
+    chapterTitle: r.chapters?.title || '',
+    chapterNumber: r.chapters?.chapter_number,
+    score: r.score,
+    correctCount: r.correct_count,
+    totalQuestions: r.total_questions,
+    keysEarned: r.keys_earned,
+    timeTaken: r.time_taken_seconds,
+    hintsUsed: r.hints_used || 0,
+    completedAt: r.completed_at
+  }));
+
+  return {
+    readingScore: compositeScore,
+    scoreChangeThisWeek: thisWeekScoreChange,
+    scoreChangeLastWeek: lastWeekScoreChange,
+    trend,
+    sparklineData,
+    components: {
+      comprehension: { ...comprehension, weight: 30 },
+      effort: { ...effort, weight: 20 },
+      independence: { ...independence, weight: 20 },
+      vocabulary: { ...vocabulary, weight: 15 },
+      persistence: { ...persistence, weight: 15 }
+    },
+    keyActivity: {
+      balance: student?.keys_earned || 0,
+      earnedThisWeek: weeklyStats.keysThisWeek || 0,
+      spentThisWeek: 0
+    },
+    weeklyStats,
+    quizHistory
+  };
+}
+
+// ─── Component Calculators ───
+
+function calcComprehension(recentScores, thisWeek, lastWeek) {
+  if (recentScores.length === 0) return { score: 0, trend: 'stable', insight: 'No quizzes yet.', details: {} };
+
+  const avg = recentScores.reduce((a, b) => a + b, 0) / recentScores.length;
+  // Standard deviation for consistency
+  const stdDev = Math.sqrt(recentScores.reduce((sum, s) => sum + Math.pow(s - avg, 2), 0) / recentScores.length);
+  const consistencyMultiplier = stdDev < 10 ? 1.05 : stdDev < 20 ? 1.0 : stdDev < 30 ? 0.95 : 0.9;
+
+  // Trend: compare recent 5 vs older quizzes
+  const recent5 = recentScores.slice(-5);
+  const older = recentScores.slice(0, -5);
+  const recent5Avg = recent5.length > 0 ? recent5.reduce((a, b) => a + b, 0) / recent5.length : avg;
+  const olderAvg = older.length > 0 ? older.reduce((a, b) => a + b, 0) / older.length : avg;
+  const trendMultiplier = recent5Avg > olderAvg + 5 ? 1.05 : recent5Avg < olderAvg - 5 ? 0.95 : 1.0;
+
+  let score = Math.round(Math.min(1000, Math.max(0, avg * 10 * consistencyMultiplier * trendMultiplier)));
+
+  const thisWeekScores = thisWeek.map(r => r.score);
+  const lastWeekScores = lastWeek.map(r => r.score);
+  const thisWeekAvg = thisWeekScores.length > 0 ? thisWeekScores.reduce((a, b) => a + b, 0) / thisWeekScores.length : null;
+  const lastWeekAvg = lastWeekScores.length > 0 ? lastWeekScores.reduce((a, b) => a + b, 0) / lastWeekScores.length : null;
+
+  const trend = determineTrend(thisWeekAvg, lastWeekAvg);
+
+  const consistency = stdDev < 10 ? 'Very High' : stdDev < 20 ? 'High' : stdDev < 30 ? 'Medium' : 'Low';
+  let insight = score >= 800 ? 'Excellent comprehension — strong and consistent.' :
+                score >= 600 ? 'Good comprehension with room to grow.' :
+                score >= 400 ? 'Building comprehension skills.' : 'Working on building comprehension.';
+
+  return {
+    score, trend, insight,
+    details: {
+      avgQuizScore: Math.round(avg),
+      bestThisWeek: thisWeekScores.length > 0 ? Math.round(Math.max(...thisWeekScores)) : null,
+      lowestThisWeek: thisWeekScores.length > 0 ? Math.round(Math.min(...thisWeekScores)) : null,
+      totalQuizzes: recentScores.length,
+      consistency
+    }
+  };
+}
+
+function calcEffort(recent, thisWeek, lastWeek) {
+  if (recent.length === 0) return { score: 0, trend: 'stable', insight: 'No quizzes yet.', details: {} };
+
+  // Time per question — sweet spot is 15-45 seconds
+  const timesPerQ = recent.map(r => {
+    const total = r.time_taken_seconds || 0;
+    const numQ = r.total_questions || 5;
+    return total / numQ;
+  });
+  const avgTimePerQ = timesPerQ.reduce((a, b) => a + b, 0) / timesPerQ.length;
+
+  // Score based on time sweet spot
+  let timeScore;
+  if (avgTimePerQ >= 15 && avgTimePerQ <= 45) {
+    timeScore = 1000; // perfect range
+  } else if (avgTimePerQ < 8) {
+    timeScore = 300; // rushing
+  } else if (avgTimePerQ < 15) {
+    timeScore = 300 + (avgTimePerQ - 8) / 7 * 700; // 300–1000 ramp
+  } else if (avgTimePerQ <= 60) {
+    timeScore = 1000 - (avgTimePerQ - 45) / 15 * 200; // slight decrease past sweet spot
+  } else {
+    timeScore = 700; // very slow but still trying
+  }
+
+  // Completion rate — always 100% since quizzes auto-submit
+  const completionRate = 100;
+  const rushingRate = Math.round(timesPerQ.filter(t => t < 8).length / timesPerQ.length * 100);
+
+  const score = Math.round(Math.min(1000, Math.max(0, timeScore)));
+
+  const thisWeekTPQ = thisWeek.map(r => (r.time_taken_seconds || 0) / (r.total_questions || 5));
+  const lastWeekTPQ = lastWeek.map(r => (r.time_taken_seconds || 0) / (r.total_questions || 5));
+  const thisAvg = thisWeekTPQ.length > 0 ? thisWeekTPQ.reduce((a, b) => a + b, 0) / thisWeekTPQ.length : null;
+  const lastAvg = lastWeekTPQ.length > 0 ? lastWeekTPQ.reduce((a, b) => a + b, 0) / lastWeekTPQ.length : null;
+
+  // For effort, closer to sweet spot is better
+  const trend = determineTrend(
+    thisAvg !== null ? -Math.abs(thisAvg - 30) : null,
+    lastAvg !== null ? -Math.abs(lastAvg - 30) : null
+  );
+
+  let insight = score >= 800 ? 'Great pacing — thoughtful and steady.' :
+                score >= 600 ? 'Good effort with solid pacing.' :
+                score >= 400 ? 'Could benefit from slowing down a bit.' : 'Try spending more time on each question.';
+
+  return {
+    score, trend, insight,
+    details: {
+      avgTimePerQuestion: Math.round(avgTimePerQ),
+      completionRate,
+      rushingRate
+    }
+  };
+}
+
+function calcIndependence(recent, thisWeek, lastWeek) {
+  if (recent.length === 0) return { score: 0, trend: 'stable', insight: 'No quizzes yet.', details: {} };
+
+  const hintRates = recent.map(r => {
+    const hints = r.hints_used || 0;
+    const numQ = r.total_questions || 5;
+    return hints / numQ;
+  });
+  const avgHintRate = hintRates.reduce((a, b) => a + b, 0) / hintRates.length;
+  const zeroHintQuizzes = recent.filter(r => (r.hints_used || 0) === 0).length;
+  const zeroHintRate = Math.round(zeroHintQuizzes / recent.length * 100);
+
+  // Trend: fewer hints over time = improving
+  const recent5Hints = hintRates.slice(-5);
+  const older5Hints = hintRates.slice(0, -5);
+  const r5Avg = recent5Hints.length > 0 ? recent5Hints.reduce((a, b) => a + b, 0) / recent5Hints.length : avgHintRate;
+  const o5Avg = older5Hints.length > 0 ? older5Hints.reduce((a, b) => a + b, 0) / older5Hints.length : avgHintRate;
+  const hintTrendMultiplier = r5Avg < o5Avg - 0.05 ? 1.1 : r5Avg > o5Avg + 0.05 ? 0.9 : 1.0;
+
+  let score = Math.round(Math.min(1000, Math.max(0, (1 - avgHintRate) * 1000 * hintTrendMultiplier)));
+
+  const thisWeekHints = thisWeek.reduce((sum, r) => sum + (r.hints_used || 0), 0);
+  const lastWeekHints = lastWeek.reduce((sum, r) => sum + (r.hints_used || 0), 0);
+  // For independence, fewer hints = better (invert for trend)
+  const trend = determineTrend(
+    thisWeek.length > 0 ? -(thisWeekHints / thisWeek.length) : null,
+    lastWeek.length > 0 ? -(lastWeekHints / lastWeek.length) : null
+  );
+
+  let insight = score >= 800 ? 'Very independent — rarely needs hints!' :
+                score >= 600 ? 'Growing independence with occasional support.' :
+                score >= 400 ? 'Building confidence to work independently.' : 'Still learning to use strategies on their own.';
+
+  return {
+    score, trend, insight,
+    details: {
+      avgHintsPerQuiz: Math.round(avgHintRate * (recent[0]?.total_questions || 5) * 10) / 10,
+      zeroHintRate,
+      hintsThisWeek: thisWeekHints
+    }
+  };
+}
+
+function calcVocabulary(allResults, thisWeek, lastWeek) {
+  // Gather all vocab lookups from all quizzes
+  const allWords = [];
+  const recentWords = [];
+  for (const r of allResults) {
+    const lookups = r.vocab_lookups || [];
+    if (Array.isArray(lookups)) {
+      allWords.push(...lookups);
+      if (new Date(r.completed_at) >= new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)) {
+        recentWords.push(...lookups);
+      }
+    }
+  }
+
+  const uniqueWords = [...new Set(allWords.map(w => (w || '').toLowerCase()))].filter(Boolean);
+  const wordCounts = {};
+  allWords.forEach(w => {
+    const key = (w || '').toLowerCase();
+    if (key) wordCounts[key] = (wordCounts[key] || 0) + 1;
+  });
+  const repeatedWords = Object.values(wordCounts).filter(c => c > 1).length;
+
+  if (uniqueWords.length === 0) {
+    return {
+      score: 0, trend: 'stable',
+      insight: 'Building vocabulary data — tap words during quizzes to learn definitions!',
+      details: { uniqueWordsLooked: 0, wordsRepeated: 0, recentWords: [] }
+    };
+  }
+
+  // Score: more unique words + fewer repeats = better engagement
+  // Cap at 50 unique words for max score
+  const engagementScore = Math.min(1000, (uniqueWords.length / 50) * 800);
+  const masteryBonus = repeatedWords > 0 ? Math.min(200, (1 - repeatedWords / uniqueWords.length) * 200) : 200;
+  const score = Math.round(Math.min(1000, engagementScore + masteryBonus));
+
+  const thisWeekWords = thisWeek.flatMap(r => r.vocab_lookups || []);
+  const lastWeekWords = lastWeek.flatMap(r => r.vocab_lookups || []);
+  const trend = determineTrend(
+    thisWeekWords.length > 0 ? new Set(thisWeekWords).size : null,
+    lastWeekWords.length > 0 ? new Set(lastWeekWords).size : null
+  );
+
+  const uniqueRecent = [...new Set(recentWords.map(w => (w || '').toLowerCase()))].filter(Boolean).slice(0, 5);
+
+  let insight = score >= 800 ? 'Active vocabulary explorer — great curiosity!' :
+                score >= 600 ? 'Good vocabulary engagement.' :
+                score >= 400 ? 'Starting to explore new words.' : 'Encourage tapping unfamiliar words for definitions.';
+
+  return {
+    score, trend, insight,
+    details: {
+      uniqueWordsLooked: uniqueWords.length,
+      wordsRepeated: repeatedWords,
+      recentWords: uniqueRecent
+    }
+  };
+}
+
+function calcPersistence(recent, thisWeek, lastWeek) {
+  if (recent.length === 0) return { score: 0, trend: 'stable', insight: 'No quizzes yet.', details: {} };
+
+  // Attempt data: average attempts per quiz, improvement after retry
+  const attemptQuizzes = recent.filter(r => r.attempt_data && Array.isArray(r.attempt_data) && r.attempt_data.length > 0);
+
+  if (attemptQuizzes.length === 0) {
+    // No attempt data yet — use score and first-attempt proxy
+    const avgScore = recent.reduce((s, r) => s + r.score, 0) / recent.length;
+    const score = Math.round(Math.min(1000, avgScore * 8));
+    return {
+      score, trend: 'stable',
+      insight: 'Building persistence data — keep taking quizzes!',
+      details: { avgAttemptsPerQuiz: 1, improvedAfterRetry: 0, firstAttemptMastery: Math.round(avgScore) }
+    };
+  }
+
+  // Average attempts per question across all quizzes
+  const allAttempts = attemptQuizzes.flatMap(r => r.attempt_data);
+  const avgAttempts = allAttempts.length > 0 ? allAttempts.reduce((a, b) => a + b, 0) / allAttempts.length : 1;
+
+  // First attempt mastery: % of questions answered correctly on first try (attempt = 1)
+  const firstTryCorrect = allAttempts.filter(a => a === 1).length;
+  const firstAttemptMastery = Math.round(firstTryCorrect / allAttempts.length * 100);
+
+  // Improvement after retry: quizzes where retries happened and score was still decent
+  const retryQuizzes = attemptQuizzes.filter(r => r.attempt_data.some(a => a > 1));
+  const improvedQuizzes = retryQuizzes.filter(r => r.score >= 60);
+  const improvedAfterRetry = retryQuizzes.length > 0 ? Math.round(improvedQuizzes.length / retryQuizzes.length * 100) : 0;
+
+  // Score: balanced between first-attempt mastery and persistence through retries
+  const masteryScore = firstAttemptMastery * 6; // 0-600
+  const persistenceBonus = Math.min(400, improvedAfterRetry * 4); // 0-400
+  const score = Math.round(Math.min(1000, Math.max(0, masteryScore + persistenceBonus)));
+
+  const thisWeekAttempts = thisWeek.filter(r => r.attempt_data?.length > 0).flatMap(r => r.attempt_data);
+  const lastWeekAttempts = lastWeek.filter(r => r.attempt_data?.length > 0).flatMap(r => r.attempt_data);
+  // For persistence, higher first-attempt rate is better
+  const thisFirstRate = thisWeekAttempts.length > 0 ? thisWeekAttempts.filter(a => a === 1).length / thisWeekAttempts.length : null;
+  const lastFirstRate = lastWeekAttempts.length > 0 ? lastWeekAttempts.filter(a => a === 1).length / lastWeekAttempts.length : null;
+  const trend = determineTrend(thisFirstRate, lastFirstRate);
+
+  let insight = score >= 800 ? 'Persistent and accurate — great mastery!' :
+                score >= 600 ? 'Shows persistence and keeps trying.' :
+                score >= 400 ? 'Building persistence — keep it up!' : 'Encourage trying again after mistakes.';
+
+  return {
+    score, trend, insight,
+    details: {
+      avgAttemptsPerQuiz: Math.round(avgAttempts * 10) / 10,
+      improvedAfterRetry,
+      firstAttemptMastery
+    }
+  };
+}
+
+function determineTrend(thisWeekVal, lastWeekVal) {
+  if (thisWeekVal === null || lastWeekVal === null) return 'stable';
+  const diff = thisWeekVal - lastWeekVal;
+  if (diff > 0.05 || diff > lastWeekVal * 0.1) return 'up';
+  if (diff < -0.05 || diff < -lastWeekVal * 0.1) return 'down';
+  return 'stable';
+}
+
+function buildEmptyComponents() {
+  const empty = { score: 0, trend: 'stable', insight: 'No quizzes yet — start reading to build your score!', details: {} };
+  return {
+    comprehension: { ...empty, weight: 30 },
+    effort: { ...empty, weight: 20 },
+    independence: { ...empty, weight: 20 },
+    vocabulary: { ...empty, weight: 15 },
+    persistence: { ...empty, weight: 15 }
+  };
+}
+
 // Export everything
 module.exports = {
   supabase,
@@ -775,7 +1202,8 @@ module.exports = {
   getStudentBookProgress,
   deductStudentKeys,
   getFavoriteBooks,
-  toggleFavoriteBook
+  toggleFavoriteBook,
+  getStudentPerformance
 };
 
 async function getFullBookQuiz(bookId) {

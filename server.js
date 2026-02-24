@@ -365,6 +365,17 @@ app.get('/api/students/:id/book-progress', async (req, res) => {
   }
 });
 
+// ─── STUDENT PERFORMANCE (Reading Score 0-1000) ───
+app.get('/api/students/:id/performance', async (req, res) => {
+  try {
+    const performance = await db.getStudentPerformance(parseInt(req.params.id));
+    res.json(performance);
+  } catch (e) {
+    console.error('Student performance error:', e);
+    res.status(500).json({ error: 'Failed to load performance data' });
+  }
+});
+
 // ─── CHAPTER PROGRESS ───
 app.get('/api/students/:id/completed-chapters/:bookId', async (req, res) => {
   const studentId = parseInt(req.params.id);
@@ -529,7 +540,7 @@ app.post('/api/quiz/personalize-all', async (req, res) => {
 });
 
 app.post('/api/quiz/submit', async (req, res) => {
-  const { studentId, chapterId, assignmentId, answers, timeTaken, hintCount } = req.body;
+  const { studentId, chapterId, assignmentId, answers, timeTaken, hintCount, attemptData, vocabLookups } = req.body;
   const student = await db.getStudent(studentId);
   const questions = await db.getChapterQuiz(chapterId);
   if (!student || questions.length === 0) return res.status(400).json({ error: 'Invalid submission' });
@@ -585,7 +596,10 @@ app.post('/api/quiz/submit', async (req, res) => {
     studentId, assignmentId, chapterId, answers,
     score, correctCount, totalQuestions: questions.length,
     readingLevelChange: levelChange, keysEarned,
-    timeTaken: timeTaken || 0, strategiesUsed
+    timeTaken: timeTaken || 0, strategiesUsed,
+    hintsUsed: hints,
+    attemptData: attemptData || [],
+    vocabLookups: vocabLookups || []
   });
 
   res.json({

@@ -43,6 +43,7 @@ const API = {
   getReadingHistory: (id) => API.get(`/api/students/${id}/reading-history`),
   getQuizResults: (id) => API.get(`/api/students/${id}/quiz-results`),
   getWeeklyStats: (id) => API.get(`/api/students/${id}/weekly-stats`),
+  getStudentPerformance: (id) => API.get(`/api/students/${id}/performance`),
   getBookProgress: (id) => API.get(`/api/students/${id}/book-progress`),
   getFavorites: (id) => API.get(`/api/students/${id}/favorites`),
   toggleFavorite: (id, bookId) => API.post(`/api/students/${id}/favorites/toggle`, { bookId }),
