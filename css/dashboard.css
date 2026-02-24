@@ -565,21 +565,21 @@
 
 .coming-soon-ribbon {
   position: absolute;
-  top: 12px;
-  right: -32px;
-  width: 130px;
-  padding: 4px 0;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
+  top: 18px;
+  right: -40px;
+  width: 170px;
+  padding: 6px 0;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   color: #fff;
   text-align: center;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 0.625rem;
-  letter-spacing: 0.06em;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   transform: rotate(45deg);
   z-index: 3;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.22);
   line-height: 1.4;
 }
 
