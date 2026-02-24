@@ -1174,8 +1174,11 @@ async function getClassAnalytics(classId) {
     .or('is_teacher_demo.is.null,is_teacher_demo.eq.false')
     .order('name');
 
-  // If precomputed columns exist, return them directly (no live computation)
-  if (!preErr && precomputed && precomputed.length > 0 && precomputed[0].comprehension_label !== undefined) {
+  // If precomputed columns exist AND at least one student has actual analytics data, use fast path
+  const hasAnalytics = !preErr && precomputed && precomputed.length > 0 &&
+    precomputed[0].comprehension_label !== undefined &&
+    precomputed.some(s => s.comprehension_label !== null || s.independence_label !== null || s.persistence_label !== null);
+  if (hasAnalytics) {
     return precomputed.map(s => ({
       id: s.id,
       name: s.name,
@@ -1248,7 +1251,7 @@ async function getClassAnalytics(classId) {
   lastMonday.setUTCDate(thisMonday.getUTCDate() - 7);
 
   // 7. Compute analytics per student
-  return students.map(s => {
+  const analyticsResults = students.map(s => {
     const studentResults = resultsByStudent[s.id] || [];
     const recent = studentResults.slice(-20); // last 20 quizzes
 
@@ -1335,6 +1338,27 @@ async function getClassAnalytics(classId) {
       persistence
     };
   });
+
+  // Backfill: write computed analytics back to students table (fire-and-forget)
+  for (const a of analyticsResults) {
+    supabase.from('students').update({
+      comprehension_label: a.comprehension === 'No Data' ? null : a.comprehension,
+      comprehension_pct: a.comprehensionPct,
+      reasoning_label: a.reasoning === 'No Data' ? null : a.reasoning,
+      reasoning_pct: a.reasoningPct,
+      vocab_words_learned: a.vocabWordsLearned,
+      independence_label: a.independence === 'No Data' ? null : a.independence,
+      persistence_label: a.persistence === 'No Data' ? null : a.persistence,
+      score_trend: a.scoreTrend,
+      analytics_updated_at: new Date().toISOString()
+    }).eq('id', a.id).then(({ error }) => {
+      if (error && !error.message?.includes('does not exist')) {
+        console.error('Backfill analytics error for student', a.id, error.message);
+      }
+    });
+  }
+
+  return analyticsResults;
 }
 
 // ─── UPDATE STUDENT ANALYTICS (called after quiz submission) ───

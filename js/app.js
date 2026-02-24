@@ -1329,6 +1329,25 @@ async function refreshStudentList() {
   try {
     const rawStudents = await API.getStudents();
     students = rawStudents.filter(s => !s.is_teacher_demo).map(mapStudentFromAPI);
+    // Also refresh analytics
+    try {
+      const analytics = await API.getClassAnalytics(currentUser.classId);
+      if (analytics && analytics.length > 0) {
+        const analyticsMap = {};
+        for (const a of analytics) { analyticsMap[a.id] = a; }
+        for (const s of students) {
+          const a = analyticsMap[s.id];
+          if (a && s._raw) {
+            s._raw.comprehension_label = a.comprehension !== 'No Data' ? a.comprehension : null;
+            s._raw.reasoning_label = a.reasoning !== 'No Data' ? a.reasoning : null;
+            s._raw.vocab_words_learned = a.vocabWordsLearned || 0;
+            s._raw.independence_label = a.independence !== 'No Data' ? a.independence : null;
+            s._raw.persistence_label = a.persistence !== 'No Data' ? a.persistence : null;
+            s._raw.score_trend = a.scoreTrend || 'stable';
+          }
+        }
+      }
+    } catch(e) { /* analytics refresh optional */ }
     navigate('students');
   } catch(e) {
     console.error('Refresh error:', e);
@@ -3475,8 +3494,8 @@ function renderStudentQuizzes() {
     <div class="empty-state" style="margin-top:24px">
       <div class="empty-state-icon" style="font-size:2rem">&#128203;</div>
       <h2>No Quizzes Yet</h2>
-      <p>Pick a book from the dashboard and start reading!</p>
-      <button class="btn btn-primary" onclick="navigate('student-dashboard')">Browse Books</button>
+      <p>If you have read a book and are ready to take a quiz, go to the Book Library!</p>
+      <button class="btn btn-primary" onclick="navigate('library')">Go to Book Library</button>
     </div>` : ''}
   `;
 }
@@ -3985,6 +4004,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         students = rawStudents.filter(s => !s.is_teacher_demo).map(mapStudentFromAPI);
       } catch(e) { console.warn('Could not load students:', e); }
 
+      // Fetch class analytics and merge into student records for the Students table
+      try {
+        const analytics = await API.getClassAnalytics(currentUser.classId);
+        if (analytics && analytics.length > 0) {
+          const analyticsMap = {};
+          for (const a of analytics) { analyticsMap[a.id] = a; }
+          for (const s of students) {
+            const a = analyticsMap[s.id];
+            if (a && s._raw) {
+              s._raw.comprehension_label = a.comprehension !== 'No Data' ? a.comprehension : null;
+              s._raw.comprehension_pct = a.comprehensionPct;
+              s._raw.reasoning_label = a.reasoning !== 'No Data' ? a.reasoning : null;
+              s._raw.reasoning_pct = a.reasoningPct;
+              s._raw.vocab_words_learned = a.vocabWordsLearned || 0;
+              s._raw.independence_label = a.independence !== 'No Data' ? a.independence : null;
+              s._raw.persistence_label = a.persistence !== 'No Data' ? a.persistence : null;
+              s._raw.score_trend = a.scoreTrend || 'stable';
+            }
+          }
+        }
+      } catch(e) { console.warn('Could not load class analytics:', e); }
+
       // Load assignments for this teacher's class
       try {
         const rawAssignments = await API.getAssignments(currentUser.classId);
@@ -4080,6 +4121,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         const rawStudents = await API.getStudents(currentUser.classId);
         students = rawStudents.filter(s => !s.is_teacher_demo).map(mapStudentFromAPI);
       } catch(e) { console.warn('Could not load children:', e); }
+
+      // Fetch class analytics for parent view
+      try {
+        const analytics = await API.getClassAnalytics(currentUser.classId);
+        if (analytics && analytics.length > 0) {
+          const analyticsMap = {};
+          for (const a of analytics) { analyticsMap[a.id] = a; }
+          for (const s of students) {
+            const a = analyticsMap[s.id];
+            if (a && s._raw) {
+              s._raw.comprehension_label = a.comprehension !== 'No Data' ? a.comprehension : null;
+              s._raw.reasoning_label = a.reasoning !== 'No Data' ? a.reasoning : null;
+              s._raw.vocab_words_learned = a.vocabWordsLearned || 0;
+              s._raw.independence_label = a.independence !== 'No Data' ? a.independence : null;
+              s._raw.persistence_label = a.persistence !== 'No Data' ? a.persistence : null;
+              s._raw.score_trend = a.scoreTrend || 'stable';
+            }
+          }
+        }
+      } catch(e) { console.warn('Could not load class analytics:', e); }
     }
   }
 
