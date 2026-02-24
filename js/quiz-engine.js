@@ -399,7 +399,13 @@ const QuizEngine = (function() {
     'appreciates': { word: 'appreciates', definition: 'Feels thankful for something — knows it is special', pos: 'verb' },
     'positive': { word: 'positive', definition: 'Good and happy — looking on the bright side', pos: 'adjective' },
     'remember': { word: 'remember', definition: 'When you think about someone or something from before', pos: 'verb' },
-    'entertaining': { word: 'entertaining', definition: 'Fun and interesting to watch or listen to — it keeps your attention', pos: 'adjective' }
+    'entertaining': { word: 'entertaining', definition: 'Fun and interesting to watch or listen to — it keeps your attention', pos: 'adjective' },
+    'creative': { word: 'creative', definition: 'Coming up with new and cool ideas — using your imagination', pos: 'adjective' },
+    'interesting': { word: 'interesting', definition: 'Something that makes you want to know more about it', pos: 'adjective' },
+    'opinion': { word: 'opinion', definition: 'What YOU think about something — your own idea', pos: 'noun' },
+    'pretending': { word: 'pretending', definition: 'Acting like something is real when it is not — playing make-believe', pos: 'verb' },
+    'perfectly': { word: 'perfectly', definition: 'Just right — with nothing wrong at all', pos: 'adverb' },
+    'filming': { word: 'filming', definition: 'Recording a video with a camera or phone', pos: 'verb' }
   };
 
   // ─── Shuffle answer options so correct answer isn't always B ───
