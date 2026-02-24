@@ -61,6 +61,9 @@ const API = {
   getStrategy: (strategyType, question, passage, gradeLevel) => API.post('/api/strategy', { strategyType, question, passage, gradeLevel }),
   getFeedback: (data) => API.post('/api/feedback', data),
 
+  // Store
+  purchaseReward: (data) => API.post('/api/store/purchase', data),
+
   // Assignments
   createAssignment: (data) => API.post('/api/assignments', data),
   getAssignments: (classId) => API.get(`/api/assignments?classId=${classId}`),

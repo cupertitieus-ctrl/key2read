@@ -2859,6 +2859,85 @@
   animation: slideUp 0.3s var(--ease-out) both;
 }
 
+/* ─── STUDENT STORE VIEW ─── */
+.student-store-balance {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 2px solid #f59e0b;
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  animation: slideUp 0.3s var(--ease-out) both;
+}
+.student-store-balance-icon {
+  font-size: 2.5rem;
+}
+.student-store-balance-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #92400e;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.student-store-balance-value {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  color: #78350f;
+  line-height: 1.1;
+}
+.student-store-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+.student-store-card {
+  background: #fff;
+  border: 1.5px solid var(--g200);
+  border-radius: var(--radius-lg);
+  padding: 20px 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+  animation: slideUp 0.35s var(--ease-out) both;
+}
+.student-store-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.student-store-card-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+.student-store-card-name {
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: var(--g900);
+}
+.student-store-card-price {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.student-store-card-stock {
+  font-size: 0.75rem;
+  color: var(--g500);
+}
+.student-store-card.insufficient {
+  opacity: 0.55;
+}
+.student-store-card.sold-out {
+  opacity: 0.4;
+}
+.student-store-card .w-full {
+  width: 100%;
+  margin-top: 4px;
+}
+
 /* --- Responsive --- */
 @media (max-width: 900px) {
   .dashboard {

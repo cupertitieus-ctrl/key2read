@@ -407,6 +407,26 @@ async function updateStudentStats(studentId, keysEarned, newAccuracy) {
   });
 }
 
+// ─── DEDUCT STUDENT KEYS (Class Store Purchase) ───
+
+async function deductStudentKeys(studentId, amount) {
+  const { data: student } = await supabase
+    .from('students')
+    .select('keys_earned')
+    .eq('id', studentId)
+    .single();
+  if (!student) return { success: false, reason: 'Student not found' };
+  const current = student.keys_earned || 0;
+  if (current < amount) return { success: false, reason: 'Not enough keys' };
+  const newBalance = current - amount;
+  const { error } = await supabase
+    .from('students')
+    .update({ keys_earned: newBalance })
+    .eq('id', studentId);
+  if (error) return { success: false, reason: 'Database error' };
+  return { success: true, newBalance };
+}
+
 // ─── GET TEACHER CLASS ───
 
 async function getTeacherClass(teacherId) {
@@ -711,7 +731,8 @@ module.exports = {
   getCompletedChapters,
   getFullBookQuiz,
   getWeeklyStats,
-  getStudentBookProgress
+  getStudentBookProgress,
+  deductStudentKeys
 };
 
 async function getFullBookQuiz(bookId) {

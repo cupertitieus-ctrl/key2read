@@ -509,7 +509,7 @@ function renderMain() {
       break;
     case 'templates':  el.innerHTML = renderTemplates(); break;
     case 'goals':      el.innerHTML = renderGoals(); break;
-    case 'store':      el.innerHTML = renderStore(); break;
+    case 'store':      el.innerHTML = userRole === 'student' ? renderStudentStore() : renderStore(); break;
     case 'library':    el.innerHTML = renderLibrary(); initLibrarySearch(); break;
     case 'book-detail': el.innerHTML = renderBookDetail(); break;
     case 'celebrate':  el.innerHTML = renderCelebrate(); break;
@@ -1185,6 +1185,73 @@ function storeRemoveItem(idx) {
   if (confirm(`Remove "${storeItems[idx].name}" from the store?`)) {
     storeItems.splice(idx, 1);
     renderMain();
+  }
+}
+
+// ---- Student Store View ----
+function renderStudentStore() {
+  const myKeys = currentUser?.keys_earned || 0;
+  return `
+    <div class="page-header">
+      <h1>Class Store</h1>
+    </div>
+
+    <div class="student-store-balance">
+      <div class="student-store-balance-icon">🔑</div>
+      <div class="student-store-balance-info">
+        <div class="student-store-balance-label">My Keys</div>
+        <div class="student-store-balance-value">${myKeys.toLocaleString()}</div>
+      </div>
+    </div>
+
+    ${storeItems.length === 0 ? `
+      <div style="padding:48px;text-align:center;color:var(--g400)">
+        <p style="font-size:1.125rem">No rewards available yet!</p>
+        <p style="font-size:0.875rem">Your teacher will add rewards soon.</p>
+      </div>` : `
+      <div class="student-store-grid">
+        ${storeItems.map((item, idx) => {
+          const canAfford = myKeys >= item.price;
+          const soldOut = item.stock <= 0;
+          let stateClass = '';
+          if (soldOut) stateClass = ' sold-out';
+          else if (!canAfford) stateClass = ' insufficient';
+          return `
+          <div class="student-store-card${stateClass}">
+            <div class="student-store-card-icon">${item.icon}</div>
+            <div class="student-store-card-name">${item.name}</div>
+            <div class="student-store-card-price">${keysDisp(item.price)}</div>
+            <div class="student-store-card-stock">${soldOut ? 'Sold Out' : item.stock + ' left'}</div>
+            ${soldOut
+              ? `<button class="btn btn-sm btn-ghost w-full" disabled>Sold Out</button>`
+              : canAfford
+                ? `<button class="btn btn-sm btn-primary w-full" onclick="storeBuyItem(${idx})">Buy</button>`
+                : `<button class="btn btn-sm btn-ghost w-full" disabled>Not enough keys</button>`
+            }
+          </div>`;
+        }).join('')}
+      </div>`}`;
+}
+
+async function storeBuyItem(idx) {
+  const item = storeItems[idx];
+  if (!item || !currentUser) return;
+  if (!confirm(`Buy "${item.name}" for ${item.price} keys?`)) return;
+  try {
+    const result = await API.purchaseReward({
+      studentId: currentUser.studentId,
+      itemName: item.name,
+      price: item.price
+    });
+    if (result.success) {
+      currentUser.keys_earned = result.newBalance;
+      storeItems[idx].stock = Math.max(0, storeItems[idx].stock - 1);
+      renderMain();
+    } else {
+      alert(result.error || 'Purchase failed.');
+    }
+  } catch (e) {
+    alert(e.message || 'Purchase failed. Please try again.');
   }
 }
 

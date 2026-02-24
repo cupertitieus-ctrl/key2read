@@ -603,6 +603,20 @@ app.post('/api/feedback', async (req, res) => {
   res.json(feedback);
 });
 
+// ─── CLASS STORE PURCHASE ───
+app.post('/api/store/purchase', async (req, res) => {
+  const { studentId, itemName, price } = req.body;
+  if (!studentId || !price || price <= 0) return res.status(400).json({ error: 'Invalid purchase data' });
+  try {
+    const result = await db.deductStudentKeys(studentId, price);
+    if (!result.success) return res.status(400).json({ error: result.reason });
+    res.json({ success: true, newBalance: result.newBalance, itemName });
+  } catch (e) {
+    console.error('Store purchase error:', e);
+    res.status(500).json({ error: 'Purchase failed' });
+  }
+});
+
 // ─── ASSIGNMENT ROUTES ───
 app.post('/api/assignments', async (req, res) => {
   const { classId, bookId, name, chapterStart, chapterEnd, dueDate, personalized } = req.body;
