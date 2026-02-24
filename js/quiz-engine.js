@@ -398,7 +398,8 @@ const QuizEngine = (function() {
     'unoriginal': { word: 'unoriginal', definition: 'Not new or creative — something that has been done before', pos: 'adjective' },
     'appreciates': { word: 'appreciates', definition: 'Feels thankful for something — knows it is special', pos: 'verb' },
     'positive': { word: 'positive', definition: 'Good and happy — looking on the bright side', pos: 'adjective' },
-    'remember': { word: 'remember', definition: 'When you think about someone or something from before', pos: 'verb' }
+    'remember': { word: 'remember', definition: 'When you think about someone or something from before', pos: 'verb' },
+    'entertaining': { word: 'entertaining', definition: 'Fun and interesting to watch or listen to — it keeps your attention', pos: 'adjective' }
   };
 
   // ─── Shuffle answer options so correct answer isn't always B ───
