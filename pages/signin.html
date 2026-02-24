@@ -119,11 +119,11 @@
           <input type="text" id="classcode" class="form-input" placeholder="Enter your teacher's class code">
         </div>
 
-        <div class="form-group" id="field-password">
+        <div class="form-group" id="field-password" style="display:none">
           <label class="form-label" for="password">Password</label>
           <input type="password" id="password" class="form-input" placeholder="Enter your password">
         </div>
-        <div class="auth-extras" id="field-extras">
+        <div class="auth-extras" id="field-extras" style="display:none">
           <label class="auth-remember">
             <input type="checkbox" checked> Remember me
           </label>
@@ -197,11 +197,12 @@ function selectRole(el, role) {
     if (passwordGroup) passwordGroup.style.display = '';
     if (extrasGroup) extrasGroup.style.display = 'none';
   } else {
+    // Teacher & Principal: email-only login (no password required)
     if (emailGroup) emailGroup.style.display = '';
     if (nameGroup) nameGroup.style.display = 'none';
     if (codeGroup) codeGroup.style.display = 'none';
-    if (passwordGroup) passwordGroup.style.display = '';
-    if (extrasGroup) extrasGroup.style.display = '';
+    if (passwordGroup) passwordGroup.style.display = 'none';
+    if (extrasGroup) extrasGroup.style.display = 'none';
   }
 }
 

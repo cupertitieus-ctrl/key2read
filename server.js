@@ -10,15 +10,30 @@ const claude = require('./server/claude');
 const app = express();
 const PORT = process.env.PORT || 3456;
 
+// Trust proxy in production (Render uses a reverse proxy)
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Middleware
 app.use(express.json());
 app.use(session({
   secret: process.env.SESSION_SECRET || 'key2read-dev-secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 24 * 60 * 60 * 1000 }
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
+  }
 }));
-app.use(express.static(path.join(__dirname), { extensions: ['html'] }));
+
+// Serve only public-safe directories (not server/, package.json, .env, etc.)
+app.use('/css', express.static(path.join(__dirname, 'css')));
+app.use('/js', express.static(path.join(__dirname, 'js')));
+app.use('/pages', express.static(path.join(__dirname, 'pages')));
+app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use('/index.html', express.static(path.join(__dirname, 'index.html')));
 
 // ─── Helper: build full session data for a user ───
 async function buildSessionUser(user) {
