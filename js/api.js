@@ -42,6 +42,7 @@ const API = {
   updateSurvey: (id, data) => API.put(`/api/students/${id}/survey`, data),
   getReadingHistory: (id) => API.get(`/api/students/${id}/reading-history`),
   getQuizResults: (id) => API.get(`/api/students/${id}/quiz-results`),
+  getWeeklyStats: (id) => API.get(`/api/students/${id}/weekly-stats`),
 
   // Books
   getBooks: () => API.get('/api/books'),

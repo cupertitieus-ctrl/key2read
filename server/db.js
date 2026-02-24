@@ -504,6 +504,105 @@ async function getCompletedChapters(studentId, bookId) {
     .map(c => c.chapter_number);
 }
 
+// ─── WEEKLY STATS ───
+
+async function getWeeklyStats(studentId) {
+  // Calculate Monday 00:00:00 UTC of the current week
+  const now = new Date();
+  const dayOfWeek = now.getUTCDay(); // 0=Sun, 1=Mon, ...
+  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const monday = new Date(now);
+  monday.setUTCDate(now.getUTCDate() - daysSinceMonday);
+  monday.setUTCHours(0, 0, 0, 0);
+  const mondayISO = monday.toISOString();
+
+  // 1. Get all quiz_results this week for this student, with chapter → book join
+  const { data: weekResults } = await supabase
+    .from('quiz_results')
+    .select(`
+      id, keys_earned, reading_level_change, chapter_id,
+      chapters!inner (
+        chapter_number, book_id,
+        books!inner ( id, chapter_count )
+      )
+    `)
+    .eq('student_id', studentId)
+    .gte('completed_at', mondayISO);
+
+  if (!weekResults || weekResults.length === 0) {
+    // Still need total books completed (all-time)
+    const totalBooksCompleted = await countBooksCompleted(studentId);
+    return { keysThisWeek: 0, quizzesThisWeek: 0, growthScoreThisWeek: 0, booksCompletedThisWeek: 0, totalBooksCompleted };
+  }
+
+  // 2. Simple aggregations
+  const keysThisWeek = weekResults.reduce((sum, r) => sum + (r.keys_earned || 0), 0);
+  const quizzesThisWeek = weekResults.length;
+  const growthScoreThisWeek = weekResults.reduce((sum, r) => sum + (r.reading_level_change || 0), 0);
+
+  // 3. Books Completed This Week
+  //    A book counts if ALL its chapters have quiz results AND at least one chapter was completed this week
+  const bookIdsThisWeek = [...new Set(weekResults.map(r => r.chapters.book_id))];
+  let booksCompletedThisWeek = 0;
+
+  for (const bookId of bookIdsThisWeek) {
+    const bookInfo = weekResults.find(r => r.chapters.book_id === bookId)?.chapters?.books;
+    const totalChapters = bookInfo?.chapter_count || 0;
+    if (totalChapters === 0) continue;
+
+    // Get all chapter IDs for this book
+    const { data: bookChapters } = await supabase.from('chapters').select('id').eq('book_id', bookId);
+    if (!bookChapters) continue;
+    const chapterIds = bookChapters.map(c => c.id);
+
+    // Get all completed chapters for this student (all time)
+    const { data: allResults } = await supabase
+      .from('quiz_results')
+      .select('chapter_id')
+      .eq('student_id', studentId)
+      .in('chapter_id', chapterIds);
+
+    const uniqueCompleted = new Set((allResults || []).map(r => r.chapter_id));
+    if (uniqueCompleted.size >= totalChapters) booksCompletedThisWeek++;
+  }
+
+  // 4. Total books completed (all time)
+  const totalBooksCompleted = await countBooksCompleted(studentId);
+
+  return { keysThisWeek, quizzesThisWeek, growthScoreThisWeek, booksCompletedThisWeek, totalBooksCompleted };
+}
+
+async function countBooksCompleted(studentId) {
+  // Get all books with chapter counts
+  const { data: allBooks } = await supabase.from('books').select('id, chapter_count');
+  if (!allBooks) return 0;
+
+  // Get all quiz results for this student
+  const { data: allResults } = await supabase
+    .from('quiz_results')
+    .select('chapter_id, chapters!inner(book_id)')
+    .eq('student_id', studentId);
+
+  if (!allResults || allResults.length === 0) return 0;
+
+  // Group completed chapter_ids by book_id
+  const bookChapters = {};
+  for (const r of allResults) {
+    const bid = r.chapters.book_id;
+    if (!bookChapters[bid]) bookChapters[bid] = new Set();
+    bookChapters[bid].add(r.chapter_id);
+  }
+
+  // Count books where all chapters are completed
+  let count = 0;
+  for (const book of allBooks) {
+    if (!book.chapter_count || book.chapter_count === 0) continue;
+    const completed = bookChapters[book.id];
+    if (completed && completed.size >= book.chapter_count) count++;
+  }
+  return count;
+}
+
 // Export everything
 module.exports = {
   supabase,
@@ -538,7 +637,8 @@ module.exports = {
   getAllTeachers,
   getAllStudentsForOwner,
   getCompletedChapters,
-  getFullBookQuiz
+  getFullBookQuiz,
+  getWeeklyStats
 };
 
 async function getFullBookQuiz(bookId) {

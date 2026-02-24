@@ -343,6 +343,17 @@ app.get('/api/students/:id/quiz-results', async (req, res) => {
   res.json(results);
 });
 
+// ─── WEEKLY STATS ───
+app.get('/api/students/:id/weekly-stats', async (req, res) => {
+  try {
+    const stats = await db.getWeeklyStats(parseInt(req.params.id));
+    res.json(stats);
+  } catch (e) {
+    console.error('Weekly stats error:', e);
+    res.status(500).json({ error: 'Failed to load weekly stats' });
+  }
+});
+
 // ─── CHAPTER PROGRESS ───
 app.get('/api/students/:id/completed-chapters/:bookId', async (req, res) => {
   const studentId = parseInt(req.params.id);

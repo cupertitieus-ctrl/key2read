@@ -2644,56 +2644,75 @@ function closeModal2(e) {
 // ============================================================
 
 function renderStudentDashboard() {
-  // Build student object from currentUser (real data from API)
   let s = {
     id: currentUser?.studentId || 0,
     name: currentUser?.name || 'Student',
-    level: currentUser?.reading_level || '3.0',
-    score: currentUser?.reading_score || 500,
     keys: currentUser?.keys_earned || 0,
     quizzes: currentUser?.quizzes_completed || 0,
-    accuracy: currentUser?.accuracy || 0,
-    streak: currentUser?.streak_days || 0,
-    interests: null,
     onboarded: currentUser?.onboarded || 0
   };
   const hasQuizzes = s.quizzes > 0;
-  const lvlColor = !hasQuizzes ? 'blue' : s.accuracy >= 90 ? 'green' : s.accuracy >= 75 ? 'blue' : s.accuracy >= 60 ? 'gold' : 'red';
-  const lvlLabel = !hasQuizzes ? 'Get started!' : s.accuracy >= 90 ? 'Excellent' : s.accuracy >= 75 ? 'Good' : s.accuracy >= 60 ? 'Fair' : 'Keep practicing!';
 
-  // Show first 6 books with covers for the student to browse
-  const featuredBooks = books.slice(0, 6);
+  // Weekly stats (fetched during loadApp)
+  const w = currentUser?.weeklyStats || { keysThisWeek: 0, quizzesThisWeek: 0, growthScoreThisWeek: 0, booksCompletedThisWeek: 0 };
+  const totalBooksCompleted = currentUser?.totalBooksCompleted || 0;
+  const growthRaw = Math.round((w.growthScoreThisWeek || 0) * 10) / 10;
+  const growthDisplay = growthRaw > 0 ? `+${growthRaw}` : `${growthRaw}`;
+  const growthColor = growthRaw > 0 ? 'green' : growthRaw < 0 ? 'red' : 'g500';
 
   return `
     <div class="page-header"><h1>Welcome${hasQuizzes ? ' back' : ''}, ${s.name.split(' ')[0]}!</h1></div>
-    <div class="stat-cards stat-cards-5">
-      <div class="stat-card"><div class="stat-card-label">Reading Level</div><div class="stat-card-value">${s.level}</div></div>
-      <div class="stat-card"><div class="stat-card-label">Reading Score</div><div class="stat-card-value">${s.score}</div></div>
-      <div class="stat-card"><div class="stat-card-label">Keys Earned</div><div class="stat-card-value">${s.keys}</div></div>
-      <div class="stat-card"><div class="stat-card-label">Quizzes Done</div><div class="stat-card-value">${s.quizzes}</div></div>
-      <div class="stat-card"><div class="stat-card-label">Accuracy</div><div class="stat-card-value">${hasQuizzes ? s.accuracy + '%' : '—'}</div><div class="stat-card-trend" style="color:var(--${lvlColor})">${lvlLabel}</div></div>
-    </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px">
-      <div class="list-card" style="padding:24px">
-        <h3 style="margin-bottom:16px;font-size:1rem;font-weight:700">Reading Streak</h3>
-        <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
-          <div style="font-size:2.25rem;font-weight:800;color:var(--navy)">${parseInt(s.streak) || 0}</div>
-          <div style="color:var(--g500);font-size:0.875rem">${parseInt(s.streak) > 0 ? 'day streak! Keep it going!' : 'days. Start reading to build your streak!'}</div>
+    ${!s.onboarded ? `
+    <div class="interest-cta-card" style="margin-bottom:24px">
+      <h3 style="margin-bottom:8px">Personalize Your Experience!</h3>
+      <p style="margin-bottom:16px">Tell us about your interests so we can make your quizzes more fun!</p>
+      <button class="btn btn-primary" onclick="onboardingStudent=${s.id}; onboardingStep=0; openModal('onboarding')">Set Up My Profile</button>
+    </div>` : ''}
+
+    <div class="weekly-wins-section">
+      <div class="weekly-wins-header">
+        <h2 class="weekly-wins-title">Weekly Wins</h2>
+        <span class="weekly-wins-reset">Resets every Monday</span>
+      </div>
+      <div class="weekly-wins-cards">
+        <div class="weekly-win-card weekly-win-growth">
+          <div class="weekly-win-emoji">📈</div>
+          <div class="weekly-win-value" style="color:var(--${growthColor})">${growthDisplay}</div>
+          <div class="weekly-win-label">Growth Score</div>
         </div>
-        <div style="display:flex;gap:6px;justify-content:center">
-          ${['M','T','W','T','F','S','S'].map((d, i) => { const streakNum = parseInt(s.streak) || 0; return `<div style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:600;${i < Math.min(streakNum, 7) ? 'background:var(--gold-p);color:var(--gold);border:2px solid var(--gold)' : 'background:var(--g100);color:var(--g400);border:2px solid var(--g200)'}">${d}</div>`; }).join('')}
+        <div class="weekly-win-card weekly-win-keys">
+          <div class="weekly-win-emoji">🔑</div>
+          <div class="weekly-win-value">${w.keysThisWeek}</div>
+          <div class="weekly-win-label">Keys Earned</div>
+        </div>
+        <div class="weekly-win-card weekly-win-quizzes">
+          <div class="weekly-win-emoji">✅</div>
+          <div class="weekly-win-value">${w.quizzesThisWeek}</div>
+          <div class="weekly-win-label">Quizzes Done</div>
+        </div>
+        <div class="weekly-win-card weekly-win-books">
+          <div class="weekly-win-emoji">📚</div>
+          <div class="weekly-win-value">${w.booksCompletedThisWeek}</div>
+          <div class="weekly-win-label">Books Finished</div>
         </div>
       </div>
+    </div>
 
-      <div class="list-card" style="padding:24px">
-        <h3 style="margin-bottom:16px;font-size:1rem;font-weight:700">Class Store</h3>
-        <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
-          <div style="font-size:2.25rem;font-weight:800;color:var(--navy)">${s.keys}</div>
-          <div style="color:var(--g500);font-size:0.875rem">Keys to spend</div>
+    <div class="total-progress-section">
+      <h3 class="total-progress-title">Total Progress</h3>
+      <div class="total-progress-cards">
+        <div class="total-progress-card">
+          <span class="total-progress-value">${s.keys}</span>
+          <span class="total-progress-label">Keys</span>
         </div>
-        <div>
-          <button class="btn btn-sm btn-outline" onclick="navigate('store')">Visit Store</button>
+        <div class="total-progress-card">
+          <span class="total-progress-value">${s.quizzes}</span>
+          <span class="total-progress-label">Quizzes</span>
+        </div>
+        <div class="total-progress-card">
+          <span class="total-progress-value">${totalBooksCompleted}</span>
+          <span class="total-progress-label">Books</span>
         </div>
       </div>
     </div>
@@ -2713,13 +2732,6 @@ function renderStudentDashboard() {
         ${books.length > 0 ? books.map(b => renderStudentBookCard(b)).join('') : `<p style="grid-column:1/-1;color:var(--g500);text-align:center;padding:24px">No books available yet.</p>`}
       </div>
     </div>
-
-    ${!s.onboarded ? `
-    <div class="interest-cta-card" style="margin-top:24px">
-      <h3 style="margin-bottom:8px">Personalize Your Experience!</h3>
-      <p style="margin-bottom:16px">Tell us about your interests so we can make your quizzes more fun!</p>
-      <button class="btn btn-primary" onclick="onboardingStudent=${s.id}; onboardingStep=0; openModal('onboarding')">Set Up My Profile</button>
-    </div>` : ''}
   `;
 }
 
@@ -2790,53 +2802,74 @@ function renderStudentProgress() {
   let s = {
     id: currentUser?.studentId || 0,
     name: currentUser?.name || 'Student',
-    level: currentUser?.reading_level || '3.0',
-    score: currentUser?.reading_score || 500,
     keys: currentUser?.keys_earned || 0,
-    quizzes: currentUser?.quizzes_completed || 0,
-    accuracy: currentUser?.accuracy || 0,
-    streak: currentUser?.streak_days || 0,
-    interests: null
+    quizzes: currentUser?.quizzes_completed || 0
   };
   const hasQuizzes = s.quizzes > 0;
 
+  const w = currentUser?.weeklyStats || { keysThisWeek: 0, quizzesThisWeek: 0, growthScoreThisWeek: 0, booksCompletedThisWeek: 0 };
+  const totalBooksCompleted = currentUser?.totalBooksCompleted || 0;
+  const growthRaw = Math.round((w.growthScoreThisWeek || 0) * 10) / 10;
+  const growthDisplay = growthRaw > 0 ? `+${growthRaw}` : `${growthRaw}`;
+  const growthColor = growthRaw > 0 ? 'green' : growthRaw < 0 ? 'red' : 'g500';
+
   return `
     <div class="page-header"><h1>My Reading Progress</h1></div>
-    <div class="stat-cards">
-      <div class="stat-card"><div class="stat-card-label">Current Level</div><div class="stat-card-value">${s.level}</div></div>
-      <div class="stat-card"><div class="stat-card-label">Reading Score</div><div class="stat-card-value">${s.score}</div></div>
-      <div class="stat-card"><div class="stat-card-label">Total Keys</div><div class="stat-card-value">${s.keys}</div></div>
-      <div class="stat-card"><div class="stat-card-label">Accuracy</div><div class="stat-card-value">${hasQuizzes ? s.accuracy + '%' : '—'}</div></div>
-    </div>
 
-    ${hasQuizzes ? `
-    <div class="list-card" style="margin-top:24px;padding:24px">
-      <h3 style="margin-bottom:16px">Your Stats</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <div style="text-align:center;padding:20px;background:var(--g50);border-radius:var(--radius-md)">
-          <div style="font-size:2rem;font-weight:800;color:var(--blue)">${s.score}</div>
-          <div style="color:var(--g500);font-size:0.875rem;margin-top:4px">Reading Score</div>
+    <div class="weekly-wins-section">
+      <div class="weekly-wins-header">
+        <h2 class="weekly-wins-title">Weekly Wins</h2>
+        <span class="weekly-wins-reset">Resets every Monday</span>
+      </div>
+      <div class="weekly-wins-cards">
+        <div class="weekly-win-card weekly-win-growth">
+          <div class="weekly-win-emoji">📈</div>
+          <div class="weekly-win-value" style="color:var(--${growthColor})">${growthDisplay}</div>
+          <div class="weekly-win-label">Growth Score</div>
         </div>
-        <div style="text-align:center;padding:20px;background:var(--g50);border-radius:var(--radius-md)">
-          <div style="font-size:2rem;font-weight:800;color:var(--green)">${s.accuracy}%</div>
-          <div style="color:var(--g500);font-size:0.875rem;margin-top:4px">Accuracy</div>
+        <div class="weekly-win-card weekly-win-keys">
+          <div class="weekly-win-emoji">🔑</div>
+          <div class="weekly-win-value">${w.keysThisWeek}</div>
+          <div class="weekly-win-label">Keys Earned</div>
         </div>
-        <div style="text-align:center;padding:20px;background:var(--g50);border-radius:var(--radius-md)">
-          <div style="font-size:2rem;font-weight:800;color:var(--gold)">${s.keys}</div>
-          <div style="color:var(--g500);font-size:0.875rem;margin-top:4px">Keys Earned</div>
+        <div class="weekly-win-card weekly-win-quizzes">
+          <div class="weekly-win-emoji">✅</div>
+          <div class="weekly-win-value">${w.quizzesThisWeek}</div>
+          <div class="weekly-win-label">Quizzes Done</div>
         </div>
-        <div style="text-align:center;padding:20px;background:var(--g50);border-radius:var(--radius-md)">
-          <div style="font-size:2rem;font-weight:800;color:var(--orange)">${parseInt(s.streak) || 0}</div>
-          <div style="color:var(--g500);font-size:0.875rem;margin-top:4px">Day Streak</div>
+        <div class="weekly-win-card weekly-win-books">
+          <div class="weekly-win-emoji">📚</div>
+          <div class="weekly-win-value">${w.booksCompletedThisWeek}</div>
+          <div class="weekly-win-label">Books Finished</div>
         </div>
       </div>
-    </div>` : `
+    </div>
+
+    <div class="total-progress-section" style="margin-top:24px">
+      <h3 class="total-progress-title">Total Progress</h3>
+      <div class="total-progress-cards">
+        <div class="total-progress-card">
+          <span class="total-progress-value">${s.keys}</span>
+          <span class="total-progress-label">Total Keys</span>
+        </div>
+        <div class="total-progress-card">
+          <span class="total-progress-value">${s.quizzes}</span>
+          <span class="total-progress-label">Total Quizzes</span>
+        </div>
+        <div class="total-progress-card">
+          <span class="total-progress-value">${totalBooksCompleted}</span>
+          <span class="total-progress-label">Total Books</span>
+        </div>
+      </div>
+    </div>
+
+    ${!hasQuizzes ? `
     <div class="empty-state" style="margin-top:24px">
       <div class="empty-state-icon" style="font-size:2rem">📊</div>
       <h2>No Progress Yet</h2>
       <p>Complete your first quiz to start tracking your reading progress!</p>
       <button class="btn btn-primary" onclick="navigate('library')">Browse Books</button>
-    </div>`}
+    </div>` : ''}
   `;
 }
 
@@ -3287,6 +3320,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Set default page based on role
   if (userRole === 'student') {
     page = 'student-dashboard';
+
+    // Fetch weekly stats for the student dashboard
+    if (currentUser?.studentId) {
+      try {
+        const ws = await API.getWeeklyStats(currentUser.studentId);
+        currentUser.weeklyStats = ws;
+        currentUser.totalBooksCompleted = ws.totalBooksCompleted || 0;
+      } catch(e) {
+        currentUser.weeklyStats = { keysThisWeek: 0, quizzesThisWeek: 0, growthScoreThisWeek: 0, booksCompletedThisWeek: 0 };
+        currentUser.totalBooksCompleted = 0;
+      }
+    }
 
     // Auto-launch onboarding wizard for new students (onboarded === 0)
     if (currentUser && currentUser.onboarded === 0) {
