@@ -590,6 +590,11 @@ async function launchQuiz(bookId, chapterNum, sid) {
           const oldQuizzes = (currentUser.quizzes_completed || 1) - 1;
           currentUser.accuracy = oldQuizzes > 0 ? Math.round((oldAcc * oldQuizzes + results.score) / currentUser.quizzes_completed) : Math.round(results.score);
         }
+        // Update weekly stats so Weekly Wins + Total Progress stay in sync
+        if (currentUser.weeklyStats) {
+          currentUser.weeklyStats.keysThisWeek = (currentUser.weeklyStats.keysThisWeek || 0) + (results.keysEarned || 0);
+          currentUser.weeklyStats.quizzesThisWeek = (currentUser.weeklyStats.quizzesThisWeek || 0) + 1;
+        }
       }
       // Update completed chapters so next chapter unlocks
       if (!completedChapters.includes(chapterNum)) {
@@ -1562,6 +1567,11 @@ async function launchFullBookQuiz(bookId, sid) {
           const oldAcc = currentUser.accuracy || 0;
           const oldQuizzes = (currentUser.quizzes_completed || 1) - 1;
           currentUser.accuracy = oldQuizzes > 0 ? Math.round((oldAcc * oldQuizzes + results.score) / currentUser.quizzes_completed) : Math.round(results.score);
+        }
+        // Update weekly stats so Weekly Wins + Total Progress stay in sync
+        if (currentUser.weeklyStats) {
+          currentUser.weeklyStats.keysThisWeek = (currentUser.weeklyStats.keysThisWeek || 0) + (results.keysEarned || 0);
+          currentUser.weeklyStats.quizzesThisWeek = (currentUser.weeklyStats.quizzesThisWeek || 0) + 1;
         }
       }
       // Full book quiz = book is complete
