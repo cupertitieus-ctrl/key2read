@@ -1376,7 +1376,7 @@ function initLibrarySearch() {
     const countEl = document.getElementById('library-book-count');
     if (!grid) return;
     const isStudent = userRole === 'student';
-    const base = isStudent && showFavoritesOnly ? books.filter(b => studentFavorites.includes(b.id)) : books;
+    const base = isStudent && showFavoritesOnly ? books.filter(b => studentFavorites.some(fid => Number(fid) === Number(b.id))) : books;
     const filtered = q
       ? base.filter(b =>
           (b.title || '').toLowerCase().includes(q) ||
@@ -1417,7 +1417,7 @@ function renderStudentBookCard(b) {
   const level = displayGradeLevel(b.grade_level || b.lexile_level || '');
   const genre = b.genre || '';
   const comingSoon = b.has_quizzes === false;
-  const isFav = studentFavorites.includes(b.id);
+  const isFav = studentFavorites.some(fid => Number(fid) === Number(b.id));
   return `
     <div class="book-card${comingSoon ? ' book-card-coming-soon' : ''}" ${comingSoon ? '' : `onclick="openBook(${b.id})" style="cursor:pointer"`}>
       <div class="book-card-cover" style="height:200px">
@@ -1445,15 +1445,24 @@ function renderStudentBookCard(b) {
     </div>`;
 }
 
+// ─── Favorites localStorage helpers ───
+function _studentId() { return currentUser?.studentId || currentUser?.id; }
+function _favKey() { return 'k2r_favorites_' + (_studentId() || 'unknown'); }
+function _saveFavsLocal(favs) { try { localStorage.setItem(_favKey(), JSON.stringify(favs)); } catch(e) {} }
+function _loadFavsLocal() { try { return JSON.parse(localStorage.getItem(_favKey()) || '[]'); } catch(e) { return []; } }
+
 async function toggleFavoriteBook(bookId) {
-  if (!currentUser?.studentId) return;
+  if (!_studentId()) return;
+  const numId = Number(bookId);
   // Optimistic update: toggle immediately in UI
-  const wasFav = studentFavorites.includes(bookId);
+  const wasFav = studentFavorites.some(id => Number(id) === numId);
   if (wasFav) {
-    studentFavorites = studentFavorites.filter(id => id !== bookId);
+    studentFavorites = studentFavorites.filter(id => Number(id) !== numId);
   } else {
-    studentFavorites = [...studentFavorites, bookId];
+    studentFavorites = [...studentFavorites, numId];
   }
+  // Save to localStorage immediately (reliable even if DB column missing)
+  _saveFavsLocal(studentFavorites);
   // Update just the heart buttons without full re-render (preserves scroll)
   document.querySelectorAll(`.book-fav-btn[data-book-id="${bookId}"]`).forEach(btn => {
     btn.classList.toggle('active', !wasFav);
@@ -1462,19 +1471,11 @@ async function toggleFavoriteBook(bookId) {
       ? '<svg viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'
       : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
   });
-  // Persist to server
+  // Try to persist to server (may fail if favorite_books column missing)
   try {
-    const result = await API.toggleFavorite(currentUser.studentId, bookId);
-    studentFavorites = result.favorites || [];
+    await API.toggleFavorite(_studentId(), bookId);
   } catch(e) {
-    console.error('Toggle favorite error:', e);
-    // Revert on failure
-    if (wasFav) {
-      studentFavorites = [...studentFavorites, bookId];
-    } else {
-      studentFavorites = studentFavorites.filter(id => id !== bookId);
-    }
-    renderMain();
+    console.warn('Server favorites sync failed, using localStorage:', e.message);
   }
 }
 
@@ -1486,7 +1487,7 @@ function initStudentBookSearch() {
     const grid = document.getElementById('student-book-grid');
     const countEl = document.getElementById('student-book-count');
     if (!grid) return;
-    const base = showFavoritesOnly ? books.filter(b => studentFavorites.includes(b.id)) : books;
+    const base = showFavoritesOnly ? books.filter(b => studentFavorites.some(fid => Number(fid) === Number(b.id))) : books;
     const filtered = q
       ? base.filter(b =>
           (b.title || '').toLowerCase().includes(q) ||
@@ -1517,7 +1518,7 @@ function renderLibrary() {
   }
 
   const isStudent = userRole === 'student';
-  const displayBooks = isStudent && showFavoritesOnly ? books.filter(b => studentFavorites.includes(b.id)) : books;
+  const displayBooks = isStudent && showFavoritesOnly ? books.filter(b => studentFavorites.some(fid => Number(fid) === Number(b.id))) : books;
 
   return `
     <div class="page-header">
@@ -2974,7 +2975,7 @@ function renderStudentDashboard() {
     onboarded: currentUser?.onboarded || 0
   };
   const hasQuizzes = s.quizzes > 0;
-  const displayBooks = showFavoritesOnly ? books.filter(b => studentFavorites.includes(b.id)) : books;
+  const displayBooks = showFavoritesOnly ? books.filter(b => studentFavorites.some(fid => Number(fid) === Number(b.id))) : books;
 
   // Weekly stats (fetched during loadApp)
   const w = currentUser?.weeklyStats || { keysThisWeek: 0, quizzesThisWeek: 0, booksCompletedThisWeek: 0 };
@@ -3080,7 +3081,7 @@ function renderStudentQuizzes() {
     </div>
 
     ${(() => {
-      const favBooks = books.filter(b => studentFavorites.includes(b.id));
+      const favBooks = books.filter(b => studentFavorites.some(fid => Number(fid) === Number(b.id)));
       if (favBooks.length > 0) {
         return `<div style="margin-top:28px">
           <h3 style="margin:0 0 16px;font-size:1rem;font-weight:700">&#10084;&#65039; My Favorites</h3>
@@ -3691,9 +3692,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     page = 'student-dashboard';
 
     // Fetch weekly stats and book progress for the student dashboard
-    if (currentUser?.studentId) {
+    const sid = _studentId();
+    if (sid) {
       try {
-        const ws = await API.getWeeklyStats(currentUser.studentId);
+        const ws = await API.getWeeklyStats(sid);
         currentUser.weeklyStats = ws;
         currentUser.totalBooksCompleted = ws.totalBooksCompleted || 0;
       } catch(e) {
@@ -3701,16 +3703,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentUser.totalBooksCompleted = 0;
       }
       try {
-        currentUser.bookProgress = await API.getBookProgress(currentUser.studentId);
+        currentUser.bookProgress = await API.getBookProgress(sid);
       } catch(e) {
         currentUser.bookProgress = [];
       }
+      // Load favorites: try server first, fall back to localStorage
       try {
-        const favResult = await API.getFavorites(currentUser.studentId);
-        studentFavorites = favResult.favorites || [];
+        const favResult = await API.getFavorites(sid);
+        const serverFavs = (favResult.favorites || []).map(Number);
+        const localFavs = _loadFavsLocal();
+        // Use whichever has more favorites (server may return empty if column missing)
+        studentFavorites = serverFavs.length >= localFavs.length ? serverFavs : localFavs;
+        _saveFavsLocal(studentFavorites);
       } catch(e) {
-        studentFavorites = [];
+        studentFavorites = _loadFavsLocal();
       }
+    } else {
+      // No studentId from server — still load favorites from localStorage
+      studentFavorites = _loadFavsLocal();
     }
 
     // Auto-launch onboarding wizard for new students (onboarded === 0)
