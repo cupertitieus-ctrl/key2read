@@ -1349,28 +1349,39 @@ function initLibrarySearch() {
     const grid = document.getElementById('library-book-grid');
     const countEl = document.getElementById('library-book-count');
     if (!grid) return;
+    const isStudent = userRole === 'student';
+    const base = isStudent && showFavoritesOnly ? books.filter(b => studentFavorites.includes(b.id)) : books;
     const filtered = q
-      ? books.filter(b =>
+      ? base.filter(b =>
           (b.title || '').toLowerCase().includes(q) ||
           (b.author || '').toLowerCase().includes(q) ||
           (b.genre || '').toLowerCase().includes(q) ||
           (b.grade_level || '').toLowerCase().includes(q)
         )
-      : books;
-    grid.innerHTML = filtered.length === 0
-      ? `<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--g400)">
-           <p style="font-size:1.125rem;margin-bottom:4px">No books found</p>
-           <p style="font-size:0.875rem">Try a different search term</p>
-         </div>`
-      : filtered.map(b => {
-          const coverUrl = b.cover_url || '';
-          const level = displayGradeLevel(b.grade_level || b.lexile_level || '');
-          const genre = b.genre || '';
-          return `<div class="book-card" onclick="openBook(${b.id})">
-            <div class="book-card-cover">${coverUrl ? `<img src="${coverUrl}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}<div class="book-card-cover-fallback" ${coverUrl ? 'style="display:none"' : ''}><span style="font-size:0.875rem;font-weight:600;color:var(--g500);padding:12px;text-align:center;line-height:1.4">${b.title}</span></div></div>
-            <div class="book-card-info"><h4 class="book-card-title">${b.title}</h4><p class="book-card-author">${b.author || ''}</p><div class="book-card-meta">${level ? `<span class="badge badge-blue">${level}</span>` : ''}${genre ? `<span class="badge badge-outline">${genre}</span>` : ''}</div></div>
-          </div>`;
-        }).join('');
+      : base;
+    if (isStudent) {
+      grid.innerHTML = filtered.length === 0
+        ? `<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--g400)">
+             <p style="font-size:1rem;margin-bottom:4px">No books found</p>
+             <p style="font-size:0.8125rem">Try a different search term</p>
+           </div>`
+        : filtered.map(b => renderStudentBookCard(b)).join('');
+    } else {
+      grid.innerHTML = filtered.length === 0
+        ? `<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--g400)">
+             <p style="font-size:1.125rem;margin-bottom:4px">No books found</p>
+             <p style="font-size:0.875rem">Try a different search term</p>
+           </div>`
+        : filtered.map(b => {
+            const coverUrl = b.cover_url || '';
+            const level = displayGradeLevel(b.grade_level || b.lexile_level || '');
+            const genre = b.genre || '';
+            return `<div class="book-card" onclick="openBook(${b.id})">
+              <div class="book-card-cover">${coverUrl ? `<img src="${coverUrl}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}<div class="book-card-cover-fallback" ${coverUrl ? 'style="display:none"' : ''}><span style="font-size:0.875rem;font-weight:600;color:var(--g500);padding:12px;text-align:center;line-height:1.4">${b.title}</span></div></div>
+              <div class="book-card-info"><h4 class="book-card-title">${b.title}</h4><p class="book-card-author">${b.author || ''}</p><div class="book-card-meta">${level ? `<span class="badge badge-blue">${level}</span>` : ''}${genre ? `<span class="badge badge-outline">${genre}</span>` : ''}</div></div>
+            </div>`;
+          }).join('');
+    }
     if (countEl) countEl.textContent = filtered.length;
   });
 }
@@ -1457,10 +1468,19 @@ function renderLibrary() {
       </div>`;
   }
 
+  const isStudent = userRole === 'student';
+  const displayBooks = isStudent && showFavoritesOnly ? books.filter(b => studentFavorites.includes(b.id)) : books;
+
   return `
     <div class="page-header">
-      <h1>Book Library <span class="badge badge-blue" id="library-book-count">${books.length}</span></h1>
+      <h1>Book Library <span class="badge badge-blue" id="library-book-count">${displayBooks.length}</span></h1>
     </div>
+
+    ${isStudent ? `
+    <div class="book-filter-toggle" style="margin-bottom:12px">
+      <button class="book-filter-btn${!showFavoritesOnly ? ' active' : ''}" onclick="showFavoritesOnly=false; renderMain()">All Books</button>
+      <button class="book-filter-btn${showFavoritesOnly ? ' active' : ''}" onclick="showFavoritesOnly=true; renderMain()">&#10084;&#65039; My Favorites</button>
+    </div>` : ''}
 
     <div style="position:relative;margin-bottom:20px;max-width:480px">
       <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--g400);pointer-events:none">${IC.search}</span>
@@ -1470,7 +1490,11 @@ function renderLibrary() {
     </div>
 
     <div class="book-grid" id="library-book-grid">
-      ${books.map(b => {
+      ${isStudent
+        ? (displayBooks.length > 0 ? displayBooks.map(b => renderStudentBookCard(b)).join('') : showFavoritesOnly
+          ? `<p style="grid-column:1/-1;color:var(--g500);text-align:center;padding:24px">No favorites yet! Tap the &#10084;&#65039; on any book to add it here.</p>`
+          : `<p style="grid-column:1/-1;color:var(--g500);text-align:center;padding:24px">No books available yet.</p>`)
+        : books.map(b => {
         const coverUrl = b.cover_url || '';
         const level = displayGradeLevel(b.grade_level || b.lexile_level || '');
         const genre = b.genre || '';
