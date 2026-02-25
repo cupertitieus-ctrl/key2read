@@ -1069,15 +1069,12 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
     ? miniChart(perf.sparklineData, 'var(--blue)', 120, 32)
     : '<span style="color:var(--g400);font-size:0.8125rem">Not enough data yet</span>';
 
-  // Map component keys to analytics labels from student record
-  const raw = s._raw || {};
-  const labelMap = {
-    comprehension: raw.comprehension_label || null,
-    effort: raw.reasoning_label || null,
-    independence: raw.independence_label || null,
-    vocabulary: null,
-    persistence: raw.persistence_label || null
-  };
+  // Derive labels directly from component scores so they always match
+  function scoreToPill(score, key) {
+    if (key === 'independence') return score >= 750 ? 'High' : score >= 450 ? 'Improving' : 'Needs Support';
+    if (key === 'persistence') return score >= 750 ? 'High' : score >= 450 ? 'Moderate' : 'Low';
+    return score >= 750 ? 'Strong' : score >= 450 ? 'Developing' : 'Needs Support';
+  }
 
   // Component cards
   const componentCards = Object.entries(perf.components).map(([key, comp]) => {
@@ -1085,7 +1082,7 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
     const tIcon = comp.trend === 'up' ? `<span class="trend-up">&#9650;</span>` :
                   comp.trend === 'down' ? `<span class="trend-down">&#9660;</span>` :
                   `<span class="trend-stable">&#9472;</span>`;
-    const label = labelMap[key];
+    const label = key !== 'vocabulary' ? scoreToPill(comp.score, key) : null;
     return `
       <div class="component-card" onclick="toggleComponentDetail('${key}')" style="border-top:3px solid ${cfg.borderColor}">
         <div class="component-card-header">

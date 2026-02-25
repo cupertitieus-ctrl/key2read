@@ -1463,25 +1463,36 @@ async function updateStudentAnalytics(studentId) {
       else if (thisWeekAvg < lastWeekAvg - 5) scoreTrend = 'down';
     }
 
-    // Also compute the composite reading score (same as getStudentPerformance)
-    // so the student list and profile always show the same score
+    // Compute the composite reading score AND derive labels from component scores
+    // so everything (student list, profile, labels) stays in sync
     let compositeScore = null;
+    let syncedLabels = {};
     try {
       const perf = await getStudentPerformance(studentId);
       compositeScore = perf.readingScore;
+      // Derive labels from component scores (not question-type accuracy)
+      const scoreToLabel = (s) => s >= 750 ? 'Strong' : s >= 450 ? 'Developing' : 'Needs Support';
+      const indToLabel = (s) => s >= 750 ? 'High' : s >= 450 ? 'Improving' : 'Needs Support';
+      const persToLabel = (s) => s >= 750 ? 'High' : s >= 450 ? 'Moderate' : 'Low';
+      syncedLabels = {
+        comprehension_label: scoreToLabel(perf.components.comprehension.score),
+        reasoning_label: scoreToLabel(perf.components.effort.score),
+        independence_label: indToLabel(perf.components.independence.score),
+        persistence_label: persToLabel(perf.components.persistence.score)
+      };
     } catch(e2) {
       console.warn('Could not compute composite score:', e2.message);
     }
 
-    // Write precomputed analytics + synced score to the students table
+    // Write precomputed analytics + synced score + synced labels to the students table
     const updateData = {
-      comprehension_label: comprehension,
+      comprehension_label: syncedLabels.comprehension_label || comprehension,
       comprehension_pct: compPct,
-      reasoning_label: reasoning,
+      reasoning_label: syncedLabels.reasoning_label || reasoning,
       reasoning_pct: reasonPct,
       vocab_words_learned: vocabWordsLearned,
-      independence_label: independence,
-      persistence_label: persistence,
+      independence_label: syncedLabels.independence_label || independence,
+      persistence_label: syncedLabels.persistence_label || persistence,
       score_trend: scoreTrend,
       analytics_updated_at: new Date().toISOString()
     };
