@@ -688,6 +688,11 @@ const QuizEngine = (function() {
             <div class="quiz-results-key-icon">🔑</div>
             <div class="quiz-results-key-count">${r.keysEarned}</div>
             <div class="quiz-results-key-label">Keys Earned</div>
+            ${r.keysEarned === 0 && r.score >= 80
+              ? `<div style="font-size:0.75rem;color:#9CA3AF;margin-top:6px;max-width:240px;line-height:1.4">You already earned keys for this quiz! Keys are only awarded on your first passing score.</div>`
+              : r.keysEarned === 0 && r.score < 80
+              ? `<div style="font-size:0.75rem;color:#9CA3AF;margin-top:6px;max-width:240px;line-height:1.4">Score 80% or higher to earn keys!</div>`
+              : ''}
             ${!currentStudent
               ? `<button class="btn btn-sm btn-outline" style="margin-top:8px;font-size:0.75rem" onclick="showPersistenceGate('keys')">Keep Keys</button>`
               : ''}
