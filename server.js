@@ -43,7 +43,7 @@ app.use('/index.html', express.static(path.join(__dirname, 'index.html')));
 async function buildSessionUser(user) {
   let sessionUser = { ...user };
 
-  if (user.role === 'student') {
+  if (user.role === 'student' || user.role === 'child') {
     const studentRecord = await db.getStudentByUserId(user.id);
     if (studentRecord) {
       // Get class info for the student (only if they have a class)
