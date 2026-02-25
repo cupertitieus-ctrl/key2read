@@ -562,18 +562,7 @@ const QuizEngine = (function() {
             })()}
           </div>
 
-          ${!answered && !showRetryModal ? `
-            <div class="quiz-hint-area">
-              <button class="quiz-hint-btn" onclick="QuizEngine.toggleStrategy()">
-                ${showingStrategy ? 'Hide Hint' : '💡 Need a Hint?'}
-              </button>
-              ${showingStrategy ? `
-                <div class="quiz-strategy-card">
-                  <p class="quiz-strategy-tip">${escapeHtml(q.strategy_tip || 'Think carefully about the story!')}</p>
-                </div>
-              ` : ''}
-            </div>
-          ` : ''}
+          ${''}<!-- Hints only shown after wrong answer in retry modal -->
 
           ${answered && fbForThis ? `
             <div class="quiz-feedback correct">

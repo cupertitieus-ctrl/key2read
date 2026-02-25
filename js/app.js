@@ -368,7 +368,7 @@ function renderSidebar() {
       { id: 'library',           icon: IC.book,   label: 'Book Library' },
       { id: 'student-progress',  icon: IC.chart,  label: 'My Progress' },
       { section: 'Fun' },
-      { id: 'store',             icon: IC.bag,    label: 'Class Store', badge: storeItems.length > 0 ? String(storeItems.length) : '', badgeCls: 'gold' },
+      { id: 'store',             icon: IC.bag,    label: 'Store', badge: storeItems.length > 0 ? String(storeItems.length) : '', badgeCls: 'gold' },
       { id: 'student-badges',    icon: IC.star,   label: 'My Badges' },
     ];
   } else if (userRole === 'owner') {
@@ -483,7 +483,7 @@ function renderSidebar() {
         </div>
       </div>
       <div onclick="navigate('store')" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;margin-top:14px;padding:12px;background:rgba(255,255,255,0.12);border-radius:10px">
-        <img src="/public/Key_Icon.png" alt="Keys" style="width:72px;height:72px;object-fit:contain">
+        <img src="/public/Key_Circle_Icon.png" alt="Keys" style="width:72px;height:72px;object-fit:contain">
         <div style="color:#FFD700;font-size:2rem;font-weight:800;margin-top:4px">${tp.keys}</div>
         <div style="color:rgba(255,255,255,0.6);font-size:0.75rem;font-weight:600">Keys to Spend</div>
       </div>
@@ -545,7 +545,7 @@ function renderHeader() {
     </div>
     <div class="header-search">
       ${IC.search}
-      <input type="text" placeholder="Search students, books, quizzes...">
+      <input type="text" placeholder="${userRole === 'student' ? 'Search books, quizzes...' : 'Search students, books, quizzes...'}">
     </div>
     <div class="header-actions">
       <div class="header-profile">
@@ -2008,12 +2008,12 @@ async function storeBuyItem(idx) {
 // ---- Store Sneak Peek (Student Dashboard) ----
 function renderStoreSneak() {
   if (!storeItems || storeItems.length === 0) return '';
-  const peek = storeItems.slice(0, 4);
+  const peek = storeItems.slice(0, 5);
   return `
     <div class="store-peek-section">
-      <div class="store-peek-header" onclick="navigate('store')" style="cursor:pointer">
-        <div class="store-peek-title">Class Store</div>
-        <div class="store-peek-link">See all rewards →</div>
+      <div class="store-peek-header">
+        <div class="store-peek-title"><img src="/public/Chest_Icon.png" alt="">Store</div>
+        <span class="store-peek-link" onclick="navigate('store')">See all rewards &rarr;</span>
       </div>
       <div class="store-peek-grid">
         ${peek.map((item, idx) => `
@@ -2023,7 +2023,7 @@ function renderStoreSneak() {
               : `<div class="store-peek-item-icon">${item.icon || '🎁'}</div>`}
             <div class="store-peek-item-details">
               <div class="store-peek-item-name">${escapeHtml(item.name)}</div>
-              <div class="store-peek-item-price">${item.price} 🔑</div>
+              <div class="store-peek-item-price">${item.price}</div>
             </div>
           </div>
         `).join('')}
@@ -4134,6 +4134,53 @@ async function showQuizResult(bookId, chapterNumber) {
 // ---- STUDENT DASHBOARD PAGES ----
 // ============================================================
 
+function getStudentBadges() {
+  const s = {
+    quizzes: currentUser?.quizzes_completed || 0,
+    keys: currentUser?.keys_earned || 0,
+    accuracy: currentUser?.accuracy || 0,
+    streak: currentUser?.streak_days || 0,
+    totalBooks: currentUser?.totalBooksCompleted || 0
+  };
+  const genreSet = new Set();
+  (currentUser?.bookProgress || []).forEach(p => {
+    if (p.isComplete) {
+      const bk = books.find(b => b.id === p.bookId);
+      if (bk && bk.genre) genreSet.add(bk.genre);
+    }
+  });
+  return [
+    { img: '/public/Learned_About_You.png',     name: 'Learned About You',     desc: 'Fill out your student profile',    earned: !!(currentUser?.onboarded) },
+    { img: '/public/Quiz_Streak_Badge_.png',    name: 'Quiz Streak',           desc: 'Complete your first chapter quiz', earned: s.quizzes >= 1 },
+    { img: '/public/Book_Boss_Badge.png',       name: 'Book Boss',             desc: 'Complete all chapters in a book',  earned: s.totalBooks >= 1 },
+    { img: '/public/Genre_Jumper_Badge.png',    name: 'Genre Jumper',          desc: 'Read books from 3 different genres', earned: genreSet.size >= 3 },
+    { img: '/public/First_Book_Badge.png',      name: 'First Book Done',       desc: 'Finish your very first book',      earned: s.totalBooks >= 1 },
+    { img: '/public/Quiz_Conqueror_Badge.png',  name: 'Quiz Conqueror',        desc: 'Complete 10 quizzes',              earned: s.quizzes >= 10 },
+    { img: '/public/Grow_Hero_Badge.png',       name: 'Grow Hero',             desc: '90%+ accuracy',                    earned: s.accuracy >= 90 },
+    { img: '/public/Ultimate_Key_Badge.png',    name: 'Ultimate Key Reader',   desc: 'Earn 500 keys',                    earned: s.keys >= 500 },
+  ];
+}
+
+function renderDashboardBadges() {
+  const badges = getStudentBadges();
+  return `
+    <div class="dashboard-badges-section">
+      <div class="dash-section-header">
+        <h2 class="dash-section-title"><img src="/public/Orange_Star_Icon_.png" alt="">Badges</h2>
+        <span class="dash-section-link" onclick="navigate('student-badges')">See all &rarr;</span>
+      </div>
+      <div class="dashboard-badge-grid">
+        ${badges.map(b => `
+          <div class="dashboard-badge-card${b.earned ? '' : ' locked'}" title="${b.desc}">
+            <img class="dashboard-badge-img" src="${b.img}" alt="${b.name}">
+            <div class="dashboard-badge-name">${b.name}</div>
+            <div class="dashboard-badge-status ${b.earned ? 'earned' : 'locked-label'}">${b.earned ? 'Earned' : 'Locked'}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+}
+
 function renderStudentDashboard() {
   let s = {
     id: currentUser?.studentId || 0,
@@ -4147,37 +4194,76 @@ function renderStudentDashboard() {
 
   // Weekly stats (fetched during loadApp)
   const w = currentUser?.weeklyStats || { keysThisWeek: 0, quizzesThisWeek: 0, booksCompletedThisWeek: 0 };
-  const totalBooksCompleted = currentUser?.totalBooksCompleted || 0;
+
+  // Weekly goals
+  const WEEKLY_GOALS = { keys: 50, quizzes: 10, books: 2 };
+  const keysPct = Math.min(Math.round((w.keysThisWeek / WEEKLY_GOALS.keys) * 100), 100);
+  const quizPct = Math.min(Math.round((w.quizzesThisWeek / WEEKLY_GOALS.quizzes) * 100), 100);
+  const bookPct = Math.min(Math.round((w.booksCompletedThisWeek / WEEKLY_GOALS.books) * 100), 100);
 
   return `
-    <div class="page-header"><h1>Welcome${hasQuizzes ? ' back' : ''}, ${s.name.split(' ')[0]}!</h1></div>
+    <div class="page-header" style="margin-bottom:6px"><h1>Welcome${hasQuizzes ? ' back' : ''}, ${s.name.split(' ')[0]}!</h1></div>
 
-    <div style="width:100%;border-radius:16px;overflow:hidden;margin-bottom:24px">
-      <img src="/public/Dashboard_Banner_.jpg" alt="The KEY to growing your reading SKILLS!" style="width:100%;display:block">
+    <div style="width:100%;border-radius:16px;overflow:hidden;margin-bottom:10px">
+      <img src="/public/Dashboard_Banner_Update.png" alt="The KEY to growing your reading SKILLS!" style="width:100%;display:block">
     </div>
 
     ${!s.onboarded ? `<script>setTimeout(function(){ onboardingStudent=${s.id}; onboardingStep=0; openModal('onboarding'); }, 500);</script>` : ''}
 
-    <div class="weekly-wins-section">
-      <div class="weekly-wins-header">
-        <h2 class="weekly-wins-title"><img src="/public/Teal_Star_Icon_.png" alt="" style="width:40px;height:40px;object-fit:contain;vertical-align:middle;margin-right:8px">Weekly Wins</h2>
-        <span class="weekly-wins-reset">Resets every Monday</span>
+    <div class="wins-badges-row">
+      <div class="weekly-wins-combined">
+        <div class="weekly-wins-header">
+          <h3><img src="/public/Star_Icon_.png" alt="" style="width:56px;height:56px;object-fit:contain"> Weekly Wins</h3>
+          <span class="wins-reset">Resets every Monday</span>
+        </div>
+        <div class="weekly-wins-chart">
+          <div class="chart-icons-row">
+            <div class="chart-column" onclick="showKeysBreakdown()">
+              <img class="chart-col-icon" src="/public/Key_Circle_Icon.png" alt="Keys">
+              <span class="chart-col-label">Keys Earned</span>
+            </div>
+            <div class="chart-column" onclick="showCompletedQuizzes()">
+              <img class="chart-col-icon" src="/public/Quiz_Circle_Icon.png" alt="Quizzes">
+              <span class="chart-col-label">Quizzes</span>
+            </div>
+            <div class="chart-column" onclick="showCompletedBooks()">
+              <img class="chart-col-icon" src="/public/Book_Circle_Icon.png" alt="Books">
+              <span class="chart-col-label">Books</span>
+            </div>
+          </div>
+          <div class="chart-bars-row">
+            <div class="chart-bar-wrap" onclick="showKeysBreakdown()">
+              <div class="chart-bar bar-gold" style="height:${Math.max(keysPct, 22)}%">
+                <span class="chart-bar-number">${w.keysThisWeek}</span>
+              </div>
+            </div>
+            <div class="chart-bar-wrap" onclick="showCompletedQuizzes()">
+              <div class="chart-bar bar-green" style="height:${Math.max(quizPct, 22)}%">
+                <span class="chart-bar-number">${w.quizzesThisWeek}</span>
+              </div>
+            </div>
+            <div class="chart-bar-wrap" onclick="showCompletedBooks()">
+              <div class="chart-bar bar-coral" style="height:${Math.max(bookPct, 22)}%">
+                <span class="chart-bar-number">${w.booksCompletedThisWeek}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="weekly-wins-cards">
-        <div class="weekly-win-card weekly-win-keys" onclick="showKeysBreakdown()">
-          <div class="weekly-win-emoji"><img src="/public/Key_Icon.png" alt="Keys" style="width:56px;height:56px;object-fit:contain"></div>
-          <div class="weekly-win-value">${w.keysThisWeek}</div>
-          <div class="weekly-win-label">Keys Earned</div>
+      <div class="badges-section-wrap">
+        <div class="badges-combined-header">
+          <h3><img src="/public/Badge_Icon.png" alt=""> Badges</h3>
+          <span class="dash-section-link" onclick="navigate('student-badges')">See all &rarr;</span>
         </div>
-        <div class="weekly-win-card weekly-win-quizzes" onclick="showCompletedQuizzes()">
-          <div class="weekly-win-emoji"><img src="/public/Paper_Icon_.png" alt="Quizzes" style="width:36px;height:36px;object-fit:contain"></div>
-          <div class="weekly-win-value">${w.quizzesThisWeek}</div>
-          <div class="weekly-win-label">Quizzes Done</div>
-        </div>
-        <div class="weekly-win-card weekly-win-books" onclick="showCompletedBooks()">
-          <div class="weekly-win-emoji"><img src="/public/Red_Book_Icon_.png" alt="Books" style="width:36px;height:36px;object-fit:contain"></div>
-          <div class="weekly-win-value">${w.booksCompletedThisWeek}</div>
-          <div class="weekly-win-label">Books Finished</div>
+        <div class="badges-combined">
+          <div class="badges-compact-grid">
+            ${getStudentBadges().sort((a, b) => b.earned - a.earned).slice(0, 6).map(b => `
+              <div class="badge-compact${b.earned ? '' : ' locked'}" title="${b.name}">
+                <img src="${b.img}" alt="${b.name}">
+                ${!b.earned ? '<div class="badge-lock-overlay"><img src="/public/Lock_Icon_.png" alt="Locked"></div>' : ''}
+              </div>
+            `).join('')}
+          </div>
         </div>
       </div>
     </div>
@@ -4185,8 +4271,8 @@ function renderStudentDashboard() {
     ${renderStoreSneak()}
 
     <div style="margin-top:24px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <h3 style="margin:0;font-size:1rem;font-weight:700">Browse Books</h3>
+      <div class="dash-section-header">
+        <h2 class="dash-section-title">Browse Books</h2>
         <span style="color:var(--g500);font-size:0.8125rem" id="student-book-count">${displayBooks.length} books</span>
       </div>
       <div class="book-filter-toggle" style="margin-bottom:12px">
@@ -4399,37 +4485,16 @@ function renderStudentProgress() {
 }
 
 function renderStudentBadges() {
-  let s = {
-    id: currentUser?.studentId || 0,
-    name: currentUser?.name || 'Student',
-    level: currentUser?.reading_level || '3.0',
-    score: currentUser?.reading_score || 500,
-    keys: currentUser?.keys_earned || 0,
-    quizzes: currentUser?.quizzes_completed || 0,
-    accuracy: currentUser?.accuracy || 0,
-    streak: currentUser?.streak_days || 0,
-    interests: null
-  };
-  const badges = [
-    { icon: '🔥', name: 'Reading Streak',    desc: `${s.streak} day streak!`, earned: s.streak >= 3, color: 'orange' },
-    { icon: '⭐', name: 'Quiz Champion',     desc: 'Complete 10 quizzes',     earned: s.quizzes >= 10, color: 'gold' },
-    { icon: '🎯', name: 'Sharp Shooter',     desc: '90%+ accuracy',           earned: s.accuracy >= 90, color: 'green' },
-    { icon: '📚', name: 'Bookworm',          desc: 'Read 5 books',            earned: s.quizzes >= 15, color: 'blue' },
-    { icon: '🔑', name: 'Key Collector',      desc: 'Earn 500 keys',           earned: s.keys >= 500, color: 'purple' },
-    { icon: '📈', name: 'Level Up',           desc: 'Improve reading level',   earned: true, color: 'blue' },
-    { icon: '❤️', name: 'Personalized',       desc: 'Set up your profile',     earned: !!(s.interests && s.interests.onboarded), color: 'red' },
-    { icon: '✅', name: 'Perfect Score',      desc: 'Get 100% on a quiz',      earned: s.accuracy >= 95, color: 'green' },
-  ];
-
+  const badges = getStudentBadges();
   return `
     <div class="page-header"><h1>My Badges</h1></div>
-    <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:16px;margin-top:8px">
+    <div class="dashboard-badge-grid" style="margin-top:8px">
       ${badges.map(b => `
-        <div class="stat-card" style="text-align:center;padding:24px 16px;${b.earned ? '' : 'opacity:0.4;filter:grayscale(1)'}">
-          <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:50%;background:var(--${b.color}-p, var(--g100));display:flex;align-items:center;justify-content:center;color:var(--${b.color}, var(--g500))">${b.icon}</div>
-          <div style="font-weight:700;color:var(--navy);margin-bottom:4px">${b.name}</div>
-          <div style="font-size:0.75rem;color:var(--g500)">${b.desc}</div>
-          ${b.earned ? '<div style="margin-top:8px;font-size:0.7rem;font-weight:700;color:var(--green)">EARNED</div>' : '<div style="margin-top:8px;font-size:0.7rem;font-weight:600;color:var(--g400)">LOCKED</div>'}
+        <div class="dashboard-badge-card${b.earned ? '' : ' locked'}" title="${b.desc}">
+          <img class="dashboard-badge-img" src="${b.img}" alt="${b.name}">
+          <div class="dashboard-badge-name">${b.name}</div>
+          <div style="font-size:0.75rem;color:var(--g500);margin-top:4px">${b.desc}</div>
+          <div class="dashboard-badge-status ${b.earned ? 'earned' : 'locked-label'}">${b.earned ? 'Earned' : 'Locked'}</div>
         </div>
       `).join('')}
     </div>

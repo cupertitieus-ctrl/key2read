@@ -458,96 +458,214 @@
   height: 14px;
 }
 
-/* ─── WEEKLY WINS SECTION ─── */
-.weekly-wins-section {
-  margin-bottom: 28px;
+/* ─── Weekly Wins + Badges Side-by-Side ─── */
+.wins-badges-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 6px;
+  animation: slideUp 0.5s var(--ease-out) both;
 }
 
+/* Combined Weekly Wins Card */
+.weekly-wins-combined {
+  border-radius: var(--radius-lg, 16px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
 .weekly-wins-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  padding: 6px 20px 6px;
 }
-
-.weekly-wins-title {
-  font-family: var(--font-display);
-  font-size: 1.375rem;
-  font-weight: 800;
-  color: var(--g900);
+.weekly-wins-header h3 {
   margin: 0;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--g800);
   display: flex;
   align-items: center;
+  gap: 8px;
 }
-
-.weekly-wins-reset {
+.weekly-wins-header .wins-reset {
   font-size: 0.75rem;
-  color: var(--g400);
-  font-weight: 500;
+  color: var(--teal, #0ea5a9);
+  font-weight: 600;
 }
-
-.weekly-wins-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+.weekly-wins-chart {
+  background: url('/public/Burst.png') center center / cover no-repeat;
+  border: 2px solid var(--teal, #0ea5a9);
+  border-radius: var(--radius-lg, 14px);
+  margin: 0 10px 12px;
+  padding: 16px 10px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
 }
-
-.weekly-win-card {
-  background: #fff;
-  border-radius: var(--radius-lg, 16px);
-  padding: 12px 10px;
+/* Icon row: 3 icons across the top */
+.chart-icons-row {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  margin-bottom: 4px;
+}
+.chart-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.chart-column:hover { opacity: 0.85; }
+.chart-col-icon {
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+}
+.chart-col-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--g700);
+  margin-top: 4px;
   text-align: center;
-  border: 2px solid var(--g200);
-  animation: slideUp 0.5s var(--ease-out) both;
-  transition: all 0.25s var(--ease-out);
+}
+/* Vertical bars area */
+.chart-bars-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  width: 100%;
+  flex: 1;
+  min-height: 140px;
+  padding: 0 8px;
+  margin-top: 8px;
+}
+.chart-bar-wrap {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 100%;
   cursor: pointer;
 }
-
-.weekly-win-card:nth-child(1) { animation-delay: 0ms; }
-.weekly-win-card:nth-child(2) { animation-delay: 80ms; }
-.weekly-win-card:nth-child(3) { animation-delay: 160ms; }
-
-.weekly-win-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--sh-md);
+.chart-bar {
+  width: 80%;
+  max-width: 120px;
+  min-height: 32px;
+  border-radius: 6px 6px 0 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 8px;
+  transition: height 0.8s ease;
 }
-
-.weekly-win-keys { border-top: 4px solid var(--gold); }
-.weekly-win-quizzes { border-top: 4px solid var(--blue); }
-.weekly-win-books { border-top: 4px solid var(--purple, #7C3AED); }
-
-.weekly-win-emoji {
-  font-size: 2rem;
-  margin-bottom: 8px;
+.chart-bar-number {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--g900);
   line-height: 1;
+}
+.chart-bar.bar-gold  { background: #F5A623; }
+.chart-bar.bar-green { background: #7BC142; }
+.chart-bar.bar-coral { background: #F87171; }
+
+/* Right-side Badges Section */
+.badges-section-wrap {
+  display: flex;
+  flex-direction: column;
+}
+.badges-combined-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px 6px;
+}
+.badges-combined-header h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--g800);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.badges-combined-header h3 img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+.badges-combined {
+  background: #fff;
+  border: 2px solid var(--g200);
+  border-radius: var(--radius-lg, 16px);
+  padding: 6px;
+  flex: 1;
+  max-height: 280px;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+.badges-compact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+}
+.badge-compact {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  transition: transform 0.15s;
+  overflow: hidden;
+}
+.badge-compact:hover {
+  transform: scale(1.05);
+}
+.badge-compact.locked > img {
+  opacity: 0.4;
+  filter: grayscale(1);
+}
+.badge-compact img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.badge-lock-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.weekly-win-emoji img {
-  width: 48px;
-  height: 48px;
-}
-.weekly-win-keys .weekly-win-emoji img {
-  width: 56px !important;
-  height: 56px !important;
+.badge-lock-overlay img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
-.weekly-win-value {
-  font-family: var(--font-display);
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: var(--g900);
-  line-height: 1;
-  margin-bottom: 6px;
-  letter-spacing: -0.03em;
-}
-
-.weekly-win-label {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--g500);
+@media (max-width: 900px) {
+  .wins-badges-row {
+    grid-template-columns: 1fr;
+  }
+  .badges-compact-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* ─── TOTAL PROGRESS SECTION ─── */
@@ -601,31 +719,10 @@
   margin-top: 4px;
 }
 
-/* ─── RESPONSIVE: Weekly Wins ─── */
+/* ─── RESPONSIVE: Total Progress ─── */
 @media (max-width: 768px) {
-  .weekly-wins-cards {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .weekly-win-value {
-    font-size: 2rem;
-  }
   .total-progress-cards {
     flex-direction: column;
-  }
-}
-
-@media (max-width: 480px) {
-  .weekly-wins-cards {
-    gap: 10px;
-  }
-  .weekly-win-card {
-    padding: 16px 12px;
-  }
-  .weekly-win-emoji {
-    font-size: 1.5rem;
-  }
-  .weekly-win-value {
-    font-size: 1.75rem;
   }
 }
 
@@ -3193,84 +3290,129 @@
 }
 
 /* ─── STORE SNEAK PEEK (Student Dashboard) ─── */
-.store-peek-section {
-  margin-top: 24px;
-  background: #fff;
-  border: 2px solid #0D9488;
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  transition: box-shadow 0.2s var(--ease-out);
+/* ─── Dashboard Section Headers (shared) ─── */
+.dash-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
 }
-.store-peek-section:hover {
-  box-shadow: 0 4px 16px rgba(13,148,136,0.15);
+.dash-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--g900);
+  margin: 0;
+}
+.dash-section-title img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+.dash-section-link {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--blue);
+  cursor: pointer;
+  text-decoration: none;
+}
+.dash-section-link:hover {
+  text-decoration: underline;
+}
+
+/* ─── Store Preview Section (updated) ─── */
+.store-peek-section {
+  margin-top: 4px;
+  margin-bottom: 12px;
 }
 .store-peek-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  padding: 6px 8px;
 }
 .store-peek-title {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: #0D9488;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--g800);
+}
+.store-peek-title img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
 }
 .store-peek-link {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #0D9488;
+  color: var(--blue);
+  cursor: pointer;
+}
+.store-peek-link:hover {
+  text-decoration: underline;
 }
 .store-peek-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  display: flex;
+  gap: 0;
+  background: #fff;
+  border: 2px solid var(--teal, #0ea5a9);
+  border-radius: var(--radius-lg, 16px);
+  overflow: hidden;
 }
 .store-peek-item {
-  background: #f9fafb;
-  border: 1.5px solid #e5e7eb;
-  border-radius: var(--radius-md);
-  padding: 12px;
-  text-align: left;
+  flex: 1;
   display: flex;
-  flex-direction: row;
   align-items: center;
-  gap: 12px;
-  transition: transform 0.15s var(--ease-out);
+  gap: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-right: 1px solid var(--g150, #eee);
+}
+.store-peek-item:last-child {
+  border-right: none;
 }
 .store-peek-item:hover {
-  transform: scale(1.03);
+  background: var(--g50, #f9fafb);
+}
+.store-peek-item-img {
+  width: 70px;
+  height: 70px;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
 }
 .store-peek-item-icon {
   font-size: 2.5rem;
   line-height: 1;
   flex-shrink: 0;
 }
-.store-peek-item-img {
-  width: 100px;
-  height: 100px;
-  object-fit: cover;
-  border-radius: var(--radius-md);
-  flex-shrink: 0;
-}
 .store-peek-item-details {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
+  align-items: center;
+  text-align: center;
 }
 .store-peek-item-name {
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--g700);
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--g800);
   line-height: 1.3;
 }
 .store-peek-item-price {
-  font-size: 0.8125rem;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 800;
   color: #d97706;
+  line-height: 1;
 }
 
 /* --- Info Tooltips --- */
@@ -3453,9 +3595,6 @@
     grid-template-columns: 1fr;
   }
 
-  .weekly-wins-cards {
-    flex-direction: column;
-  }
 }
 
 /* ===== OWNER DASHBOARD CHARTS ===== */
