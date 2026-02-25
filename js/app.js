@@ -1920,7 +1920,7 @@ function renderStudentStore() {
     </div>
 
     <div class="student-store-balance">
-      <div class="student-store-balance-icon">🔑</div>
+      <div class="student-store-balance-icon"><img src="/public/Key_Icon.png" alt="Keys" style="width:48px;height:48px;object-fit:contain"></div>
       <div class="student-store-balance-info">
         <div class="student-store-balance-label">My Keys</div>
         <div class="student-store-balance-value">${myKeys.toLocaleString()}</div>
@@ -1940,19 +1940,13 @@ function renderStudentStore() {
           if (soldOut) stateClass = ' sold-out';
           else if (!canAfford) stateClass = ' insufficient';
           return `
-          <div class="student-store-card${stateClass}">
+          <div class="student-store-card${stateClass}" onclick="showStoreItemPreview(${idx})" style="cursor:pointer">
             ${item.image_url
               ? `<img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.name)}" class="student-store-card-img">`
               : `<div class="student-store-card-icon">${item.icon || '🎁'}</div>`}
             <div class="student-store-card-name">${escapeHtml(item.name)}</div>
             <div class="student-store-card-price">${keysDisp(item.price)}</div>
             <div class="student-store-card-stock">${soldOut ? 'Sold Out' : item.stock + ' left'}</div>
-            ${soldOut
-              ? `<button class="btn btn-sm btn-ghost w-full" disabled>Sold Out</button>`
-              : canAfford
-                ? `<button class="btn btn-sm btn-primary w-full" onclick="storeBuyItem(${idx})">Buy</button>`
-                : `<button class="btn btn-sm btn-ghost w-full" disabled>Not enough keys</button>`
-            }
           </div>`;
         }).join('')}
       </div>`}`;
@@ -1990,14 +1984,14 @@ function renderStoreSneak() {
   if (!storeItems || storeItems.length === 0) return '';
   const peek = storeItems.slice(0, 4);
   return `
-    <div class="store-peek-section" onclick="navigate('store')">
-      <div class="store-peek-header">
+    <div class="store-peek-section">
+      <div class="store-peek-header" onclick="navigate('store')" style="cursor:pointer">
         <div class="store-peek-title">Class Store</div>
         <div class="store-peek-link">See all rewards →</div>
       </div>
       <div class="store-peek-grid">
-        ${peek.map(item => `
-          <div class="store-peek-item">
+        ${peek.map((item, idx) => `
+          <div class="store-peek-item" onclick="event.stopPropagation(); showStoreItemPreview(${idx})">
             ${item.image_url
               ? `<img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.name)}" class="store-peek-item-img">`
               : `<div class="store-peek-item-icon">${item.icon || '🎁'}</div>`}
@@ -2009,6 +2003,39 @@ function renderStoreSneak() {
         `).join('')}
       </div>
     </div>`;
+}
+
+function showStoreItemPreview(idx) {
+  const item = storeItems[idx];
+  if (!item) return;
+  const myKeys = currentUser?.keys_earned || 0;
+  const canAfford = myKeys >= item.price;
+  const soldOut = item.stock <= 0;
+  const modal = document.getElementById('modal-overlay');
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width:400px">
+      <div class="modal-header">
+        <h3>${escapeHtml(item.name)}</h3>
+        <button class="modal-close" onclick="closeModal()">${IC.x}</button>
+      </div>
+      <div class="modal-body" style="text-align:center;padding:24px">
+        ${item.image_url
+          ? `<img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.name)}" style="width:200px;height:200px;object-fit:cover;border-radius:var(--radius-lg);margin-bottom:16px;box-shadow:0 4px 12px rgba(0,0,0,0.1)">`
+          : `<div style="font-size:5rem;margin-bottom:16px">${item.icon || '🎁'}</div>`}
+        <div style="font-size:1.25rem;font-weight:800;color:var(--navy);margin-bottom:8px">${escapeHtml(item.name)}</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:16px">
+          <img src="/public/Key_Icon.png" alt="Keys" style="width:24px;height:24px;object-fit:contain">
+          <span style="font-size:1.25rem;font-weight:800;color:#D97706">${item.price} Keys</span>
+        </div>
+        <div style="font-size:0.8125rem;color:var(--g400);margin-bottom:20px">${soldOut ? 'Sold Out' : item.stock + ' left in stock'}</div>
+        ${soldOut
+          ? `<button class="btn btn-ghost w-full" disabled>Sold Out</button>`
+          : canAfford
+            ? `<button class="btn btn-primary w-full" onclick="closeModal(); storeBuyItem(${idx})">Buy for ${item.price} Keys</button>`
+            : `<button class="btn btn-ghost w-full" disabled>Need ${item.price - myKeys} more keys</button>`}
+      </div>
+    </div>`;
+  modal.classList.add('active');
 }
 
 // ---- Page: Book Library ----
