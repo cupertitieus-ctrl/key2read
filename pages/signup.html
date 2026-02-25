@@ -43,7 +43,7 @@
       <p>Get started with key2read for free. No credit card required.</p>
 
       <!-- Role Selector -->
-      <div class="role-selector" style="grid-template-columns: 1fr 1fr 1fr">
+      <div class="role-selector" style="grid-template-columns: 1fr 1fr 1fr 1fr">
         <div class="role-card active" data-role="teacher" onclick="selectRole(this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
@@ -57,6 +57,12 @@
           <span>Parent</span>
         </div>
         <div class="role-card" data-role="student" onclick="selectRole(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+          </svg>
+          <span>Student</span>
+        </div>
+        <div class="role-card" data-role="child" onclick="selectRole(this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
           </svg>
@@ -117,11 +123,11 @@
           <input type="text" id="district" class="form-input" placeholder="Lincoln Unified School District">
         </div>
 
-        <!-- Family Code (Child/Student) — optional for homeschool -->
+        <!-- Class Code (Student — required) -->
         <div class="form-group" id="field-classcode" style="display:none">
-          <label class="form-label" for="classcode">Family Code <span style="font-weight:400;color:var(--g400)">(optional)</span></label>
-          <input type="text" id="classcode" class="form-input" placeholder="Enter your family code">
-          <small style="color:var(--g400);margin-top:4px;display:block">Ask a parent for your family code, or leave blank to start on your own.</small>
+          <label class="form-label" for="classcode">Class Code</label>
+          <input type="text" id="classcode" class="form-input" placeholder="Enter your class code">
+          <small style="color:var(--g400);margin-top:4px;display:block">Ask your teacher for the class code.</small>
         </div>
 
         <!-- Grade Level (Child/Student) -->
@@ -250,7 +256,12 @@ function selectRole(el) {
     fieldTerms.style.display    = '';
     fieldPassword.style.display = '';
   } else if (role === 'student') {
+    // School student: Class Code (required) + Grade
     fieldClasscode.style.display    = '';
+    fieldStudentGrade.style.display = '';
+    fieldPassword.style.display     = 'none';
+  } else if (role === 'child') {
+    // Homeschool child: Grade only, no class code
     fieldStudentGrade.style.display = '';
     fieldPassword.style.display     = 'none';
   }
@@ -303,17 +314,28 @@ document.getElementById('signup-form').addEventListener('submit', async function
     }
 
   } else if (role === 'student') {
+    // School student: Class Code required + Grade
     const classCode = document.getElementById('classcode').value.trim();
+    const grade = document.getElementById('student-grade').value;
+    if (!classCode) return showError('Please enter your class code.');
+    if (!grade) return showError('Please select your grade level.');
+
+    try {
+      await API.post('/api/auth/signup', { name, role: 'student', classCode, grade });
+      localStorage.setItem('k2r_student_name', name);
+      localStorage.setItem('k2r_student_classcode', classCode);
+      window.location.href = 'dashboard.html';
+    } catch (err) {
+      showError(err.message || 'Signup failed. Please try again.');
+    }
+  } else if (role === 'child') {
+    // Homeschool child: Grade only, no class code
     const grade = document.getElementById('student-grade').value;
     if (!grade) return showError('Please select your grade level.');
 
     try {
-      await API.post('/api/auth/signup', { name, password: password || null, role: 'student', classCode: classCode || null, grade });
-      // Save to localStorage for auto-signin next time
-      if (classCode) {
-        localStorage.setItem('k2r_student_name', name);
-        localStorage.setItem('k2r_student_classcode', classCode);
-      }
+      await API.post('/api/auth/signup', { name, role: 'student', grade });
+      localStorage.setItem('k2r_child_name', name);
       window.location.href = 'dashboard.html';
     } catch (err) {
       showError(err.message || 'Signup failed. Please try again.');

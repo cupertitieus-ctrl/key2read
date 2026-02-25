@@ -24,7 +24,7 @@
       <p style="text-align:center">Select your role and enter your credentials.</p>
 
       <!-- Role Selector -->
-      <div class="role-selector" id="role-selector" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="role-selector" id="role-selector" style="grid-template-columns:1fr 1fr 1fr 1fr">
         <div class="role-card active" onclick="selectRole(this, 'teacher')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           <span>Teacher</span>
@@ -34,6 +34,10 @@
           <span>Parent</span>
         </div>
         <div class="role-card" onclick="selectRole(this, 'student')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          <span>Student</span>
+        </div>
+        <div class="role-card" onclick="selectRole(this, 'child')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           <span>Child</span>
         </div>
@@ -59,9 +63,9 @@
 
         <!-- Class Code (Student) -->
         <div class="form-group" id="field-classcode" style="display:none">
-          <label class="form-label" for="classcode" id="classcode-label">Family Code</label>
-          <input type="text" id="classcode" class="form-input" placeholder="Enter your family code">
-          <small id="classcode-hint" style="color:var(--g400);margin-top:4px;display:block">Ask a parent for your family code.</small>
+          <label class="form-label" for="classcode" id="classcode-label">Class Code</label>
+          <input type="text" id="classcode" class="form-input" placeholder="Enter your class code">
+          <small id="classcode-hint" style="color:var(--g400);margin-top:4px;display:block">Ask your teacher for the class code.</small>
         </div>
 
         <!-- Parent Class Code -->
@@ -146,8 +150,17 @@ function selectRole(el, role) {
   if (extrasGroup) extrasGroup.style.display = 'none';
 
   if (selectedRole === 'student') {
+    // School student: Name + Class Code (required)
     if (nameGroup) nameGroup.style.display = '';
-    if (codeGroup) codeGroup.style.display = '';
+    if (codeGroup) {
+      codeGroup.style.display = '';
+      document.getElementById('classcode-label').textContent = 'Class Code';
+      document.getElementById('classcode').placeholder = 'Enter your class code';
+      document.getElementById('classcode-hint').textContent = 'Ask your teacher for the class code.';
+    }
+  } else if (selectedRole === 'child') {
+    // Homeschool child: Name only (no class code needed)
+    if (nameGroup) nameGroup.style.display = '';
   } else if (selectedRole === 'parent') {
     if (emailGroup) emailGroup.style.display = '';
     if (parentCodeGroup) parentCodeGroup.style.display = '';
@@ -211,9 +224,19 @@ selectRole(document.querySelector('.role-card.active'), 'teacher');
       await API.login({ name: savedName, classCode: savedCode, role: 'student' });
       window.location.href = 'dashboard.html';
     } catch(e) {
-      // Auto-signin failed (maybe student was removed) — clear saved data
       localStorage.removeItem('k2r_student_name');
       localStorage.removeItem('k2r_student_classcode');
+    }
+    return;
+  }
+  // Auto-signin for homeschool children
+  const savedChildName = localStorage.getItem('k2r_child_name');
+  if (savedChildName) {
+    try {
+      await API.login({ name: savedChildName, role: 'child' });
+      window.location.href = 'dashboard.html';
+    } catch(e) {
+      localStorage.removeItem('k2r_child_name');
     }
   }
 })();
@@ -226,14 +249,22 @@ document.querySelector('.auth-form').addEventListener('submit', async function(e
     const name = document.getElementById('student-name').value.trim();
     const classCode = document.getElementById('classcode').value.trim();
     if (!name) return showError('Please enter your name');
-    if (!classCode) return showError('Please enter your family code');
+    if (!classCode) return showError('Please enter your class code');
     try {
       await API.login({ name, classCode, role: 'student' });
       // Save to localStorage for auto-signin next time
       localStorage.setItem('k2r_student_name', name);
       localStorage.setItem('k2r_student_classcode', classCode);
       window.location.href = 'dashboard.html';
-    } catch(e) { showError(e.message || 'Login failed. Check your name and family code.'); }
+    } catch(e) { showError(e.message || 'Login failed. Check your name and class code.'); }
+  } else if (selectedRole === 'child') {
+    const name = document.getElementById('student-name').value.trim();
+    if (!name) return showError('Please enter your name');
+    try {
+      await API.login({ name, role: 'child' });
+      localStorage.setItem('k2r_child_name', name);
+      window.location.href = 'dashboard.html';
+    } catch(e) { showError(e.message || 'Login failed. Make sure you signed up first.'); }
   } else if (selectedRole === 'parent') {
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;

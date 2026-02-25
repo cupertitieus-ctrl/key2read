@@ -46,14 +46,19 @@ async function buildSessionUser(user) {
   if (user.role === 'student') {
     const studentRecord = await db.getStudentByUserId(user.id);
     if (studentRecord) {
-      // Get class info for the student
-      const { data: cls } = await db.supabase.from('classes').select('*, users!teacher_id (name)').eq('id', studentRecord.class_id).single();
+      // Get class info for the student (only if they have a class)
+      let cls = null;
+      if (studentRecord.class_id) {
+        const { data } = await db.supabase.from('classes').select('*, users!teacher_id (name)').eq('id', studentRecord.class_id).single();
+        cls = data;
+      }
       sessionUser = {
         ...sessionUser,
         studentId: studentRecord.id,
-        classId: studentRecord.class_id,
+        classId: studentRecord.class_id || null,
         className: cls?.name || '',
         teacherName: cls?.users?.name || '',
+        grade: studentRecord.grade || cls?.grade || '4th',
         reading_level: studentRecord.reading_level || 3.0,
         reading_score: studentRecord.reading_score || 500,
         keys_earned: studentRecord.keys_earned || 0,
@@ -97,7 +102,7 @@ app.post('/api/auth/login', async (req, res) => {
 
   try {
     if (role === 'student') {
-      // Student login: find by name + class code
+      // School student login: find by name + class code
       if (!name) return res.status(400).json({ error: 'Please enter your name.' });
       if (!classCode) return res.status(400).json({ error: 'Please enter your class code.' });
 
@@ -118,6 +123,29 @@ app.post('/api/auth/login', async (req, res) => {
       const studentRecord = studentRecords[0];
       const user = studentRecord.users || await db.getUserById(studentRecord.user_id);
       if (!user) return res.status(400).json({ error: 'Student account not found.' });
+
+      const sessionUser = await buildSessionUser(user);
+      req.session.userId = user.id;
+      req.session.user = sessionUser;
+      return res.json({ success: true, user: sessionUser });
+
+    } else if (role === 'child') {
+      // Homeschool child login: find by name where no class assigned
+      if (!name) return res.status(400).json({ error: 'Please enter your name.' });
+
+      const { data: studentRecords } = await db.supabase
+        .from('students')
+        .select('*, users!user_id (id, email, name, role)')
+        .is('class_id', null)
+        .ilike('name', name.trim());
+
+      if (!studentRecords || studentRecords.length === 0) {
+        return res.status(400).json({ error: `No homeschool account found for "${name}". Did you sign up first?` });
+      }
+
+      const studentRecord = studentRecords[0];
+      const user = studentRecord.users || await db.getUserById(studentRecord.user_id);
+      if (!user) return res.status(400).json({ error: 'Account not found.' });
 
       const sessionUser = await buildSessionUser(user);
       req.session.userId = user.id;
