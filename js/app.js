@@ -80,12 +80,12 @@ let goals = [];
 
 // Default store items (teacher can customize)
 let storeItems = [
-  { name: 'Homework Pass',    stock: 10, price: 50, icon: '📝' },
+  { name: 'Homework Pass',    stock: 10, price: 50, icon: '📝', image_url: '/public/Homework_Pass.jpg' },
   { name: 'Extra Recess',     stock: 5,  price: 75, icon: '⏰' },
   { name: 'Class DJ',         stock: 3,  price: 30, icon: '🎵' },
   { name: 'Sit With a Friend', stock: 10, price: 20, icon: '👫' },
-  { name: 'Candy Jar',        stock: 15, price: 15, icon: '🍬' },
-  { name: 'Sticker Pack',     stock: 20, price: 10, icon: '⭐' },
+  { name: 'Candy Jar',        stock: 15, price: 15, icon: '🍬', image_url: '/public/Candy.jpg' },
+  { name: 'Sticker Pack',     stock: 20, price: 10, icon: '⭐', image_url: '/public/Stickers_.jpg' },
 ];
 
 // Books loaded from API (populated on init)
@@ -336,14 +336,14 @@ function renderSidebar() {
   let items;
   if (userRole === 'student') {
     items = [
-      { section: 'My Learning' },
-      { id: 'student-dashboard', icon: IC.target, label: 'My Dashboard' },
-      { id: 'student-quizzes',   icon: IC.clip,   label: 'My Quizzes', badge: assignments.length > 0 ? String(assignments.length) : '', badgeCls: 'red' },
-      { id: 'library',           icon: IC.book,   label: 'Book Library' },
-      { id: 'student-progress',  icon: IC.chart,  label: 'My Progress' },
-      { section: 'Fun' },
-      { id: 'store',             icon: IC.bag,    label: 'Class Store', badge: storeItems.length > 0 ? String(storeItems.length) : '', badgeCls: 'gold' },
-      { id: 'student-badges',    icon: IC.star,   label: 'My Badges' },
+      { section: 'Explore' },
+      { id: 'student-dashboard', icon: IC.target, label: 'Home' },
+      { id: 'student-quizzes',   icon: IC.clip,   label: 'My Books', badge: assignments.length > 0 ? String(assignments.length) : '', badgeCls: 'red' },
+      { id: 'library',           icon: IC.book,   label: 'All Books' },
+      { id: 'student-progress',  icon: IC.chart,  label: 'My Keys' },
+      { section: 'Rewards' },
+      { id: 'store',             icon: IC.bag,    label: 'Treasure Shop', badge: storeItems.length > 0 ? String(storeItems.length) : '', badgeCls: 'gold' },
+      { id: 'student-badges',    icon: IC.star,   label: 'Trophies' },
     ];
   } else if (userRole === 'owner') {
     items = [
@@ -425,10 +425,12 @@ function renderSidebar() {
 
   if (userRole === 'guest') {
     html += `
-    <div class="sidebar-footer" style="flex-direction:column;gap:8px;padding:16px">
-      <a href="/index.html" style="display:flex;align-items:center;gap:6px;color:var(--g400);font-size:0.8125rem;text-decoration:none;padding:6px 0;margin-bottom:4px">${IC.arrowLeft} Back to Home</a>
-      <a href="signin.html" class="btn btn-primary" style="width:100%;text-align:center;text-decoration:none">Sign In</a>
-      <a href="signup.html" class="btn btn-outline" style="width:100%;text-align:center;text-decoration:none">Create Account</a>
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:16px">
+      <div style="display:flex;flex-direction:column;gap:8px;width:100%">
+        <a href="signin.html" class="btn btn-primary" style="width:100%;text-align:center;text-decoration:none;font-size:1rem;padding:12px">Sign In</a>
+        <a href="signup.html" class="btn btn-outline" style="width:100%;text-align:center;text-decoration:none;font-size:1rem;padding:12px">Create Account</a>
+        <a href="/index.html" style="display:flex;align-items:center;justify-content:center;gap:8px;color:var(--g400);font-size:1.1rem;font-weight:600;text-decoration:none;padding:10px 0;margin-top:6px">${IC.arrowLeft} Back to Home</a>
+      </div>
     </div>`;
   } else {
     html += `
@@ -2295,8 +2297,8 @@ function renderBookDetail() {
               return `
               <div class="list-item" style="cursor:not-allowed;opacity:0.5">
                 <div class="list-item-info" style="display:flex;align-items:center;gap:12px;flex-direction:row">
-                  <div style="width:44px;height:44px;border-radius:50%;background:var(--g200);color:var(--g400);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.875rem;flex-shrink:0">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                  <div style="width:44px;height:44px;border-radius:50%;background:var(--g200);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <img src="/public/Lock_Icon_.png" alt="Locked" style="width:28px;height:28px;object-fit:contain">
                   </div>
                   <div>
                     <span class="list-item-name" style="color:var(--g400)">${/diary|diaries/i.test(b.title) ? 'Entry' : 'Chapter'} ${ch.chapter_number}: ${ch.title}</span>
@@ -2304,7 +2306,7 @@ function renderBookDetail() {
                   </div>
                 </div>
                 <div class="list-item-right">
-                  <span class="btn btn-sm btn-outline" style="opacity:0.4;pointer-events:none">🔒 Locked</span>
+                  <span class="btn btn-sm btn-outline" style="opacity:0.4;pointer-events:none">Take Quiz</span>
                 </div>
               </div>`;
             }
@@ -2321,7 +2323,7 @@ function renderBookDetail() {
                 </div>
               </div>
               <div class="list-item-right">
-                <span class="btn btn-sm ${isCompleted ? 'btn-outline' : 'btn-primary'}">${isCompleted ? 'Retake Quiz' : 'Take Quiz'}</span>
+                <span class="btn ${isCompleted ? 'btn-outline' : 'btn-primary'}" style="padding:10px 20px;font-size:1rem;font-weight:700">${isCompleted ? 'Retake Quiz' : 'Take Quiz'}</span>
               </div>
             </div>`;
           }).join('')}
@@ -3784,6 +3786,53 @@ function showCompletedBooks() {
 // ---- STUDENT DASHBOARD PAGES ----
 // ============================================================
 
+// Custom icon helper — returns <img> tag for our hand-drawn icons
+const K2R_ICONS = {
+  key:        '/public/Key_Icon.png',
+  bookBlue:   '/public/Blue_Book_Icon.png',
+  bookRed:    '/public/Red_Book_Icon_.png',
+  starGold:   '/public/Star_Icon_.png',
+  starTeal:   '/public/Teal_Star_Icon_.png',
+  starOrange: '/public/Orange_Star_Icon_.png',
+  paper:      '/public/Paper_Icon_.png',
+  lock:       '/public/Lock_Icon_.png',
+};
+function k2rIcon(name, size = 28) {
+  const src = K2R_ICONS[name];
+  if (!src) return '';
+  return `<img src="${src}" alt="${name}" class="k2r-icon" style="width:${size}px;height:${size}px;object-fit:contain">`;
+}
+
+function getDoorsToOpen(weeklyStats, user) {
+  const w = weeklyStats || { keysThisWeek: 0, quizzesThisWeek: 0, booksCompletedThisWeek: 0 };
+  const doors = [];
+  doors.push({ icon: 'paper', name: 'Complete 3 chapter quizzes', current: Math.min(w.quizzesThisWeek, 3), target: 3, done: w.quizzesThisWeek >= 3 });
+  doors.push({ icon: 'key', name: 'Collect 50 keys', current: Math.min(w.keysThisWeek, 50), target: 50, done: w.keysThisWeek >= 50 });
+  doors.push({ icon: 'bookBlue', name: 'Finish a book', current: Math.min(w.booksCompletedThisWeek, 1), target: 1, done: w.booksCompletedThisWeek >= 1 });
+  return doors;
+}
+
+function renderDuoStatsBar() {
+  const keys = currentUser?.keys_earned || 0;
+  const totalBooksCompleted = currentUser?.totalBooksCompleted || 0;
+  const quizzes = currentUser?.quizzes_completed || 0;
+  return `
+    <div class="duo-stats-bar">
+      <div class="duo-stat" onclick="showKeysBreakdown()" title="Your Keys">
+        ${k2rIcon('key', 22)}
+        <span class="duo-stat-value">${keys}</span>
+      </div>
+      <div class="duo-stat" onclick="navigate('student-quizzes')" title="Books">
+        ${k2rIcon('bookBlue', 22)}
+        <span class="duo-stat-value">${totalBooksCompleted}</span>
+      </div>
+      <div class="duo-stat" onclick="navigate('student-badges')" title="Trophies">
+        ${k2rIcon('starGold', 22)}
+        <span class="duo-stat-value">${quizzes}</span>
+      </div>
+    </div>`;
+}
+
 function renderStudentDashboard() {
   let s = {
     id: currentUser?.studentId || 0,
@@ -3794,314 +3843,319 @@ function renderStudentDashboard() {
   };
   const hasQuizzes = s.quizzes > 0;
   const displayBooks = showFavoritesOnly ? books.filter(b => studentFavorites.some(fid => Number(fid) === Number(b.id))) : books;
-
-  // Weekly stats (fetched during loadApp)
   const w = currentUser?.weeklyStats || { keysThisWeek: 0, quizzesThisWeek: 0, booksCompletedThisWeek: 0 };
   const totalBooksCompleted = currentUser?.totalBooksCompleted || 0;
+  const doors = getDoorsToOpen(w, currentUser);
+  const doorsOpened = doors.filter(d => d.done).length;
 
   return `
-    <div class="page-header"><h1>Welcome${hasQuizzes ? ' back' : ''}, ${s.name.split(' ')[0]}!</h1></div>
+    ${renderDuoStatsBar()}
 
     ${!s.onboarded ? `
-    <div class="interest-cta-card" style="margin-bottom:24px">
-      <h3 style="margin-bottom:8px">Personalize Your Experience!</h3>
-      <p style="margin-bottom:16px">Tell us about your interests so we can make your quizzes more fun!</p>
-      <button class="btn btn-primary" onclick="onboardingStudent=${s.id}; onboardingStep=0; openModal('onboarding')">Set Up My Profile</button>
+    <div class="duo-onboard-cta">
+      ${k2rIcon('starOrange', 40)}
+      <div class="duo-onboard-text">
+        <strong>Make it yours!</strong>
+        <span>Tell us what you like so we can make reading more fun!</span>
+      </div>
+      <button class="duo-btn" onclick="onboardingStudent=${s.id}; onboardingStep=0; openModal('onboarding')">Let's Go!</button>
     </div>` : ''}
 
-    <div class="weekly-wins-section">
-      <div class="weekly-wins-header">
-        <h2 class="weekly-wins-title">Weekly Wins</h2>
-        <span class="weekly-wins-reset">Resets every Monday</span>
+    <div class="duo-treasure-row">
+      <div class="duo-treasure-card duo-treasure-keys" onclick="showKeysBreakdown()">
+        ${k2rIcon('key', 44)}
+        <div class="duo-treasure-value">${s.keys}</div>
+        <div class="duo-treasure-label">Keys</div>
       </div>
-      <div class="weekly-wins-cards">
-        <div class="weekly-win-card weekly-win-keys" onclick="showKeysBreakdown()">
-          <div class="weekly-win-emoji">🔑</div>
-          <div class="weekly-win-value">${w.keysThisWeek}</div>
-          <div class="weekly-win-label">Keys Earned</div>
-        </div>
-        <div class="weekly-win-card weekly-win-quizzes" onclick="navigate('student-quizzes')">
-          <div class="weekly-win-emoji">✅</div>
-          <div class="weekly-win-value">${w.quizzesThisWeek}</div>
-          <div class="weekly-win-label">Quizzes Done</div>
-        </div>
-        <div class="weekly-win-card weekly-win-books" onclick="showCompletedBooks()">
-          <div class="weekly-win-emoji">📚</div>
-          <div class="weekly-win-value">${w.booksCompletedThisWeek}</div>
-          <div class="weekly-win-label">Books Finished</div>
-        </div>
+      <div class="duo-treasure-card duo-treasure-books" onclick="navigate('student-quizzes')">
+        ${k2rIcon('bookBlue', 44)}
+        <div class="duo-treasure-value">${totalBooksCompleted}</div>
+        <div class="duo-treasure-label">Books</div>
+      </div>
+      <div class="duo-treasure-card duo-treasure-chapters" onclick="navigate('student-badges')">
+        ${k2rIcon('paper', 44)}
+        <div class="duo-treasure-value">${s.quizzes}</div>
+        <div class="duo-treasure-label">Chapters</div>
       </div>
     </div>
 
-    <div class="total-progress-section">
-      <h3 class="total-progress-title">Total Progress</h3>
-      <div class="total-progress-cards">
-        <div class="total-progress-card">
-          <span class="total-progress-value">${s.keys}</span>
-          <span class="total-progress-label">Keys</span>
-        </div>
-        <div class="total-progress-card">
-          <span class="total-progress-value">${s.quizzes}</span>
-          <span class="total-progress-label">Quizzes</span>
-        </div>
-        <div class="total-progress-card">
-          <span class="total-progress-value">${totalBooksCompleted}</span>
-          <span class="total-progress-label">Books</span>
-        </div>
+    <div class="duo-doors">
+      <div class="duo-doors-header">
+        ${k2rIcon('lock', 24)}
+        <span class="duo-doors-title">Doors to Open</span>
+        <span class="duo-doors-count">${doorsOpened}/${doors.length}</span>
       </div>
+      ${doors.map(d => `
+        <div class="duo-door-item${d.done ? ' duo-door-done' : ''}">
+          <span class="duo-door-icon">${d.done ? k2rIcon('starGold', 24) : k2rIcon(d.icon, 24)}</span>
+          <div class="duo-door-info">
+            <span class="duo-door-name">${d.name}</span>
+            <div class="duo-door-bar"><div class="duo-door-fill" style="width:${Math.min(100, (d.current / d.target) * 100)}%"></div></div>
+          </div>
+          <span class="duo-door-count">${d.done ? 'Opened!' : `${d.current}/${d.target}`}</span>
+        </div>
+      `).join('')}
     </div>
 
     ${renderStoreSneak()}
 
     <div style="margin-top:24px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <h3 style="margin:0;font-size:1rem;font-weight:700">Browse Books</h3>
-        <span style="color:var(--g500);font-size:0.8125rem" id="student-book-count">${displayBooks.length} books</span>
+        <h3 style="margin:0;font-size:1.1rem;font-weight:800;color:#4B4B4B">${k2rIcon('bookRed', 22)} Pick a Book</h3>
+        <span style="color:#AFAFAF;font-size:0.8125rem;font-weight:700" id="student-book-count">${displayBooks.length} books</span>
       </div>
       <div class="book-filter-toggle" style="margin-bottom:12px">
         <button class="book-filter-btn${!showFavoritesOnly ? ' active' : ''}" onclick="showFavoritesOnly=false; renderMain()">All Books</button>
-        <button class="book-filter-btn${showFavoritesOnly ? ' active' : ''}" onclick="showFavoritesOnly=true; renderMain()">&#10084;&#65039; My Favorites</button>
+        <button class="book-filter-btn${showFavoritesOnly ? ' active' : ''}" onclick="showFavoritesOnly=true; renderMain()">&#10084;&#65039; Favorites</button>
       </div>
       <div style="position:relative;margin-bottom:16px">
-        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--g400);pointer-events:none">${IC.search}</span>
-        <input type="text" id="student-book-search" placeholder="Search books by title, author, or genre..."
-          style="width:100%;padding:10px 14px 10px 38px;border:1.5px solid var(--g200);border-radius:var(--radius-md);font-size:0.875rem;outline:none;transition:border-color .2s"
-          onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--g200)'">
+        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:#AFAFAF;pointer-events:none">${IC.search}</span>
+        <input type="text" id="student-book-search" placeholder="Search books..."
+          style="width:100%;padding:10px 14px 10px 38px;border:2px solid #E5E5E5;border-radius:12px;font-size:0.875rem;outline:none;transition:border-color .2s;font-weight:600"
+          onfocus="this.style.borderColor='#1CB0F6'" onblur="this.style.borderColor='#E5E5E5'">
       </div>
       <div class="book-grid" id="student-book-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
         ${displayBooks.length > 0 ? displayBooks.map(b => renderStudentBookCard(b)).join('') : showFavoritesOnly
-          ? `<p style="grid-column:1/-1;color:var(--g500);text-align:center;padding:24px">No favorites yet! Tap the &#10084;&#65039; on any book to add it here.</p>`
-          : `<p style="grid-column:1/-1;color:var(--g500);text-align:center;padding:24px">No books available yet.</p>`}
+          ? `<div style="grid-column:1/-1;text-align:center;padding:40px 20px">
+              <div style="margin-bottom:12px">${k2rIcon('starOrange', 48)}</div>
+              <div style="font-weight:800;color:#4B4B4B;margin-bottom:8px">No favorites yet!</div>
+              <div style="color:#AFAFAF;font-size:0.875rem">Tap the heart on any book to save it here.</div>
+            </div>`
+          : `<div style="grid-column:1/-1;text-align:center;padding:40px 20px">
+              <div style="margin-bottom:12px">${k2rIcon('key', 56)}</div>
+              <div style="font-weight:800;color:#4B4B4B;margin-bottom:8px">Pick a book to start collecting keys!</div>
+              <button class="duo-btn" onclick="navigate('library')" style="margin-top:12px">Find a Book</button>
+            </div>`}
       </div>
     </div>
   `;
 }
 
 function renderStudentQuizzes() {
-  let s = {
-    id: currentUser?.studentId || 0,
-    name: currentUser?.name || 'Student',
-    keys: currentUser?.keys_earned || 0,
-    quizzes: currentUser?.quizzes_completed || 0
-  };
+  let s = { id: currentUser?.studentId || 0, name: currentUser?.name || 'Student', keys: currentUser?.keys_earned || 0, quizzes: currentUser?.quizzes_completed || 0 };
   const hasQuizzes = s.quizzes > 0;
-
-  // Build book progress map: bookId → { completedChapters, totalChapters, isComplete }
   const progressMap = {};
   (currentUser?.bookProgress || []).forEach(p => { progressMap[p.bookId] = p; });
-
-  // Books the student has started (at least one quiz)
-  const startedBooks = books.filter(b => progressMap[b.id]);
-
-  // Separate incomplete and favorite books
-  const incompleteBooks = startedBooks.filter(b => !progressMap[b.id]?.isComplete);
+  const incompleteBooks = books.filter(b => progressMap[b.id] && !progressMap[b.id]?.isComplete);
   const favBooks = books.filter(b => studentFavorites.some(fid => Number(fid) === Number(b.id)));
 
   return `
-    <div class="page-header"><h1>My Quizzes</h1></div>
-    <div class="stat-cards" style="grid-template-columns: repeat(2, 1fr)">
-      <div class="stat-card" style="display:flex;align-items:center;gap:14px">
-        <div style="width:44px;height:44px;border-radius:var(--radius-md);background:linear-gradient(135deg,#dbeafe,#bfdbfe);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
-        </div>
-        <div><div class="stat-card-label">Quizzes Completed</div><div class="stat-card-value">${s.quizzes}</div></div>
+    ${renderDuoStatsBar()}
+    <div class="page-header" style="margin-bottom:20px"><h1 style="font-weight:800;color:#4B4B4B">${k2rIcon('bookBlue', 28)} My Books</h1></div>
+
+    <div class="duo-card-row">
+      <div class="duo-card teal">
+        ${k2rIcon('paper', 40)}
+        <div class="duo-card-value">${s.quizzes}</div>
+        <div class="duo-card-label">Chapters Read</div>
       </div>
-      <div class="stat-card" style="display:flex;align-items:center;gap:14px">
-        <div style="width:44px;height:44px;border-radius:var(--radius-md);background:linear-gradient(135deg,#fef3c7,#fde68a);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><circle cx="8" cy="8" r="4"/><path d="M10.5 10.5L21 21"/><path d="M16 16l5 0"/><path d="M19 13l0 6"/></svg>
-        </div>
-        <div><div class="stat-card-label">Keys Earned</div><div class="stat-card-value">${s.keys}</div></div>
+      <div class="duo-card gold">
+        ${k2rIcon('key', 40)}
+        <div class="duo-card-value">${s.keys}</div>
+        <div class="duo-card-label">Keys Collected</div>
       </div>
     </div>
 
     ${incompleteBooks.length > 0 ? `
     <div style="margin-top:28px">
-      <h3 style="margin:0 0 16px;font-size:1rem;font-weight:700">&#128218; Books That Still Need Completion</h3>
-      <div class="book-progress-grid">
+      <h3 class="duo-section-title">${k2rIcon('bookRed', 22)} Keep Reading</h3>
+      <div class="duo-book-quest-list">
         ${incompleteBooks.map(b => {
           const prog = progressMap[b.id];
+          const pct = Math.round((prog.completedChapters / prog.totalChapters) * 100);
           return `
-          <div class="book-progress-card" onclick="openBook(${b.id})" style="cursor:pointer">
-            <div class="book-progress-cover">
+          <div class="duo-book-quest" onclick="openBook(${b.id})">
+            <div class="duo-book-quest-cover">
               ${b.cover_url ? `<img src="${b.cover_url}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
-              <div class="book-progress-cover-fallback" ${b.cover_url ? 'style="display:none"' : ''}>
-                <span>${b.title}</span>
-              </div>
+              <div class="book-progress-cover-fallback" ${b.cover_url ? 'style="display:none"' : ''}><span>${b.title}</span></div>
             </div>
-            <div class="book-progress-info">
-              <div class="book-progress-title">${b.title}</div>
-              <div class="book-progress-status">${prog.completedChapters}/${prog.totalChapters} chapters</div>
+            <div class="duo-book-quest-info">
+              <div class="duo-book-quest-title">${b.title}</div>
+              <div class="duo-book-quest-status">Chapter ${prog.completedChapters} of ${prog.totalChapters} &mdash; Keep going!</div>
+              <div class="duo-progress"><div class="duo-progress-fill" style="width:${pct}%"></div></div>
             </div>
           </div>`;
         }).join('')}
       </div>
     </div>` : ''}
 
-    ${(() => {
-      if (favBooks.length > 0) {
-        return `<div style="margin-top:28px">
-          <h3 style="margin:0 0 16px;font-size:1rem;font-weight:700">&#10084;&#65039; My Favorites</h3>
-          <div class="book-progress-grid">
-            ${favBooks.map(b => {
-              const prog = progressMap[b.id];
-              const isComplete = prog && prog.isComplete;
-              const hasProgress = !!prog;
-              return `
-              <div class="book-progress-card" onclick="openBook(${b.id})" style="cursor:pointer">
-                <div class="book-progress-cover">
-                  ${b.cover_url ? `<img src="${b.cover_url}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
-                  <div class="book-progress-cover-fallback" ${b.cover_url ? 'style="display:none"' : ''}>
-                    <span>${b.title}</span>
-                  </div>
-                  ${isComplete ? `
-                  <div class="book-completed-overlay">
-                    <div class="book-completed-badge">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                      <span>COMPLETED</span>
-                    </div>
-                  </div>` : ''}
-                </div>
-                <div class="book-progress-info">
-                  <div class="book-progress-title">${b.title}</div>
-                  <div class="book-progress-status">${isComplete ? '&#9989; All done!' : hasProgress ? `${prog.completedChapters}/${prog.totalChapters} chapters` : 'Not started'}</div>
-                </div>
-              </div>`;
-            }).join('')}
-          </div>
-        </div>`;
-      } else {
-        return `<div style="margin-top:20px;padding:20px;background:var(--blue-p);border-radius:var(--radius-md);text-align:center;color:var(--g500);font-size:0.875rem">
-          Tap the &#10084;&#65039; on any book to add it to your favorites!
-        </div>`;
-      }
-    })()}
+    ${favBooks.length > 0 ? `
+    <div style="margin-top:28px">
+      <h3 class="duo-section-title">${k2rIcon('starOrange', 22)} Favorites</h3>
+      <div class="duo-book-quest-list">
+        ${favBooks.map(b => {
+          const prog = progressMap[b.id];
+          const isComplete = prog && prog.isComplete;
+          const hasProgress = !!prog;
+          const pct = hasProgress ? Math.round((prog.completedChapters / prog.totalChapters) * 100) : 0;
+          return `
+          <div class="duo-book-quest" onclick="openBook(${b.id})">
+            <div class="duo-book-quest-cover">
+              ${b.cover_url ? `<img src="${b.cover_url}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+              <div class="book-progress-cover-fallback" ${b.cover_url ? 'style="display:none"' : ''}><span>${b.title}</span></div>
+            </div>
+            <div class="duo-book-quest-info">
+              <div class="duo-book-quest-title">${b.title}</div>
+              <div class="duo-book-quest-status">${isComplete ? '&#9989; All done!' : hasProgress ? `Chapter ${prog.completedChapters} of ${prog.totalChapters}` : 'Not started'}</div>
+              ${hasProgress ? `<div class="duo-progress"><div class="duo-progress-fill" style="width:${pct}%"></div></div>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : `
+    <div class="duo-card" style="margin-top:20px;text-align:center;border-left:4px solid #1CB0F6">
+      <div style="margin-bottom:8px">${k2rIcon('starTeal', 32)}</div>
+      <div style="font-weight:700;color:#AFAFAF;font-size:0.875rem">Tap the heart on any book to save it here!</div>
+    </div>`}
 
     ${assignments.length > 0 ? `
-    <div class="list-card" style="margin-top:24px">
-      <div style="padding:16px 20px;border-bottom:1px solid var(--g150);font-weight:700;color:var(--navy)">Assigned To You</div>
-      ${assignments.map(a => `
-        <div class="list-item">
-          <div class="list-item-info">
-            <span class="list-item-name">${a.name}</span>
-            <span class="list-item-sub">Due: ${a.due || 'No due date'}</span>
+    <div style="margin-top:28px">
+      <h3 class="duo-section-title">${k2rIcon('paper', 22)} From Your Teacher</h3>
+      <div class="duo-book-quest-list">
+        ${assignments.map(a => `
+          <div class="duo-book-quest" style="cursor:default">
+            <div style="display:flex;align-items:center;justify-content:center;width:60px">${k2rIcon('paper', 36)}</div>
+            <div class="duo-book-quest-info">
+              <div class="duo-book-quest-title">${a.name}</div>
+              <div class="duo-book-quest-status">Due: ${a.due || 'No due date'}</div>
+            </div>
+            <div>${statusPill(a.status)}</div>
           </div>
-          <div class="list-item-right" style="display:flex;align-items:center;gap:12px">
-            ${statusPill(a.status)}
-          </div>
-        </div>
-      `).join('')}
+        `).join('')}
+      </div>
     </div>` : !hasQuizzes ? `
-    <div class="empty-state" style="margin-top:24px">
-      <div class="empty-state-icon" style="font-size:2rem">&#128203;</div>
-      <h2>No Quizzes Yet</h2>
-      <p>If you have read a book and are ready to take a quiz, go to the Book Library!</p>
-      <button class="btn btn-primary" onclick="navigate('library')">Go to Book Library</button>
+    <div style="text-align:center;padding:48px 20px;margin-top:24px">
+      <div style="margin-bottom:16px">${k2rIcon('bookBlue', 64)}</div>
+      <div style="font-weight:800;font-size:1.25rem;color:#4B4B4B;margin-bottom:8px">No books yet!</div>
+      <div style="color:#AFAFAF;font-size:0.9375rem;margin-bottom:20px">Pick a book and start collecting keys!</div>
+      <button class="duo-btn" onclick="navigate('library')">Find a Book</button>
     </div>` : ''}
   `;
 }
 
 function renderStudentProgress() {
-  let s = {
-    id: currentUser?.studentId || 0,
-    name: currentUser?.name || 'Student',
-    keys: currentUser?.keys_earned || 0,
-    quizzes: currentUser?.quizzes_completed || 0
-  };
+  let s = { id: currentUser?.studentId || 0, name: currentUser?.name || 'Student', keys: currentUser?.keys_earned || 0, quizzes: currentUser?.quizzes_completed || 0, accuracy: currentUser?.accuracy || 0 };
   const hasQuizzes = s.quizzes > 0;
-
   const w = currentUser?.weeklyStats || { keysThisWeek: 0, quizzesThisWeek: 0, booksCompletedThisWeek: 0 };
   const totalBooksCompleted = currentUser?.totalBooksCompleted || 0;
+  const encouragement = s.keys >= 500 ? "Wow, you're amazing! Keep it up!" : s.keys >= 100 ? "You're doing so great!" : s.keys >= 20 ? "Nice! Keep reading to get more keys!" : "Read books and answer questions to collect keys!";
 
   return `
-    <div class="page-header"><h1>My Reading Progress</h1></div>
+    ${renderDuoStatsBar()}
+    <div class="page-header" style="margin-bottom:20px"><h1 style="font-weight:800;color:#4B4B4B">${k2rIcon('key', 28)} My Keys</h1></div>
 
-    <div class="weekly-wins-section">
-      <div class="weekly-wins-header">
-        <h2 class="weekly-wins-title">Weekly Wins</h2>
-        <span class="weekly-wins-reset">Resets every Monday</span>
+    <div class="duo-score-hero">
+      ${k2rIcon('key', 128)}
+      <div class="duo-score-value">${s.keys}</div>
+      <div class="duo-score-label">Keys Collected</div>
+      <div class="duo-score-encourage">${encouragement}</div>
+    </div>
+
+    <div class="duo-power-grid">
+      <div class="duo-card gold">
+        ${k2rIcon('key', 36)}
+        <div class="duo-card-value">${s.keys}</div>
+        <div class="duo-card-label">Total Keys</div>
       </div>
-      <div class="weekly-wins-cards">
-        <div class="weekly-win-card weekly-win-keys" onclick="showKeysBreakdown()">
-          <div class="weekly-win-emoji">🔑</div>
-          <div class="weekly-win-value">${w.keysThisWeek}</div>
-          <div class="weekly-win-label">Keys Earned</div>
-        </div>
-        <div class="weekly-win-card weekly-win-quizzes" onclick="navigate('student-quizzes')">
-          <div class="weekly-win-emoji">✅</div>
-          <div class="weekly-win-value">${w.quizzesThisWeek}</div>
-          <div class="weekly-win-label">Quizzes Done</div>
-        </div>
-        <div class="weekly-win-card weekly-win-books" onclick="showCompletedBooks()">
-          <div class="weekly-win-emoji">📚</div>
-          <div class="weekly-win-value">${w.booksCompletedThisWeek}</div>
-          <div class="weekly-win-label">Books Finished</div>
-        </div>
+      <div class="duo-card teal">
+        ${k2rIcon('paper', 36)}
+        <div class="duo-card-value">${s.quizzes}</div>
+        <div class="duo-card-label">Chapters Read</div>
+      </div>
+      <div class="duo-card blue">
+        ${k2rIcon('starTeal', 36)}
+        <div class="duo-card-value">${s.accuracy}%</div>
+        <div class="duo-card-label">Right Answers</div>
+      </div>
+      <div class="duo-card orange">
+        ${k2rIcon('bookBlue', 36)}
+        <div class="duo-card-value">${totalBooksCompleted}</div>
+        <div class="duo-card-label">Books Done</div>
       </div>
     </div>
 
-    <div class="total-progress-section" style="margin-top:24px">
-      <h3 class="total-progress-title">Total Progress</h3>
-      <div class="total-progress-cards">
-        <div class="total-progress-card">
-          <span class="total-progress-value">${s.keys}</span>
-          <span class="total-progress-label">Total Keys</span>
+    <div style="margin-top:28px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h3 class="duo-section-title" style="margin:0">${k2rIcon('starGold', 22)} This Week</h3>
+        <span style="color:#AFAFAF;font-size:0.75rem;font-weight:700">Resets Monday</span>
+      </div>
+      <div class="duo-weekly-rows">
+        <div class="duo-weekly-row">
+          ${k2rIcon('key', 20)}
+          <span class="duo-weekly-label">Keys</span>
+          <div class="duo-progress" style="flex:1"><div class="duo-progress-fill" style="width:${Math.min(100, (w.keysThisWeek / 50) * 100)}%"></div></div>
+          <span class="duo-weekly-count">${w.keysThisWeek}</span>
         </div>
-        <div class="total-progress-card">
-          <span class="total-progress-value">${s.quizzes}</span>
-          <span class="total-progress-label">Total Quizzes</span>
+        <div class="duo-weekly-row">
+          ${k2rIcon('paper', 20)}
+          <span class="duo-weekly-label">Chapters</span>
+          <div class="duo-progress" style="flex:1"><div class="duo-progress-fill" style="width:${Math.min(100, (w.quizzesThisWeek / 3) * 100)}%"></div></div>
+          <span class="duo-weekly-count">${w.quizzesThisWeek}</span>
         </div>
-        <div class="total-progress-card">
-          <span class="total-progress-value">${totalBooksCompleted}</span>
-          <span class="total-progress-label">Total Books</span>
+        <div class="duo-weekly-row">
+          ${k2rIcon('bookBlue', 20)}
+          <span class="duo-weekly-label">Books</span>
+          <div class="duo-progress" style="flex:1"><div class="duo-progress-fill" style="width:${Math.min(100, w.booksCompletedThisWeek * 100)}%"></div></div>
+          <span class="duo-weekly-count">${w.booksCompletedThisWeek}</span>
         </div>
       </div>
     </div>
 
     ${!hasQuizzes ? `
-    <div class="empty-state" style="margin-top:24px">
-      <div class="empty-state-icon" style="font-size:2rem">📊</div>
-      <h2>No Progress Yet</h2>
-      <p>Complete your first quiz to start tracking your reading progress!</p>
-      <button class="btn btn-primary" onclick="navigate('library')">Browse Books</button>
+    <div style="text-align:center;padding:48px 20px;margin-top:24px">
+      <div style="margin-bottom:16px">${k2rIcon('key', 64)}</div>
+      <div style="font-weight:800;font-size:1.25rem;color:#4B4B4B;margin-bottom:8px">Start reading to collect keys!</div>
+      <div style="color:#AFAFAF;font-size:0.9375rem;margin-bottom:20px">Answer questions about books to earn keys and open doors.</div>
+      <button class="duo-btn" onclick="navigate('library')">Find a Book</button>
     </div>` : ''}
   `;
 }
 
 function renderStudentBadges() {
-  let s = {
-    id: currentUser?.studentId || 0,
-    name: currentUser?.name || 'Student',
-    level: currentUser?.reading_level || '3.0',
-    score: currentUser?.reading_score || 500,
-    keys: currentUser?.keys_earned || 0,
-    quizzes: currentUser?.quizzes_completed || 0,
-    accuracy: currentUser?.accuracy || 0,
-    streak: currentUser?.streak_days || 0,
-    interests: null
-  };
-  const badges = [
-    { icon: '🔥', name: 'Reading Streak',    desc: `${s.streak} day streak!`, earned: s.streak >= 3, color: 'orange' },
-    { icon: '⭐', name: 'Quiz Champion',     desc: 'Complete 10 quizzes',     earned: s.quizzes >= 10, color: 'gold' },
-    { icon: '🎯', name: 'Sharp Shooter',     desc: '90%+ accuracy',           earned: s.accuracy >= 90, color: 'green' },
-    { icon: '📚', name: 'Bookworm',          desc: 'Read 5 books',            earned: s.quizzes >= 15, color: 'blue' },
-    { icon: '🔑', name: 'Key Collector',      desc: 'Earn 500 keys',           earned: s.keys >= 500, color: 'purple' },
-    { icon: '📈', name: 'Level Up',           desc: 'Improve reading level',   earned: true, color: 'blue' },
-    { icon: '❤️', name: 'Personalized',       desc: 'Set up your profile',     earned: !!(s.interests && s.interests.onboarded), color: 'red' },
-    { icon: '✅', name: 'Perfect Score',      desc: 'Get 100% on a quiz',      earned: s.accuracy >= 95, color: 'green' },
+  let s = { id: currentUser?.studentId || 0, keys: currentUser?.keys_earned || 0, quizzes: currentUser?.quizzes_completed || 0, accuracy: currentUser?.accuracy || 0, onboarded: currentUser?.onboarded || 0 };
+  const totalBooksCompleted = currentUser?.totalBooksCompleted || 0;
+
+  const trophies = [
+    { iconE: 'paper',     iconL: 'lock', name: 'First Chapter',   desc: 'Read your first chapter',   earned: s.quizzes >= 1,  hint: 'Read 1 chapter to unlock!', group: 'Reading' },
+    { iconE: 'bookBlue',  iconL: 'lock', name: 'Bookworm',        desc: 'Finish 3 books',            earned: totalBooksCompleted >= 3, hint: `${Math.max(0, 3 - totalBooksCompleted)} more books!`, group: 'Reading' },
+    { iconE: 'starTeal',  iconL: 'lock', name: 'Super Reader',    desc: 'Read 10 chapters',          earned: s.quizzes >= 10, hint: `${Math.max(0, 10 - s.quizzes)} more chapters!`, group: 'Reading' },
+    { iconE: 'starOrange',iconL: 'lock', name: 'Reading Royalty',  desc: 'Read 25 chapters',          earned: s.quizzes >= 25, hint: `${Math.max(0, 25 - s.quizzes)} more chapters!`, group: 'Reading' },
+    { iconE: 'bookRed',   iconL: 'lock', name: 'Library Hero',    desc: 'Finish 10 books',           earned: totalBooksCompleted >= 10, hint: `${Math.max(0, 10 - totalBooksCompleted)} more books!`, group: 'Reading' },
+    { iconE: 'key',       iconL: 'lock', name: 'Key Finder',      desc: 'Collect 100 keys',          earned: s.keys >= 100,  hint: `${Math.max(0, 100 - s.keys)} more keys!`, group: 'Keys' },
+    { iconE: 'key',       iconL: 'lock', name: 'Key Collector',   desc: 'Collect 500 keys',          earned: s.keys >= 500,  hint: `${Math.max(0, 500 - s.keys)} more keys!`, group: 'Keys' },
+    { iconE: 'key',       iconL: 'lock', name: 'Treasure Chest',  desc: 'Collect 2000 keys',         earned: s.keys >= 2000, hint: `${Math.max(0, 2000 - s.keys)} more keys!`, group: 'Keys' },
+    { iconE: 'starTeal',  iconL: 'lock', name: 'Bullseye',        desc: 'Get 80% right answers',     earned: s.accuracy >= 80 && s.quizzes > 0, hint: 'Get 80% right!', group: 'Accuracy' },
+    { iconE: 'starGold',  iconL: 'lock', name: 'Sharpshooter',    desc: 'Get 90% right answers',     earned: s.accuracy >= 90 && s.quizzes > 0, hint: 'Get 90% right!', group: 'Accuracy' },
+    { iconE: 'starOrange',iconL: 'lock', name: 'Perfect',         desc: 'Get 100% on a chapter',     earned: s.accuracy >= 95 && s.quizzes > 0, hint: 'Get every question right!', group: 'Accuracy' },
+    { iconE: 'starGold',  iconL: 'lock', name: 'My Profile',      desc: 'Set up your profile',       earned: !!s.onboarded, hint: 'Set up your profile!', group: 'Special' },
   ];
 
+  const earnedCount = trophies.filter(t => t.earned).length;
+  const groups = ['Reading', 'Keys', 'Accuracy', 'Special'];
+  const groupIcons = { Reading: 'bookBlue', Keys: 'key', Accuracy: 'starTeal', Special: 'starGold' };
+
   return `
-    <div class="page-header"><h1>My Badges</h1></div>
-    <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:16px;margin-top:8px">
-      ${badges.map(b => `
-        <div class="stat-card" style="text-align:center;padding:24px 16px;${b.earned ? '' : 'opacity:0.4;filter:grayscale(1)'}">
-          <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:50%;background:var(--${b.color}-p, var(--g100));display:flex;align-items:center;justify-content:center;color:var(--${b.color}, var(--g500))">${b.icon}</div>
-          <div style="font-weight:700;color:var(--navy);margin-bottom:4px">${b.name}</div>
-          <div style="font-size:0.75rem;color:var(--g500)">${b.desc}</div>
-          ${b.earned ? '<div style="margin-top:8px;font-size:0.7rem;font-weight:700;color:var(--green)">EARNED</div>' : '<div style="margin-top:8px;font-size:0.7rem;font-weight:600;color:var(--g400)">LOCKED</div>'}
+    ${renderDuoStatsBar()}
+    <div class="page-header" style="margin-bottom:8px"><h1 style="font-weight:800;color:#4B4B4B">${k2rIcon('starGold', 28)} Trophies</h1></div>
+    <div style="font-weight:700;color:#AFAFAF;font-size:0.9375rem;margin-bottom:24px">${earnedCount} of ${trophies.length} unlocked!</div>
+
+    ${groups.map(group => {
+      const groupTrophies = trophies.filter(t => t.group === group);
+      return `
+      <div style="margin-bottom:28px">
+        <h3 class="duo-section-title">${k2rIcon(groupIcons[group], 22)} ${group}</h3>
+        <div class="duo-trophy-grid">
+          ${groupTrophies.map(t => `
+            <div class="duo-trophy${t.earned ? ' duo-trophy-earned' : ' duo-trophy-locked'}">
+              <div class="duo-trophy-icon">${t.earned ? k2rIcon(t.iconE, 48) : k2rIcon(t.iconL, 48)}</div>
+              <div class="duo-trophy-name">${t.name}</div>
+              <div class="duo-trophy-desc">${t.earned ? t.desc : t.hint}</div>
+              ${t.earned ? '<div class="duo-trophy-badge">Unlocked!</div>' : '<div class="duo-trophy-lock-text">Keep going!</div>'}
+            </div>
+          `).join('')}
         </div>
-      `).join('')}
-    </div>
+      </div>`;
+    }).join('')}
   `;
 }
 
