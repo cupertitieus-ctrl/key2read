@@ -44,7 +44,7 @@ const BOOK_PAGES = {
     { chapter: 8, start: 81, end: 96 },
     { chapter: 9, start: 97, end: 109 },
   ],
-  'Diary of a Famous Cat: Book 1': [
+  'Diary of a Famous Cat: Now I Have A Name': [
     { chapter: 1, start: 5, end: 10 },
     { chapter: 2, start: 11, end: 16 },
     { chapter: 3, start: 17, end: 23 },
@@ -59,7 +59,7 @@ const BOOK_PAGES = {
     { chapter: 12, start: 75, end: 79 },
     { chapter: 13, start: 80, end: 101 },
   ],
-  'Diary of a Famous Cat: Book 2': [
+  'Diary of a Famous Cat: Lost And Found': [
     { chapter: 1, start: 5, end: 11 },
     { chapter: 2, start: 12, end: 18 },
     { chapter: 3, start: 19, end: 27 },
@@ -73,7 +73,7 @@ const BOOK_PAGES = {
     { chapter: 11, start: 75, end: 83 },
     { chapter: 12, start: 84, end: 103 },
   ],
-  'Dragon Diaries: Book 1': [
+  'Dragon Diaries': [
     { chapter: 1, start: 3, end: 11 },
     { chapter: 2, start: 12, end: 18 },
     { chapter: 3, start: 19, end: 23 },
@@ -92,7 +92,7 @@ const BOOK_PAGES = {
     { chapter: 16, start: 86, end: 89 },
     { chapter: 17, start: 90, end: 109 },
   ],
-  'Dragon Diaries: Book 2': [
+  'Dragon Diaries: BIG Time': [
     { chapter: 1, start: 5, end: 9 },
     { chapter: 2, start: 10, end: 27 },
     { chapter: 3, start: 28, end: 34 },
@@ -105,7 +105,7 @@ const BOOK_PAGES = {
     { chapter: 10, start: 81, end: 87 },
     { chapter: 11, start: 88, end: 103 },
   ],
-  'Turtle Life': [
+  'The Life of a Sparkly Turtle: The Big Sneeze': [
     { chapter: 1, start: 5, end: 12 },
     { chapter: 2, start: 13, end: 18 },
     { chapter: 3, start: 19, end: 25 },
@@ -122,7 +122,7 @@ const BOOK_PAGES = {
     { chapter: 14, start: 99, end: 105 },
     { chapter: 15, start: 106, end: 120 },
   ],
-  'Tryouts': [
+  'Tryouts: Tall Doesn\'t Mean Talent': [
     { chapter: 1, start: 6, end: 12 },
     { chapter: 2, start: 13, end: 19 },
     { chapter: 3, start: 20, end: 28 },
@@ -136,7 +136,7 @@ const BOOK_PAGES = {
     { chapter: 11, start: 95, end: 105 },
     { chapter: 12, start: 106, end: 119 },
   ],
-  'Nancho the Nacho Hamster': [
+  "Don't Trust the Nacho Hamster": [
     { chapter: 1, start: 6, end: 13 },
     { chapter: 2, start: 14, end: 17 },
     { chapter: 3, start: 18, end: 23 },
@@ -151,7 +151,7 @@ const BOOK_PAGES = {
     { chapter: 12, start: 90, end: 95 },
     { chapter: 13, start: 96, end: 104 },
   ],
-  'Sprinkles and the Unicorn': [
+  'Sprinkles and Unicorn: Surprise Visit': [
     { chapter: 1, start: 6, end: 26 },
     { chapter: 2, start: 27, end: 41 },
     { chapter: 3, start: 42, end: 54 },
