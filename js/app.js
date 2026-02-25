@@ -3346,7 +3346,7 @@ function getOnboardingBodyHtml(s) {
       <div class="onboarding-welcome">
         <div style="margin:0 auto 20px">${avatar(s, 'lg')}</div>
         <h2 style="text-align:center;margin-bottom:8px">Welcome, ${s.name.split(' ')[0]}!</h2>
-        <p style="text-align:center;color:var(--g500);margin-bottom:24px">We'd love to learn about you! Answer a few fun questions so your teacher can get to know you better.</p>
+        <p style="text-align:center;color:var(--g500);margin-bottom:24px">We'd love to learn about you! Answer a few fun questions so we can make your reading experience awesome.</p>
         <div style="text-align:center">
           <button class="btn btn-primary" onclick="nextOnboardingStep()">Let's Go!</button>
         </div>
