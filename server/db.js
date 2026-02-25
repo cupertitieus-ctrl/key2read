@@ -1463,8 +1463,18 @@ async function updateStudentAnalytics(studentId) {
       else if (thisWeekAvg < lastWeekAvg - 5) scoreTrend = 'down';
     }
 
-    // Write precomputed analytics to the students table
-    const { error } = await supabase.from('students').update({
+    // Also compute the composite reading score (same as getStudentPerformance)
+    // so the student list and profile always show the same score
+    let compositeScore = null;
+    try {
+      const perf = await getStudentPerformance(studentId);
+      compositeScore = perf.readingScore;
+    } catch(e2) {
+      console.warn('Could not compute composite score:', e2.message);
+    }
+
+    // Write precomputed analytics + synced score to the students table
+    const updateData = {
       comprehension_label: comprehension,
       comprehension_pct: compPct,
       reasoning_label: reasoning,
@@ -1474,7 +1484,11 @@ async function updateStudentAnalytics(studentId) {
       persistence_label: persistence,
       score_trend: scoreTrend,
       analytics_updated_at: new Date().toISOString()
-    }).eq('id', studentId);
+    };
+    if (compositeScore !== null) {
+      updateData.reading_score = compositeScore;
+    }
+    const { error } = await supabase.from('students').update(updateData).eq('id', studentId);
 
     if (error) {
       // Columns might not exist yet — silently ignore

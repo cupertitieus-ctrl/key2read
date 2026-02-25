@@ -935,9 +935,6 @@ function renderStudents() {
     return `
       <div class="page-header">
         <h1>Students <span class="badge badge-blue">0</span></h1>
-        <div class="page-header-actions">
-          <button class="btn btn-outline btn-sm" onclick="refreshStudentList()">&#8635; Refresh</button>
-        </div>
       </div>
       <div class="empty-state">
         <div class="empty-state-icon">${IC.users}</div>
@@ -952,9 +949,6 @@ function renderStudents() {
   return `
     <div class="page-header">
       <h1>Students <span class="badge badge-blue">${students.length}</span></h1>
-      <div class="page-header-actions">
-        <button class="btn btn-outline btn-sm" onclick="refreshStudentList()">&#8635; Refresh</button>
-      </div>
     </div>
 
     <div class="data-table-wrap">
@@ -2879,12 +2873,14 @@ function renderTeacherSettings() {
           // Update local currentUser
           if (data.user) {
             currentUser.name = data.user.name || currentUser.name;
-            currentUser.grade = data.user.grade || currentUser.grade;
+            if (data.user.grade) currentUser.grade = data.user.grade;
           }
+          msg.textContent = '✅ Saved!';
           msg.style.display = 'inline';
-          setTimeout(() => msg.style.display = 'none', 3000);
-          renderSidebar(); // Update sidebar with new name
+          setTimeout(() => msg.style.display = 'none', 4000);
+          renderSidebar();
           renderHeader();
+          renderMain();
         } else {
           alert(data.error || 'Failed to save settings.');
         }

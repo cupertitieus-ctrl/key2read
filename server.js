@@ -333,6 +333,9 @@ app.put('/api/auth/settings', async (req, res) => {
       req.session.user.grade = grade;
     }
 
+    // Explicitly save session to ensure persistence
+    await new Promise((resolve, reject) => req.session.save(err => err ? reject(err) : resolve()));
+
     res.json({ success: true, user: req.session.user });
   } catch (e) {
     console.error('Settings update error:', e);
@@ -749,13 +752,21 @@ app.post('/api/quiz/submit', async (req, res) => {
     vocabLookups: vocabLookups || []
   });
 
-  // Precompute and store analytics summary for this student (non-blocking)
-  db.updateStudentAnalytics(studentId).catch(e => console.error('Analytics update error:', e));
+  // Precompute analytics and sync composite reading score
+  try {
+    await db.updateStudentAnalytics(studentId);
+  } catch(e) {
+    console.error('Analytics update error:', e);
+  }
+
+  // Read back the synced composite score
+  const updatedStudent = await db.getStudent(studentId);
+  const syncedScore = updatedStudent?.reading_score || newScore;
 
   res.json({
     score, correctCount, totalQuestions: questions.length,
-    readingLevelChange: levelChange, newReadingScore: newScore,
-    newReadingLevel: (newScore / 160).toFixed(1),
+    readingLevelChange: levelChange, newReadingScore: syncedScore,
+    newReadingLevel: (syncedScore / 160).toFixed(1),
     keysEarned, results, strategiesUsed
   });
 });
