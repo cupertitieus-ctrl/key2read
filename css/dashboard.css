@@ -477,6 +477,8 @@
   color: var(--g900);
   margin: 0;
   letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
 }
 
 .weekly-wins-reset {
@@ -494,7 +496,7 @@
 .weekly-win-card {
   background: #fff;
   border-radius: var(--radius-lg, 16px);
-  padding: 24px 20px;
+  padding: 12px 10px;
   text-align: center;
   border: 2px solid var(--g200);
   animation: slideUp 0.5s var(--ease-out) both;
@@ -519,6 +521,17 @@
   font-size: 2rem;
   margin-bottom: 8px;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.weekly-win-emoji img {
+  width: 48px;
+  height: 48px;
+}
+.weekly-win-keys .weekly-win-emoji img {
+  width: 56px !important;
+  height: 56px !important;
 }
 
 .weekly-win-value {
@@ -1205,11 +1218,11 @@
 .back-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
+  gap: 6px;
+  padding: 6px 12px;
   border-radius: var(--radius-sm);
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 0.875rem;
+  font-weight: 500;
   color: var(--g500);
   cursor: pointer;
   transition: all 0.2s;
@@ -1224,8 +1237,8 @@
 }
 
 .back-btn svg {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
 }
 
 /* --- Detail Header Card --- */
@@ -3174,8 +3187,8 @@
 /* ─── STORE SNEAK PEEK (Student Dashboard) ─── */
 .store-peek-section {
   margin-top: 24px;
-  background: linear-gradient(135deg, #fffbeb, #fef3c7);
-  border: 1.5px solid #fde68a;
+  background: #fff;
+  border: 2px solid #0D9488;
   border-radius: var(--radius-lg);
   padding: 20px;
   cursor: pointer;
@@ -3183,7 +3196,7 @@
 }
 .store-peek-section:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(245,158,11,0.15);
+  box-shadow: 0 4px 16px rgba(13,148,136,0.2);
 }
 .store-peek-header {
   display: flex;
@@ -3192,9 +3205,9 @@
   margin-bottom: 14px;
 }
 .store-peek-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #92400e;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #0D9488;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -3202,7 +3215,7 @@
 .store-peek-link {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #d97706;
+  color: #0D9488;
 }
 .store-peek-grid {
   display: grid;
@@ -3210,8 +3223,8 @@
   gap: 12px;
 }
 .store-peek-item {
-  background: #fff;
-  border: 1.5px solid #fde68a;
+  background: #f9fafb;
+  border: 1.5px solid #e5e7eb;
   border-radius: var(--radius-md);
   padding: 12px 8px;
   text-align: center;
@@ -3229,10 +3242,10 @@
   line-height: 1;
 }
 .store-peek-item-img {
-  width: 48px;
-  height: 48px;
+  width: 72px;
+  height: 72px;
   object-fit: cover;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
 }
 .store-peek-item-name {
   font-size: 0.75rem;
@@ -4006,141 +4019,4 @@
   .overview-score-number {
     font-size: 2.25rem;
   }
-}
-
-/* ============================================================
-   DUOLINGO-STYLE STUDENT DASHBOARD
-   ============================================================ */
-
-.k2r-icon { vertical-align: middle; display: inline-block; }
-
-/* --- Stats Bar --- */
-.duo-stats-bar { display:flex; align-items:center; justify-content:center; gap:28px; padding:10px 20px; background:#fff; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:20px; border-bottom:3px solid #E5E5E5; }
-.duo-stat { display:flex; align-items:center; gap:6px; cursor:pointer; transition:transform 0.15s; }
-.duo-stat:hover { transform:scale(1.08); }
-.duo-stat-value { font-weight:800; font-size:1.05rem; color:#4B4B4B; }
-
-/* --- Welcome Banner --- */
-.duo-welcome { background:linear-gradient(135deg, #FF9600, #E58600); color:white; border-radius:16px; padding:24px 28px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; border-bottom:4px solid #CC7800; }
-.duo-welcome h1 { font-size:1.5rem; font-weight:800; margin:0 0 4px; }
-.duo-welcome p { font-size:0.9375rem; margin:0; opacity:0.9; }
-.duo-welcome-keys { font-size:1.75rem; font-weight:800; background:rgba(255,255,255,0.25); border-radius:12px; padding:10px 18px; white-space:nowrap; display:flex; align-items:center; gap:8px; }
-.duo-welcome-keys span { font-size:1.5rem; }
-
-/* --- Onboard CTA --- */
-.duo-onboard-cta { display:flex; align-items:center; gap:16px; background:#fff; border-radius:16px; padding:16px 20px; margin-bottom:20px; border-left:5px solid #FF9600; border-bottom:4px solid #E5E5E5; }
-.duo-onboard-text { flex:1; }
-.duo-onboard-text strong { display:block; font-weight:800; color:#4B4B4B; margin-bottom:2px; }
-.duo-onboard-text span { font-size:0.875rem; color:#AFAFAF; }
-
-/* --- Treasure Row --- */
-.duo-treasure-row { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
-.duo-treasure-card { background:#fff; border-radius:16px; padding:20px 12px; text-align:center; cursor:pointer; transition:transform 0.15s; border-bottom:4px solid #E5E5E5; display:flex; flex-direction:column; align-items:center; gap:4px; }
-.duo-treasure-card:hover { transform:translateY(-3px); }
-.duo-treasure-keys { border-bottom-color:#E5B400; }
-.duo-treasure-books { border-bottom-color:#0D9488; }
-.duo-treasure-chapters { border-bottom-color:#E58600; }
-.duo-treasure-value { font-size:1.75rem; font-weight:800; color:#4B4B4B; }
-.duo-treasure-label { font-size:0.75rem; font-weight:700; color:#AFAFAF; text-transform:uppercase; letter-spacing:0.5px; }
-
-/* --- Doors to Open --- */
-.duo-doors { background:#fff; border-radius:16px; padding:20px; margin-bottom:20px; box-shadow:0 2px 8px rgba(0,0,0,0.06); border-bottom:4px solid #E5E5E5; }
-.duo-doors-header { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
-.duo-doors-title { font-size:1.1rem; font-weight:800; color:#4B4B4B; flex:1; }
-.duo-doors-count { font-size:0.8125rem; font-weight:700; color:#AFAFAF; }
-.duo-door-item { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #F0F0F0; }
-.duo-door-item:last-child { border-bottom:none; }
-.duo-door-icon { flex-shrink:0; display:flex; align-items:center; }
-.duo-door-info { flex:1; }
-.duo-door-name { font-weight:700; font-size:0.9375rem; color:#4B4B4B; display:block; margin-bottom:6px; }
-.duo-door-bar { height:12px; background:#E5E5E5; border-radius:6px; overflow:hidden; }
-.duo-door-fill { height:100%; background:linear-gradient(90deg, #0D9488, #14B8A6); border-radius:6px; transition:width 0.5s ease; }
-.duo-door-done .duo-door-fill { background:linear-gradient(90deg, #FF9600, #FFC800); }
-.duo-door-done .duo-door-name { text-decoration:line-through; color:#AFAFAF; }
-.duo-door-count { font-weight:700; font-size:0.875rem; color:#4B4B4B; min-width:48px; text-align:right; }
-.duo-door-done .duo-door-count { color:#0D9488; }
-
-/* --- Duo Card (generic stat) --- */
-.duo-card { background:#fff; border-radius:16px; padding:20px; text-align:center; border-bottom:4px solid #E5E5E5; transition:transform 0.15s; }
-.duo-card:hover { transform:translateY(-2px); }
-.duo-card-value { font-size:2rem; font-weight:800; color:#4B4B4B; margin-top:4px; }
-.duo-card-label { font-size:0.8125rem; font-weight:700; color:#AFAFAF; text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
-.duo-card.teal { border-bottom-color:#0D9488; }
-.duo-card.gold { border-bottom-color:#E5B400; }
-.duo-card.blue { border-bottom-color:#1899D6; }
-.duo-card.orange { border-bottom-color:#E58600; }
-.duo-card-row { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-bottom:20px; }
-.duo-power-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-top:20px; }
-
-/* --- Section Title --- */
-.duo-section-title { font-size:1.1rem; font-weight:800; color:#4B4B4B; margin:0 0 16px; display:flex; align-items:center; gap:6px; }
-
-/* --- Book Quest Cards --- */
-.duo-book-quest-list { display:flex; flex-direction:column; gap:12px; }
-.duo-book-quest { display:flex; background:#fff; border-radius:16px; padding:16px; gap:16px; border-bottom:4px solid #E5E5E5; cursor:pointer; transition:transform 0.15s; align-items:center; }
-.duo-book-quest:hover { transform:translateY(-2px); }
-.duo-book-quest-cover { width:60px; height:80px; border-radius:8px; overflow:hidden; flex-shrink:0; position:relative; }
-.duo-book-quest-cover img { width:100%; height:100%; object-fit:cover; }
-.duo-book-quest-info { flex:1; }
-.duo-book-quest-title { font-weight:800; font-size:0.9375rem; color:#4B4B4B; margin-bottom:4px; }
-.duo-book-quest-status { font-size:0.8125rem; font-weight:600; color:#AFAFAF; margin-bottom:8px; }
-
-/* --- Progress Bar --- */
-.duo-progress { height:12px; background:#E5E5E5; border-radius:6px; overflow:hidden; }
-.duo-progress-fill { height:100%; background:linear-gradient(90deg, #0D9488, #14B8A6); border-radius:6px; transition:width 0.5s ease; }
-
-/* --- Duo Button (3D raised, orange) --- */
-.duo-btn { background:#FF9600; color:white; border:none; border-radius:12px; padding:12px 24px; font-weight:800; font-size:1rem; cursor:pointer; border-bottom:4px solid #CC7800; text-transform:uppercase; letter-spacing:0.5px; transition:filter 0.15s, transform 0.1s; font-family:inherit; }
-.duo-btn:hover { filter:brightness(1.05); }
-.duo-btn:active { border-bottom-width:2px; transform:translateY(2px); }
-
-/* --- Score Hero Card --- */
-.duo-score-hero { background:linear-gradient(135deg, #0D9488, #14B8A6); color:white; border-radius:16px; padding:32px 28px; text-align:center; margin-bottom:20px; border-bottom:4px solid #0A7B70; }
-.duo-score-value { font-size:3rem; font-weight:800; margin-top:8px; }
-.duo-score-label { font-size:1rem; font-weight:700; opacity:0.9; margin-top:4px; }
-.duo-score-encourage { font-size:0.9375rem; margin-top:12px; opacity:0.85; }
-
-/* --- Weekly Rows --- */
-.duo-weekly-rows { background:#fff; border-radius:16px; padding:16px 20px; border-bottom:4px solid #E5E5E5; }
-.duo-weekly-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #F0F0F0; }
-.duo-weekly-row:last-child { border-bottom:none; }
-.duo-weekly-label { font-weight:700; font-size:0.875rem; color:#4B4B4B; min-width:70px; }
-.duo-weekly-count { font-weight:800; font-size:0.9375rem; color:#4B4B4B; min-width:28px; text-align:right; }
-
-/* --- Trophy Grid --- */
-.duo-trophy-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
-.duo-trophy { background:#fff; border-radius:16px; padding:24px 16px; text-align:center; border-bottom:4px solid #E5E5E5; transition:transform 0.15s; }
-.duo-trophy:hover { transform:translateY(-2px); }
-.duo-trophy-earned { border-bottom-color:#0D9488; }
-.duo-trophy-locked { opacity:0.45; filter:grayscale(0.6); }
-.duo-trophy-icon { margin-bottom:8px; }
-.duo-trophy-name { font-weight:800; font-size:0.9375rem; color:#4B4B4B; margin-bottom:4px; }
-.duo-trophy-desc { font-size:0.75rem; color:#AFAFAF; }
-.duo-trophy-badge { font-size:0.7rem; font-weight:800; color:#0D9488; margin-top:8px; text-transform:uppercase; }
-.duo-trophy-lock-text { font-size:0.7rem; font-weight:700; color:#AFAFAF; margin-top:8px; }
-
-/* --- Responsive --- */
-@media (max-width:768px) {
-  .duo-treasure-row { gap:10px; }
-  .duo-treasure-card { padding:14px 8px; }
-  .duo-power-grid, .duo-card-row { gap:10px; }
-  .duo-trophy-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
-  .duo-stats-bar { gap:16px; padding:8px 14px; }
-  .duo-welcome { flex-direction:column; text-align:center; gap:12px; padding:20px; }
-  .duo-score-hero { padding:24px 20px; }
-  .duo-score-value { font-size:2.5rem; }
-}
-@media (max-width:480px) {
-  .duo-treasure-card { padding:12px 6px; border-radius:12px; }
-  .duo-treasure-value { font-size:1.25rem; }
-  .duo-treasure-label { font-size:0.625rem; }
-  .duo-card-value { font-size:1.5rem; }
-  .duo-card { padding:14px 10px; border-radius:12px; }
-  .duo-trophy-grid { grid-template-columns:repeat(2,1fr); gap:8px; }
-  .duo-trophy { padding:16px 10px; border-radius:12px; }
-  .duo-welcome h1 { font-size:1.25rem; }
-  .duo-welcome-keys { font-size:1.25rem; padding:8px 14px; }
-  .duo-book-quest { padding:12px; gap:12px; border-radius:12px; }
-  .duo-book-quest-cover { width:48px; height:64px; }
-  .duo-score-value { font-size:2rem; }
 }
