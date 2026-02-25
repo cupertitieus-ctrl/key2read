@@ -108,6 +108,8 @@ CREATE TABLE chapters (
   title TEXT,
   summary TEXT,
   key_vocabulary JSONB DEFAULT '[]'::jsonb,
+  page_start INTEGER DEFAULT NULL,
+  page_end INTEGER DEFAULT NULL,
   UNIQUE(book_id, chapter_number)
 );
 

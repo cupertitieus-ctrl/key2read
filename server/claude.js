@@ -173,15 +173,24 @@ HARD RULES — Never include:
 ✗ Definitions harder than the target word`;
 
 // Generate quiz questions for a book chapter using the Universal Framework
-async function generateChapterQuiz(bookTitle, bookAuthor, chapterNumber, chapterTitle, chapterSummary, gradeLevel, questionCount = 5) {
+async function generateChapterQuiz(bookTitle, bookAuthor, chapterNumber, chapterTitle, chapterSummary, gradeLevel, questionCount = 5, pageStart = null, pageEnd = null) {
   if (!isConfigured()) return fallbackQuiz(chapterTitle, questionCount);
   const c = getClient();
   const categories = questionCount === 7 ? SEVEN_QUESTION_CATEGORIES : FIVE_QUESTION_CATEGORIES;
   const maxTokens = questionCount === 7 ? 5500 : 4000;
 
+  // Build page range instruction
+  const hasPages = pageStart && pageEnd;
+  const pageInfo = hasPages
+    ? `\nThis chapter spans pages ${pageStart} to ${pageEnd} in the physical book.`
+    : '';
+  const pageTip = hasPages
+    ? `• strategy_tip: Must reference a REAL page number from this chapter (pages ${pageStart}-${pageEnd}) AND a specific moment. Format: "Go back to page [number] and reread the part where [specific detail]..." or "Look at page [number] where [character] does [action]..." ALWAYS include a real page number between ${pageStart} and ${pageEnd}. Early chapter events happen closer to page ${pageStart}, later events closer to page ${pageEnd}. Do NOT use generic hints like "Reread this chapter" or "Think about the story." Do NOT make up page numbers outside the range ${pageStart}-${pageEnd}.`
+    : `• strategy_tip: Must reference a specific moment from the chapter with as much detail as possible. Format: "Go back and reread the part where [specific detail]..." or "Think about the part where [character] does [action]..." Be as specific as possible about which moment in the chapter to revisit.`;
+
   const prompt = `You are creating a reading comprehension quiz for children ages 6-8 (${gradeLevel || '2nd-3rd'} grade) about "${bookTitle}" by ${bookAuthor}.
 Chapter ${chapterNumber}: "${chapterTitle}"
-Chapter summary: ${chapterSummary}
+Chapter summary: ${chapterSummary}${pageInfo}
 
 ═══ CORE MISSION ═══
 Create quiz questions that: measure comprehension accurately, build vocabulary intentionally, develop critical thinking, strengthen problem-solving skills, and teach reasoning (not guessing). Every question must serve a learning purpose — no filler.
@@ -197,7 +206,7 @@ ${BEST_ANSWER_RULES}
 ${QUALITY_GATE}
 
 ═══ ADDITIONAL RULES ═══
-• strategy_tip: Must reference a SPECIFIC page number AND a specific moment from the chapter. Format: "Go back to page [number] and reread the part where [specific detail]..." or "Look at page [number] where [character] does [action]..." or "On page [number], pay attention to [specific event]..." ALWAYS include a page number. Do NOT use generic hints like "Reread this chapter" or "Think about the story." The page number should correspond to where in the chapter this event occurs (estimate based on chapter position: early events = lower page numbers starting from the chapter's first page, later events = higher page numbers).
+${pageTip}
 • explanation: 2-3 sentences, friendly and encouraging tone. For the BEST answer question, also explain why the other options are weaker.
 • passage_excerpt: A short relevant quote from the chapter (1-2 sentences). May be empty if the question is about the whole chapter.
 • vocabulary_words: Array of 0-3 Tier 2/3 words from the answer choices. At least 2 out of ${questionCount} questions MUST have vocabulary_words.

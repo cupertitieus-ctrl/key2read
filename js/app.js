@@ -3785,7 +3785,7 @@ async function showKeysBreakdown() {
   try {
     const results = await API.getQuizResults(currentUser.studentId);
     const withKeys = results.filter(r => r.keys_earned > 0);
-    const totalKeys = currentUser?.keys_earned || 0;
+    const totalKeys = withKeys.reduce((sum, r) => sum + (r.keys_earned || 0), 0);
 
     // Group by book
     const byBook = {};

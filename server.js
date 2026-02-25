@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcrypt');
 const db = require('./server/db');
 const claude = require('./server/claude');
+const { getChapterPages } = require('./server/book-pages');
 
 const app = express();
 const PORT = process.env.PORT || 3456;
@@ -569,7 +570,8 @@ app.get('/api/books/:bookId/chapters/:num/quiz', async (req, res) => {
   const book = await db.getBookById(bookId);
   const allChapters = await db.getBookChapters(bookId);
   const questionCount = allChapters.length <= 9 ? 7 : 5;
-  const generated = await claude.generateChapterQuiz(book.title, book.author, chapterNum, chapter.title, chapter.summary, book.grade_level, questionCount);
+  const pages = getChapterPages(book.title, chapterNum);
+  const generated = await claude.generateChapterQuiz(book.title, book.author, chapterNum, chapter.title, chapter.summary, book.grade_level, questionCount, pages?.start || null, pages?.end || null);
 
   // Save generated questions to DB
   for (const q of generated.questions) {
@@ -594,6 +596,53 @@ app.get('/api/books/:bookId/chapters/:num/quiz', async (req, res) => {
     vocabulary_words: typeof q.vocabulary_words === 'string' ? JSON.parse(q.vocabulary_words) : (q.vocabulary_words || [])
   }));
   res.json({ chapter, questions });
+});
+
+// ─── Regenerate Quiz (delete cached questions to force regeneration with page numbers) ───
+app.post('/api/books/:bookId/chapters/:num/regenerate-quiz', async (req, res) => {
+  const bookId = parseInt(req.params.bookId);
+  const chapterNum = parseInt(req.params.num);
+  const chapter = await db.getChapterByBookAndNum(bookId, chapterNum);
+  if (!chapter) return res.status(404).json({ error: 'Chapter not found' });
+
+  // Delete existing quiz questions for this chapter
+  const { error } = await db.supabase
+    .from('quiz_questions')
+    .delete()
+    .eq('chapter_id', chapter.id);
+  if (error) return res.status(500).json({ error: error.message });
+
+  // Generate fresh quiz with real page numbers
+  const book = await db.getBookById(bookId);
+  const pages = getChapterPages(book.title, chapterNum);
+  console.log(`🔄 Regenerating quiz for book ${bookId}, chapter ${chapterNum} (pages ${pages?.start || '?'}-${pages?.end || '?'})`);
+
+  const allChapters = await db.getBookChapters(bookId);
+  const questionCount = allChapters.length <= 9 ? 7 : 5;
+  const generated = await claude.generateChapterQuiz(book.title, book.author, chapterNum, chapter.title, chapter.summary, book.grade_level, questionCount, pages?.start || null, pages?.end || null);
+
+  for (const q of generated.questions) {
+    await db.insertQuizQuestion({
+      chapter_id: chapter.id,
+      question_number: q.question_number,
+      question_type: q.question_type,
+      question_text: q.question_text,
+      passage_excerpt: q.passage_excerpt || '',
+      options: q.options,
+      correct_answer: q.correct_answer,
+      strategy_type: q.strategy_type,
+      strategy_tip: q.strategy_tip,
+      explanation: q.explanation,
+      vocabulary_words: q.vocabulary_words || []
+    });
+  }
+
+  let questions = (await db.getChapterQuiz(chapter.id)).map(q => ({
+    ...q,
+    options: typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []),
+    vocabulary_words: typeof q.vocabulary_words === 'string' ? JSON.parse(q.vocabulary_words) : (q.vocabulary_words || [])
+  }));
+  res.json({ chapter, questions, regenerated: true });
 });
 
 // ─── Full Book Quiz (20 questions across all chapters) ───
