@@ -327,17 +327,22 @@ function generateClassCode() {
   return code;
 }
 
-async function createStudent(name, classId, userId) {
+async function createStudent(name, classId, userId, explicitGrade) {
   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
   const colors = ['#2563EB', '#F59E0B', '#10B981', '#EF4444', '#8B5CF6'];
   const color = colors[Math.floor(Math.random() * colors.length)];
 
-  // Get class grade
-  const { data: cls } = await supabase.from('classes').select('grade').eq('id', classId).single();
+  // Get class grade if classId provided
+  let grade = explicitGrade || '4th';
+  if (classId) {
+    const { data: cls } = await supabase.from('classes').select('grade').eq('id', classId).single();
+    if (cls?.grade) grade = cls.grade;
+  }
 
-  const { data: student, error } = await supabase.from('students').insert({
-    name, initials, color, class_id: classId, user_id: userId, grade: cls?.grade || '4th'
-  }).select().single();
+  const insertData = { name, initials, color, user_id: userId, grade };
+  if (classId) insertData.class_id = classId;
+
+  const { data: student, error } = await supabase.from('students').insert(insertData).select().single();
 
   if (error) { console.error('createStudent error:', error); return null; }
 
@@ -1521,6 +1526,127 @@ async function getOrCreateTeacherStudent(userId, classId) {
   return newStudent;
 }
 
+// ─── STORE ITEMS CRUD ───
+
+async function getStoreItems(classId) {
+  const { data, error } = await supabase
+    .from('store_items')
+    .select('*')
+    .eq('class_id', classId)
+    .order('created_at');
+  if (error) {
+    // Table might not exist yet
+    if (error.message?.includes('does not exist')) return [];
+    console.error('getStoreItems error:', error);
+    return [];
+  }
+  return data || [];
+}
+
+async function createStoreItem(classId, itemData) {
+  const { data, error } = await supabase.from('store_items').insert({
+    class_id: classId,
+    name: itemData.name,
+    price: itemData.price || 25,
+    stock: itemData.stock !== undefined ? itemData.stock : 10,
+    icon: itemData.icon || '🎁',
+    image_url: itemData.image_url || null
+  }).select().single();
+  if (error) { console.error('createStoreItem error:', error); return null; }
+  return data;
+}
+
+async function updateStoreItem(id, itemData) {
+  const updates = {};
+  if (itemData.name !== undefined) updates.name = itemData.name;
+  if (itemData.price !== undefined) updates.price = itemData.price;
+  if (itemData.stock !== undefined) updates.stock = itemData.stock;
+  if (itemData.icon !== undefined) updates.icon = itemData.icon;
+  if (itemData.image_url !== undefined) updates.image_url = itemData.image_url;
+
+  const { data, error } = await supabase.from('store_items').update(updates).eq('id', id).select().single();
+  if (error) { console.error('updateStoreItem error:', error); return null; }
+  return data;
+}
+
+async function deleteStoreItem(id) {
+  const { error } = await supabase.from('store_items').delete().eq('id', id);
+  if (error) { console.error('deleteStoreItem error:', error); return false; }
+  return true;
+}
+
+async function uploadStoreImage(base64Data, filename) {
+  try {
+    // Decode base64 to buffer
+    const base64Content = base64Data.replace(/^data:image\/\w+;base64,/, '');
+    const buffer = Buffer.from(base64Content, 'base64');
+
+    // Determine content type from prefix
+    const match = base64Data.match(/^data:(image\/\w+);base64,/);
+    const contentType = match ? match[1] : 'image/png';
+    const ext = contentType.split('/')[1] || 'png';
+
+    // Generate unique filename
+    const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const filePath = `store/${uniqueName}`;
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from('store-images')
+      .upload(filePath, buffer, {
+        contentType,
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Storage upload error:', error);
+      // Fallback: return base64 data URL
+      return { url: base64Data, fallback: true };
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('store-images')
+      .getPublicUrl(filePath);
+
+    return { url: urlData.publicUrl, fallback: false };
+  } catch (e) {
+    console.error('uploadStoreImage error:', e);
+    // Fallback: return base64 data URL
+    return { url: base64Data, fallback: true };
+  }
+}
+
+// ─── REWARD GALLERY (admin-managed image library) ───
+
+async function getRewardGallery() {
+  const { data, error } = await supabase
+    .from('reward_gallery')
+    .select('*')
+    .order('category')
+    .order('name');
+  if (error) {
+    if (error.message?.includes('does not exist')) return [];
+    console.error('getRewardGallery error:', error);
+    return [];
+  }
+  return data || [];
+}
+
+async function addRewardGalleryItem(name, imageUrl, category) {
+  const { data, error } = await supabase.from('reward_gallery').insert({
+    name, image_url: imageUrl, category: category || 'general'
+  }).select().single();
+  if (error) { console.error('addRewardGalleryItem error:', error); return null; }
+  return data;
+}
+
+async function deleteRewardGalleryItem(id) {
+  const { error } = await supabase.from('reward_gallery').delete().eq('id', id);
+  if (error) { console.error('deleteRewardGalleryItem error:', error); return false; }
+  return true;
+}
+
 // Export everything
 module.exports = {
   supabase,
@@ -1564,7 +1690,15 @@ module.exports = {
   getStudentPerformance,
   getClassAnalytics,
   updateStudentAnalytics,
-  getOrCreateTeacherStudent
+  getOrCreateTeacherStudent,
+  getStoreItems,
+  createStoreItem,
+  updateStoreItem,
+  deleteStoreItem,
+  uploadStoreImage,
+  getRewardGallery,
+  addRewardGalleryItem,
+  deleteRewardGalleryItem
 };
 
 async function getFullBookQuiz(bookId) {

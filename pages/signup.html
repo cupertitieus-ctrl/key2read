@@ -12,7 +12,7 @@
 <div class="auth-page">
   <!-- ===== LEFT PANEL ===== -->
   <div class="auth-left">
-    <a href="/index.html" class="auth-left-logo">
+    <a href="/index.html" class="auth-left-logo" style="text-decoration:none">
       <img src="/public/logo.png" alt="key2read" style="height:48px;width:auto">
     </a>
     <div class="auth-left-content">
@@ -60,7 +60,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
           </svg>
-          <span>Student</span>
+          <span>Child</span>
         </div>
       </div>
 
@@ -117,11 +117,32 @@
           <input type="text" id="district" class="form-input" placeholder="Lincoln Unified School District">
         </div>
 
-        <!-- Class Code (Student) -->
+        <!-- Family Code (Child/Student) — optional for homeschool -->
         <div class="form-group" id="field-classcode" style="display:none">
-          <label class="form-label" for="classcode">Class Code</label>
-          <input type="text" id="classcode" class="form-input" placeholder="Enter your teacher's class code">
-          <small style="color:var(--g400);margin-top:4px;display:block">Ask your teacher for the class code to join their class.</small>
+          <label class="form-label" for="classcode">Family Code <span style="font-weight:400;color:var(--g400)">(optional)</span></label>
+          <input type="text" id="classcode" class="form-input" placeholder="Enter your family code">
+          <small style="color:var(--g400);margin-top:4px;display:block">Ask a parent for your family code, or leave blank to start on your own.</small>
+        </div>
+
+        <!-- Grade Level (Child/Student) -->
+        <div class="form-group" id="field-student-grade" style="display:none">
+          <label class="form-label" for="student-grade">Grade Level</label>
+          <select id="student-grade" class="form-input" style="appearance:auto">
+            <option value="">Select your grade...</option>
+            <option value="K">Kindergarten</option>
+            <option value="1st">1st Grade</option>
+            <option value="2nd">2nd Grade</option>
+            <option value="3rd">3rd Grade</option>
+            <option value="4th">4th Grade</option>
+            <option value="5th">5th Grade</option>
+            <option value="6th">6th Grade</option>
+            <option value="7th">7th Grade</option>
+            <option value="8th">8th Grade</option>
+            <option value="9th">9th Grade</option>
+            <option value="10th">10th Grade</option>
+            <option value="11th">11th Grade</option>
+            <option value="12th">12th Grade</option>
+          </select>
         </div>
 
         <!-- Password (always visible) -->
@@ -197,22 +218,24 @@ function selectRole(el) {
   const role = el.dataset.role;
 
   // Field references
-  const fieldEmail     = document.getElementById('field-email');
-  const fieldSchool    = document.getElementById('field-school');
-  const fieldGrade     = document.getElementById('field-grade');
-  const fieldDistrict  = document.getElementById('field-district');
-  const fieldClasscode = document.getElementById('field-classcode');
-  const fieldTerms     = document.getElementById('field-terms');
-  const passwordHint   = document.getElementById('password-optional');
+  const fieldEmail        = document.getElementById('field-email');
+  const fieldSchool       = document.getElementById('field-school');
+  const fieldGrade        = document.getElementById('field-grade');
+  const fieldDistrict     = document.getElementById('field-district');
+  const fieldClasscode    = document.getElementById('field-classcode');
+  const fieldStudentGrade = document.getElementById('field-student-grade');
+  const fieldTerms        = document.getElementById('field-terms');
+  const passwordHint      = document.getElementById('password-optional');
 
   // Hide all role-specific fields first
-  fieldEmail.style.display     = 'none';
-  fieldSchool.style.display    = 'none';
-  fieldGrade.style.display     = 'none';
-  fieldDistrict.style.display  = 'none';
-  fieldClasscode.style.display = 'none';
-  fieldTerms.style.display     = 'none';
-  passwordHint.style.display   = 'none';
+  fieldEmail.style.display        = 'none';
+  fieldSchool.style.display       = 'none';
+  fieldGrade.style.display        = 'none';
+  fieldDistrict.style.display     = 'none';
+  fieldClasscode.style.display    = 'none';
+  fieldStudentGrade.style.display = 'none';
+  fieldTerms.style.display        = 'none';
+  passwordHint.style.display      = 'none';
 
   // Show fields based on role
   const fieldPassword = document.getElementById('field-password');
@@ -227,8 +250,9 @@ function selectRole(el) {
     fieldTerms.style.display    = '';
     fieldPassword.style.display = '';
   } else if (role === 'student') {
-    fieldClasscode.style.display = '';
-    fieldPassword.style.display  = 'none';
+    fieldClasscode.style.display    = '';
+    fieldStudentGrade.style.display = '';
+    fieldPassword.style.display     = 'none';
   }
 }
 
@@ -280,13 +304,16 @@ document.getElementById('signup-form').addEventListener('submit', async function
 
   } else if (role === 'student') {
     const classCode = document.getElementById('classcode').value.trim();
-    if (!classCode) return showError('Please enter your class code.');
+    const grade = document.getElementById('student-grade').value;
+    if (!grade) return showError('Please select your grade level.');
 
     try {
-      await API.post('/api/auth/signup', { name, password: password || null, role: 'student', classCode });
+      await API.post('/api/auth/signup', { name, password: password || null, role: 'student', classCode: classCode || null, grade });
       // Save to localStorage for auto-signin next time
-      localStorage.setItem('k2r_student_name', name);
-      localStorage.setItem('k2r_student_classcode', classCode);
+      if (classCode) {
+        localStorage.setItem('k2r_student_name', name);
+        localStorage.setItem('k2r_student_classcode', classCode);
+      }
       window.location.href = 'dashboard.html';
     } catch (err) {
       showError(err.message || 'Signup failed. Please try again.');

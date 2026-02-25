@@ -20,7 +20,7 @@
       <a href="#how-it-works">How It Works</a>
       <a href="#pricing">Pricing</a>
     </div>
-    <div class="navbar-actions">
+    <div class="navbar-actions" id="navbar-actions">
       <a href="pages/signin.html" class="btn btn-ghost btn-sm">Sign In</a>
       <a href="pages/signup.html" class="btn btn-primary btn-sm">Get Started Free</a>
     </div>
@@ -304,5 +304,94 @@
 </footer>
 
 <script src="js/landing-search.js"></script>
+<script>
+// ─── Auth-aware Navbar ───
+(async function() {
+  try {
+    const res = await fetch('/api/auth/me');
+    const data = await res.json();
+    if (!data.user) return; // Not signed in — keep default buttons
+
+    const actions = document.getElementById('navbar-actions');
+    if (!actions) return;
+
+    const user = data.user;
+    const displayName = user.name || user.email || 'Account';
+
+    actions.innerHTML = `
+      <a href="pages/dashboard.html" class="btn btn-ghost btn-sm">Dashboard</a>
+      <div class="navbar-user-menu" id="user-menu">
+        <button class="navbar-user-btn" id="user-menu-btn">
+          <span class="navbar-user-avatar">${displayName.charAt(0).toUpperCase()}</span>
+          <span class="navbar-user-name">${displayName.split(' ')[0]}</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="navbar-dropdown" id="user-dropdown">
+          <a href="pages/dashboard.html?page=teacher-settings" class="navbar-dropdown-item">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Settings
+          </a>
+          <button class="navbar-dropdown-item" id="logout-btn">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Log Out
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Toggle dropdown
+    const menuBtn = document.getElementById('user-menu-btn');
+    const dropdown = document.getElementById('user-dropdown');
+    menuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.classList.toggle('open');
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+
+    // Logout
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.reload();
+    });
+  } catch(e) { /* Server may not be running */ }
+})();
+</script>
+
+<style>
+/* ─── Navbar User Menu ─── */
+.navbar-user-menu { position: relative; }
+.navbar-user-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: none; border: 1px solid var(--g200); border-radius: 999px;
+  padding: 4px 12px 4px 4px; cursor: pointer; font-family: var(--font-body);
+  font-size: 0.875rem; color: var(--g700); transition: all .15s;
+}
+.navbar-user-btn:hover { border-color: var(--blue); background: var(--blue-p); }
+.navbar-user-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 0.75rem;
+}
+.navbar-user-name { font-weight: 500; }
+.navbar-dropdown {
+  position: absolute; right: 0; top: calc(100% + 8px);
+  background: #fff; border: 1px solid var(--g200); border-radius: 12px;
+  box-shadow: var(--sh-lg); min-width: 180px; padding: 6px;
+  opacity: 0; visibility: hidden; transform: translateY(-4px);
+  transition: all .15s ease;
+  z-index: 100;
+}
+.navbar-dropdown.open { opacity: 1; visibility: visible; transform: translateY(0); }
+.navbar-dropdown-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: 8px; font-size: 0.875rem;
+  color: var(--g700); text-decoration: none; cursor: pointer;
+  background: none; border: none; width: 100%; font-family: var(--font-body);
+  transition: background .1s;
+}
+.navbar-dropdown-item:hover { background: var(--g50); color: var(--g900); }
+.navbar-dropdown-item svg { flex-shrink: 0; opacity: .6; }
+</style>
 </body>
 </html>

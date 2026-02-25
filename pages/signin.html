@@ -12,13 +12,15 @@
 <div class="auth-page">
   <!-- ===== LEFT PANEL ===== -->
   <div class="auth-left" style="display:flex;align-items:stretch;justify-content:center;padding:0;overflow:hidden">
-    <img src="/public/signin-hero.jpg" alt="key2read" style="width:100%;height:100%;object-fit:cover">
+    <a href="/index.html" style="width:100%;height:100%">
+      <img src="/public/signin-hero.jpg" alt="key2read" style="width:100%;height:100%;object-fit:cover">
+    </a>
   </div>
 
   <!-- ===== RIGHT PANEL (Form) ===== -->
   <div class="auth-right">
     <div class="auth-form-container">
-      <h1 style="text-align:center"><img src="/public/logo.png" alt="key2read" style="height:64px;width:auto;display:inline-block"></h1>
+      <h1 style="text-align:center"><a href="/index.html"><img src="/public/logo.png" alt="key2read" style="height:64px;width:auto;display:inline-block"></a></h1>
       <p style="text-align:center">Select your role and enter your credentials.</p>
 
       <!-- Role Selector -->
@@ -33,7 +35,7 @@
         </div>
         <div class="role-card" onclick="selectRole(this, 'student')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <span>Student</span>
+          <span>Child</span>
         </div>
         <div class="role-card" id="owner-role-card" onclick="selectRole(this, 'owner')" style="display:none">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -43,22 +45,30 @@
 
       <!-- Sign In Form -->
       <form class="auth-form" action="dashboard.html">
-        <!-- Email (Teacher & Principal) -->
+        <!-- Email (Teacher & Parent & Owner) -->
         <div class="form-group" id="field-email">
           <label class="form-label" for="email">Email Address</label>
           <input type="email" id="email" class="form-input" placeholder="you@school.edu">
         </div>
 
-        <!-- Student Name (Student only) -->
+        <!-- Student/Child Name -->
         <div class="form-group" id="field-name" style="display:none">
           <label class="form-label" for="student-name">Your Name</label>
           <input type="text" id="student-name" class="form-input" placeholder="Enter your first and last name">
         </div>
 
-        <!-- Class Code (Student only) -->
+        <!-- Class Code (Student) -->
         <div class="form-group" id="field-classcode" style="display:none">
-          <label class="form-label" for="classcode">Class Code</label>
-          <input type="text" id="classcode" class="form-input" placeholder="Enter your teacher's class code">
+          <label class="form-label" for="classcode" id="classcode-label">Family Code</label>
+          <input type="text" id="classcode" class="form-input" placeholder="Enter your family code">
+          <small id="classcode-hint" style="color:var(--g400);margin-top:4px;display:block">Ask a parent for your family code.</small>
+        </div>
+
+        <!-- Parent Class Code -->
+        <div class="form-group" id="field-parent-code" style="display:none">
+          <label class="form-label" for="parent-code">Class Code <span style="font-weight:400;color:var(--g400)">(optional)</span></label>
+          <input type="text" id="parent-code" class="form-input" placeholder="Enter your child's class code">
+          <small style="color:var(--g400);margin-top:4px;display:block">Get the class code from your child's teacher to see their progress.</small>
         </div>
 
         <div class="form-group" id="field-password" style="display:none">
@@ -123,28 +133,34 @@ function selectRole(el, role) {
   const emailGroup = document.getElementById('field-email');
   const nameGroup = document.getElementById('field-name');
   const codeGroup = document.getElementById('field-classcode');
+  const parentCodeGroup = document.getElementById('field-parent-code');
   const passwordGroup = document.getElementById('field-password');
   const extrasGroup = document.getElementById('field-extras');
 
+  // Hide all role-specific fields first
+  if (emailGroup) emailGroup.style.display = 'none';
+  if (nameGroup) nameGroup.style.display = 'none';
+  if (codeGroup) codeGroup.style.display = 'none';
+  if (parentCodeGroup) parentCodeGroup.style.display = 'none';
+  if (passwordGroup) passwordGroup.style.display = 'none';
+  if (extrasGroup) extrasGroup.style.display = 'none';
+
   if (selectedRole === 'student') {
-    if (emailGroup) emailGroup.style.display = 'none';
     if (nameGroup) nameGroup.style.display = '';
     if (codeGroup) codeGroup.style.display = '';
-    if (passwordGroup) passwordGroup.style.display = 'none';
-    if (extrasGroup) extrasGroup.style.display = 'none';
+  } else if (selectedRole === 'parent') {
+    if (emailGroup) emailGroup.style.display = '';
+    if (parentCodeGroup) parentCodeGroup.style.display = '';
+    if (passwordGroup) passwordGroup.style.display = '';
+    if (extrasGroup) extrasGroup.style.display = '';
   } else if (selectedRole === 'owner') {
     if (emailGroup) emailGroup.style.display = '';
-    if (nameGroup) nameGroup.style.display = 'none';
-    if (codeGroup) codeGroup.style.display = 'none';
     if (passwordGroup) passwordGroup.style.display = '';
-    if (extrasGroup) extrasGroup.style.display = 'none';
   } else {
-    // Teacher & Parent: email-only login (no password required)
+    // Teacher: email + password login
     if (emailGroup) emailGroup.style.display = '';
-    if (nameGroup) nameGroup.style.display = 'none';
-    if (codeGroup) codeGroup.style.display = 'none';
-    if (passwordGroup) passwordGroup.style.display = 'none';
-    if (extrasGroup) extrasGroup.style.display = 'none';
+    if (passwordGroup) passwordGroup.style.display = '';
+    if (extrasGroup) extrasGroup.style.display = '';
   }
 }
 
@@ -183,6 +199,9 @@ function showError(msg) {
   } catch(e) { /* Server may not be running, demo mode still works */ }
 })();
 
+// Initialize fields for default role (Teacher) on page load
+selectRole(document.querySelector('.role-card.active'), 'teacher');
+
 // Auto-signin for students (localStorage)
 (async function() {
   const savedName = localStorage.getItem('k2r_student_name');
@@ -207,14 +226,24 @@ document.querySelector('.auth-form').addEventListener('submit', async function(e
     const name = document.getElementById('student-name').value.trim();
     const classCode = document.getElementById('classcode').value.trim();
     if (!name) return showError('Please enter your name');
-    if (!classCode) return showError('Please enter your class code');
+    if (!classCode) return showError('Please enter your family code');
     try {
       await API.login({ name, classCode, role: 'student' });
       // Save to localStorage for auto-signin next time
       localStorage.setItem('k2r_student_name', name);
       localStorage.setItem('k2r_student_classcode', classCode);
       window.location.href = 'dashboard.html';
-    } catch(e) { showError(e.message || 'Login failed. Check your name and class code.'); }
+    } catch(e) { showError(e.message || 'Login failed. Check your name and family code.'); }
+  } else if (selectedRole === 'parent') {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    if (!email) return showError('Please enter your email');
+    if (!password) return showError('Please enter your password');
+    const parentCode = document.getElementById('parent-code')?.value?.trim();
+    try {
+      await API.login({ email, password, role: 'parent', classCode: parentCode || undefined });
+      window.location.href = 'dashboard.html';
+    } catch(e) { showError(e.message || 'Login failed. Check your email and password.'); }
   } else if (selectedRole === 'owner') {
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
@@ -226,11 +255,13 @@ document.querySelector('.auth-form').addEventListener('submit', async function(e
     } catch(e) { showError(e.message || 'Login failed. Check your credentials.'); }
   } else {
     const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
     if (!email) return showError('Please enter your email');
+    if (!password) return showError('Please enter your password');
     try {
-      await API.login({ email, role: selectedRole });
+      await API.login({ email, password, role: selectedRole });
       window.location.href = 'dashboard.html';
-    } catch(e) { showError(e.message || 'Login failed. Check your email.'); }
+    } catch(e) { showError(e.message || 'Login failed. Check your email and password.'); }
   }
 });
 

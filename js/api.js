@@ -69,6 +69,14 @@ const API = {
   getFeedback: (data) => API.post('/api/feedback', data),
 
   // Store
+  getStoreItems: (classId) => API.get(`/api/store/items?classId=${classId}`),
+  createStoreItem: (data) => API.post('/api/store/items', data),
+  updateStoreItem: (id, data) => API.put(`/api/store/items/${id}`, data),
+  deleteStoreItem: (id) => fetch(`/api/store/items/${id}`, { method: 'DELETE' }).then(r => r.json()),
+  uploadStoreImage: (imageData, filename) => API.post('/api/store/upload-image', { imageData, filename }),
+  getRewardGallery: () => API.get('/api/store/gallery'),
+  addRewardGallery: (data) => API.post('/api/store/gallery', data),
+  deleteRewardGallery: (id) => fetch(`/api/store/gallery/${id}`, { method: 'DELETE' }).then(r => r.json()),
   purchaseReward: (data) => API.post('/api/store/purchase', data),
 
   // Assignments

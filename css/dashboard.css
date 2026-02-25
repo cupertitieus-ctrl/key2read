@@ -2514,10 +2514,10 @@
 .quiz-footer { display: flex; justify-content: flex-end; padding-top: 16px; border-top: 1px solid var(--g200); }
 
 /* ===== VOCAB TOOLTIP ===== */
-.vocab-word { position: relative; color: var(--blue); border-bottom: 2px dotted var(--blue); cursor: help; transition: color .2s; }
-.vocab-word:hover { color: #1D4ED8; }
+.vocab-word { position: relative; color: var(--g700, #374151); border-bottom: 2px dotted var(--purple, #7C3AED); cursor: help; transition: color .2s; }
+.vocab-word:hover { color: var(--purple, #7C3AED); }
 .vocab-dot { position: absolute; top: -2px; right: -4px; width: 5px; height: 5px; background: #7C3AED; border-radius: 50%; }
-.vocab-word-demo { color: var(--blue); border-bottom: 2px dotted var(--blue); }
+.vocab-word-demo { color: var(--g700, #374151); border-bottom: 2px dotted var(--purple, #7C3AED); }
 .vocab-tooltip { position: fixed; z-index: 9999; background: #1E293B; color: #fff; padding: 14px 18px; border-radius: var(--radius-lg); max-width: 320px; box-shadow: 0 8px 30px rgba(0,0,0,.2); transform: translateX(-50%); font-size: 0.85rem; line-height: 1.5; pointer-events: none; }
 .vocab-tooltip::before { content: ''; position: absolute; top: -6px; left: 50%; transform: translateX(-50%); border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 6px solid #1E293B; }
 .vocab-tooltip-word { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
@@ -2535,8 +2535,8 @@
   transition: color .2s, border-color .2s;
 }
 .vocab-word-contextual:hover {
-  color: var(--blue, #2563EB);
-  border-bottom-color: var(--blue, #2563EB);
+  color: var(--purple, #7C3AED);
+  border-bottom-color: var(--purple, #7C3AED);
 }
 .vocab-word-contextual .vocab-dot { display: none; }
 
@@ -2553,7 +2553,7 @@
   .vocab-word,
   .vocab-word-contextual {
     padding: 2px 1px;
-    -webkit-tap-highlight-color: rgba(37, 99, 235, 0.15);
+    -webkit-tap-highlight-color: rgba(124, 58, 237, 0.15);
   }
   .vocab-tooltip {
     max-width: 280px;
@@ -3163,6 +3163,91 @@
 .student-store-card .w-full {
   width: 100%;
   margin-top: 4px;
+}
+.student-store-card-img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+/* ─── STORE SNEAK PEEK (Student Dashboard) ─── */
+.store-peek-section {
+  margin-top: 24px;
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  border: 1.5px solid #fde68a;
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  cursor: pointer;
+  transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+}
+.store-peek-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(245,158,11,0.15);
+}
+.store-peek-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.store-peek-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #92400e;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.store-peek-link {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #d97706;
+}
+.store-peek-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.store-peek-item {
+  background: #fff;
+  border: 1.5px solid #fde68a;
+  border-radius: var(--radius-md);
+  padding: 12px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: transform 0.15s var(--ease-out);
+}
+.store-peek-item:hover {
+  transform: scale(1.04);
+}
+.store-peek-item-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+.store-peek-item-img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+.store-peek-item-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--g700);
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.store-peek-item-price {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #d97706;
 }
 
 /* --- Responsive --- */

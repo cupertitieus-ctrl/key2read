@@ -353,6 +353,7 @@ function renderSidebar() {
       { id: 'owner-students',   icon: IC.users,    label: 'Students', badge: ownerStats.totalStudents > 0 ? String(ownerStats.totalStudents) : '', badgeCls: 'green' },
       { section: 'Tools' },
       { id: 'library',          icon: IC.book,     label: 'Book Library' },
+      { id: 'owner-gallery',    icon: IC.bag,      label: 'Reward Gallery', badge: rewardGallery.length > 0 ? String(rewardGallery.length) : '', badgeCls: 'gold' },
       { id: 'owner-settings',   icon: IC.gear,     label: 'Settings' },
     ];
   } else if (userRole === 'principal') {
@@ -392,6 +393,8 @@ function renderSidebar() {
       { section: 'Tools' },
       { id: 'celebrate',  icon: IC.star,  label: 'Celebrate Students' },
       { id: 'aitools',    icon: IC.bulb,  label: 'Teaching Tools' },
+      { section: 'Account' },
+      { id: 'teacher-settings', icon: IC.gear, label: 'Settings' },
     ];
   }
 
@@ -542,6 +545,7 @@ function renderMain() {
     case 'book-detail': el.innerHTML = renderBookDetail(); break;
     case 'celebrate':  el.innerHTML = renderCelebrate(); break;
     case 'aitools':    el.innerHTML = renderAITools(); break;
+    case 'teacher-settings': el.innerHTML = renderTeacherSettings(); break;
     case 'reports':
       if (reportStudentId !== null) { el.innerHTML = renderStudentReport(); break; }
       el.innerHTML = renderReports();
@@ -569,6 +573,7 @@ function renderMain() {
     case 'owner-teachers':  el.innerHTML = renderOwnerTeachers(); break;
     case 'owner-students':  el.innerHTML = renderOwnerStudents(); break;
     case 'owner-settings':  el.innerHTML = renderOwnerSettings(); break;
+    case 'owner-gallery':   el.innerHTML = renderOwnerGallery(); break;
     default:
       if (userRole === 'guest') { el.innerHTML = renderGuestBrowse(); initBookSearch(); }
       else if (userRole === 'student') el.innerHTML = renderStudentDashboard();
@@ -1446,28 +1451,160 @@ function renderGoals() {
 // ---- Page: Class Store ----
 let storeEditing = null; // index of item being edited, or null
 let storeAddingNew = false;
+let storeNewImageMode = 'emoji'; // 'emoji', 'upload', 'gallery'
+let storeNewImagePreview = null; // base64 data URL for new item
+let storeNewGalleryUrl = null; // selected gallery image URL
+let storeEditImageMode = 'emoji';
+let storeEditImagePreview = null;
+let storeEditGalleryUrl = null;
+let storeLoaded = false; // whether we've loaded from API
+let rewardGallery = []; // admin-uploaded images
+let galleryLoaded = false;
+
+async function loadStoreItems() {
+  if (storeLoaded) return;
+  const classId = currentUser?.classId;
+  if (!classId) return;
+  try {
+    const items = await API.getStoreItems(classId);
+    if (items && items.length > 0) {
+      storeItems = items;
+    } else if (items && items.length === 0 && storeItems.length > 0 && storeItems[0].id === undefined) {
+      // First time: seed defaults to DB
+      await seedDefaultStoreItems(classId);
+    }
+    storeLoaded = true;
+  } catch(e) {
+    console.warn('Could not load store items:', e);
+    // Keep using hardcoded defaults
+  }
+  // Also load reward gallery (admin-uploaded images)
+  await loadRewardGallery();
+}
+
+async function seedDefaultStoreItems(classId) {
+  const defaults = [
+    { name: 'Homework Pass',     stock: 10, price: 50, icon: '📝' },
+    { name: 'Extra Recess',      stock: 5,  price: 75, icon: '⏰' },
+    { name: 'Class DJ',          stock: 3,  price: 30, icon: '🎵' },
+    { name: 'Sit With a Friend', stock: 10, price: 20, icon: '👫' },
+    { name: 'Candy Jar',         stock: 15, price: 15, icon: '🍬' },
+    { name: 'Sticker Pack',      stock: 20, price: 10, icon: '⭐' },
+  ];
+  const created = [];
+  for (const d of defaults) {
+    try {
+      const item = await API.createStoreItem({ classId, ...d });
+      if (item) created.push(item);
+    } catch(e) { console.warn('Seed store item error:', e); }
+  }
+  if (created.length > 0) storeItems = created;
+}
+
+async function loadRewardGallery() {
+  if (galleryLoaded) return;
+  try {
+    rewardGallery = await API.getRewardGallery();
+    galleryLoaded = true;
+  } catch(e) {
+    console.warn('Could not load reward gallery:', e);
+    rewardGallery = [];
+  }
+}
+
+function storeItemIcon(item, size) {
+  size = size || 48;
+  if (item.image_url) {
+    return `<img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.name)}" style="width:${size}px;height:${size}px;object-fit:cover;border-radius:var(--radius-sm)">`;
+  }
+  return `<span style="font-size:${Math.round(size * 0.65)}px;line-height:1;display:flex;align-items:center;justify-content:center;width:${size}px;height:${size}px">${item.icon || '🎁'}</span>`;
+}
 
 function renderStore() {
   return `
     <div class="page-header">
       <h1>Class Store <span class="badge badge-gold">${storeItems.length}</span></h1>
       <div class="page-header-actions">
-        <button class="btn btn-primary btn-sm" onclick="storeAddingNew=true; renderMain()">${IC.plus} Add Reward</button>
+        <button class="btn btn-primary btn-sm" onclick="storeAddingNew=true; storeNewImageMode=false; storeNewImagePreview=null; renderMain()">${IC.plus} Add Reward</button>
       </div>
     </div>
 
     <div class="info-panel" style="margin-bottom:20px">
       <h4>${IC.info} How the Class Store Works</h4>
-      <p>Students spend their earned Keys on rewards you create. Customize the rewards, prices, and stock levels below. Add new rewards or remove ones your class doesn't need.</p>
+      <p>Students spend their earned Keys on rewards you create. You can use an emoji icon or upload a custom image for each reward.</p>
     </div>
 
-    ${storeAddingNew ? `
+    ${storeAddingNew ? renderStoreAddForm() : ''}
+
+    <div class="list-card">
+      ${storeItems.length === 0 ? `
+        <div style="padding:48px;text-align:center;color:var(--g400)">
+          <p>No rewards yet. Click "Add Reward" to create your first class store item!</p>
+        </div>` :
+      storeItems.map((item, idx) => {
+        if (storeEditing === idx) return renderStoreEditRow(item, idx);
+        return `
+        <div class="list-item">
+          <div class="list-item-info" style="display:flex;align-items:center;gap:12px;flex-direction:row">
+            ${storeItemIcon(item, 48)}
+            <div>
+              <span class="list-item-name">${escapeHtml(item.name)}</span>
+              <span class="list-item-sub">${item.stock} in stock</span>
+            </div>
+          </div>
+          <div class="list-item-right">
+            ${keysDisp(item.price)}
+            <button class="btn btn-sm btn-ghost" onclick="storeStartEdit(${idx})" title="Edit">${IC.gear}</button>
+            <button class="btn btn-sm btn-ghost" onclick="storeRemoveItem(${idx})" title="Remove" style="color:var(--red)">${IC.x}</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function renderStoreAddForm() {
+  const hasGallery = rewardGallery.length > 0;
+  return `
     <div class="store-edit-card" style="background:#fff;border:2px solid var(--blue);border-radius:var(--radius-md);padding:20px;margin-bottom:16px">
       <h4 style="margin-bottom:12px;font-size:0.9375rem;font-weight:600;color:var(--g900)">New Reward</h4>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-sm ${storeNewImageMode === 'emoji' ? 'btn-primary' : 'btn-ghost'}" onclick="storeNewImageMode='emoji'; storeNewImagePreview=null; storeNewGalleryUrl=null; renderMain()">Use Emoji</button>
+        ${hasGallery ? `<button class="btn btn-sm ${storeNewImageMode === 'gallery' ? 'btn-primary' : 'btn-ghost'}" onclick="storeNewImageMode='gallery'; storeNewImagePreview=null; renderMain()">Choose Image</button>` : ''}
+        <button class="btn btn-sm ${storeNewImageMode === 'upload' ? 'btn-primary' : 'btn-ghost'}" onclick="storeNewImageMode='upload'; storeNewGalleryUrl=null; renderMain()">Upload Image</button>
+      </div>
+
+      ${storeNewImageMode === 'gallery' ? `
+        <div style="margin-bottom:12px">
+          <label style="font-size:0.75rem;font-weight:600;color:var(--g500);display:block;margin-bottom:8px">Select a reward image:</label>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px;max-height:200px;overflow-y:auto;padding:4px">
+            ${rewardGallery.map(g => `
+              <div style="cursor:pointer;border:2px solid ${storeNewGalleryUrl === g.image_url ? 'var(--blue)' : 'var(--g200)'};border-radius:var(--radius-sm);padding:4px;text-align:center;transition:border-color .15s" onclick="storeNewGalleryUrl='${escapeHtml(g.image_url)}'; renderMain()">
+                <img src="${escapeHtml(g.image_url)}" style="width:56px;height:56px;object-fit:cover;border-radius:4px">
+                <div style="font-size:0.625rem;color:var(--g500);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(g.name)}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>` : ''}
+
       <div style="display:grid;grid-template-columns:auto 1fr 100px 100px auto;gap:12px;align-items:end">
         <div>
-          <label style="font-size:0.75rem;font-weight:600;color:var(--g500);display:block;margin-bottom:4px">Icon</label>
-          <input id="store-new-icon" type="text" value="🎁" maxlength="4" style="width:48px;padding:8px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:1.25rem;text-align:center">
+          ${storeNewImageMode === 'upload' ? `
+            <label style="font-size:0.75rem;font-weight:600;color:var(--g500);display:block;margin-bottom:4px">Image</label>
+            <div style="position:relative;width:64px;height:64px;border:2px dashed var(--g300);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;background:var(--g50)" onclick="document.getElementById('store-new-file').click()">
+              ${storeNewImagePreview
+                ? `<img src="${storeNewImagePreview}" style="width:100%;height:100%;object-fit:cover">`
+                : `<span style="font-size:1.5rem;color:var(--g400)">+</span>`}
+              <input id="store-new-file" type="file" accept="image/*" style="display:none" onchange="storePreviewNewImage(this)">
+            </div>
+          ` : storeNewImageMode === 'gallery' ? `
+            <label style="font-size:0.75rem;font-weight:600;color:var(--g500);display:block;margin-bottom:4px">Selected</label>
+            <div style="width:64px;height:64px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--g50)">
+              ${storeNewGalleryUrl ? `<img src="${storeNewGalleryUrl}" style="width:100%;height:100%;object-fit:cover">` : `<span style="font-size:0.75rem;color:var(--g400)">Pick one</span>`}
+            </div>
+          ` : `
+            <label style="font-size:0.75rem;font-weight:600;color:var(--g500);display:block;margin-bottom:4px">Icon</label>
+            <input id="store-new-icon" type="text" value="🎁" maxlength="4" style="width:48px;padding:8px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:1.25rem;text-align:center">
+          `}
         </div>
         <div>
           <label style="font-size:0.75rem;font-weight:600;color:var(--g500);display:block;margin-bottom:4px">Reward Name</label>
@@ -1483,84 +1620,213 @@ function renderStore() {
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-primary btn-sm" onclick="storeAddItem()">Add</button>
-          <button class="btn btn-ghost btn-sm" onclick="storeAddingNew=false; renderMain()">Cancel</button>
+          <button class="btn btn-ghost btn-sm" onclick="storeAddingNew=false; storeNewImagePreview=null; storeNewGalleryUrl=null; renderMain()">Cancel</button>
         </div>
       </div>
-    </div>` : ''}
-
-    <div class="list-card">
-      ${storeItems.length === 0 ? `
-        <div style="padding:48px;text-align:center;color:var(--g400)">
-          <p>No rewards yet. Click "Add Reward" to create your first class store item!</p>
-        </div>` :
-      storeItems.map((item, idx) => {
-        if (storeEditing === idx) {
-          return `
-          <div class="list-item" style="background:var(--blue-p)">
-            <div style="display:flex;align-items:center;gap:12px;flex:1">
-              <input id="store-edit-icon" type="text" value="${item.icon}" maxlength="4" style="width:44px;padding:6px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:1.125rem;text-align:center">
-              <input id="store-edit-name" type="text" value="${item.name}" style="flex:1;padding:6px 12px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:0.875rem">
-              <div style="display:flex;align-items:center;gap:4px">
-                <span style="font-size:0.75rem;color:var(--g500)">Price:</span>
-                <input id="store-edit-price" type="number" value="${item.price}" min="1" style="width:70px;padding:6px 8px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:0.875rem">
-              </div>
-              <div style="display:flex;align-items:center;gap:4px">
-                <span style="font-size:0.75rem;color:var(--g500)">Stock:</span>
-                <input id="store-edit-stock" type="number" value="${item.stock}" min="0" style="width:70px;padding:6px 8px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:0.875rem">
-              </div>
-            </div>
-            <div style="display:flex;gap:8px">
-              <button class="btn btn-primary btn-sm" onclick="storeSaveEdit(${idx})">Save</button>
-              <button class="btn btn-ghost btn-sm" onclick="storeEditing=null; renderMain()">Cancel</button>
-            </div>
-          </div>`;
-        }
-        return `
-        <div class="list-item">
-          <div class="list-item-info" style="display:flex;align-items:center;gap:12px;flex-direction:row">
-            <span style="font-size:1.5rem">${item.icon}</span>
-            <div>
-              <span class="list-item-name">${item.name}</span>
-              <span class="list-item-sub">${item.stock} in stock</span>
-            </div>
-          </div>
-          <div class="list-item-right">
-            ${keysDisp(item.price)}
-            <button class="btn btn-sm btn-ghost" onclick="storeEditing=${idx}; renderMain()" title="Edit">${IC.gear}</button>
-            <button class="btn btn-sm btn-ghost" onclick="storeRemoveItem(${idx})" title="Remove" style="color:var(--red)">${IC.x}</button>
-          </div>
-        </div>`;
-      }).join('')}
     </div>`;
 }
 
-function storeAddItem() {
-  const icon = document.getElementById('store-new-icon')?.value || '🎁';
+function renderStoreEditRow(item, idx) {
+  const hasGallery = rewardGallery.length > 0;
+  const currentImgUrl = storeEditImagePreview || storeEditGalleryUrl || item.image_url;
+  return `
+    <div class="list-item" style="background:var(--blue-p);flex-direction:column;gap:12px;align-items:stretch">
+      <div style="display:flex;gap:6px;margin-bottom:4px">
+        <button class="btn btn-sm ${storeEditImageMode === 'emoji' ? 'btn-primary' : 'btn-ghost'}" style="font-size:0.7rem;padding:2px 8px" onclick="storeEditImageMode='emoji'; storeEditImagePreview=null; storeEditGalleryUrl=null; renderMain()">Emoji</button>
+        ${hasGallery ? `<button class="btn btn-sm ${storeEditImageMode === 'gallery' ? 'btn-primary' : 'btn-ghost'}" style="font-size:0.7rem;padding:2px 8px" onclick="storeEditImageMode='gallery'; storeEditImagePreview=null; renderMain()">Choose Image</button>` : ''}
+        <button class="btn btn-sm ${storeEditImageMode === 'upload' ? 'btn-primary' : 'btn-ghost'}" style="font-size:0.7rem;padding:2px 8px" onclick="storeEditImageMode='upload'; storeEditGalleryUrl=null; renderMain()">Upload</button>
+      </div>
+      ${storeEditImageMode === 'gallery' ? `
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:6px;max-height:140px;overflow-y:auto;padding:4px">
+          ${rewardGallery.map(g => `
+            <div style="cursor:pointer;border:2px solid ${storeEditGalleryUrl === g.image_url ? 'var(--blue)' : 'var(--g200)'};border-radius:var(--radius-sm);padding:3px;text-align:center" onclick="storeEditGalleryUrl='${escapeHtml(g.image_url)}'; renderMain()">
+              <img src="${escapeHtml(g.image_url)}" style="width:48px;height:48px;object-fit:cover;border-radius:3px">
+            </div>
+          `).join('')}
+        </div>` : ''}
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div>
+          ${storeEditImageMode === 'upload' ? `
+            <div style="position:relative;width:48px;height:48px;border:2px dashed var(--g300);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;background:var(--g50)" onclick="document.getElementById('store-edit-file').click()">
+              ${(storeEditImagePreview || item.image_url)
+                ? `<img src="${storeEditImagePreview || item.image_url}" style="width:100%;height:100%;object-fit:cover">`
+                : `<span style="font-size:1.25rem;color:var(--g400)">+</span>`}
+              <input id="store-edit-file" type="file" accept="image/*" style="display:none" onchange="storePreviewEditImage(this)">
+            </div>
+          ` : storeEditImageMode === 'gallery' ? `
+            <div style="width:48px;height:48px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);overflow:hidden;background:var(--g50);display:flex;align-items:center;justify-content:center">
+              ${storeEditGalleryUrl ? `<img src="${storeEditGalleryUrl}" style="width:100%;height:100%;object-fit:cover">` : (item.image_url ? `<img src="${item.image_url}" style="width:100%;height:100%;object-fit:cover">` : `<span style="font-size:0.7rem;color:var(--g400)">Pick</span>`)}
+            </div>
+          ` : `
+            <input id="store-edit-icon" type="text" value="${item.icon || '🎁'}" maxlength="4" style="width:44px;padding:6px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:1.125rem;text-align:center">
+          `}
+        </div>
+        <input id="store-edit-name" type="text" value="${escapeHtml(item.name)}" style="flex:1;min-width:120px;padding:6px 12px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:0.875rem">
+        <div style="display:flex;align-items:center;gap:4px">
+          <span style="font-size:0.75rem;color:var(--g500)">Price:</span>
+          <input id="store-edit-price" type="number" value="${item.price}" min="1" style="width:70px;padding:6px 8px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:0.875rem">
+        </div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <span style="font-size:0.75rem;color:var(--g500)">Stock:</span>
+          <input id="store-edit-stock" type="number" value="${item.stock}" min="0" style="width:70px;padding:6px 8px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:0.875rem">
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="storeSaveEdit(${idx})">Save</button>
+          <button class="btn btn-ghost btn-sm" onclick="storeEditing=null; storeEditImageMode='emoji'; storeEditImagePreview=null; storeEditGalleryUrl=null; renderMain()">Cancel</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function storeStartEdit(idx) {
+  storeEditing = idx;
+  const item = storeItems[idx];
+  storeEditImageMode = item.image_url ? 'upload' : 'emoji';
+  storeEditImagePreview = null;
+  storeEditGalleryUrl = null;
+  renderMain();
+}
+
+function storePreviewNewImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    resizeImage(e.target.result, 200, 200, (resized) => {
+      storeNewImagePreview = resized;
+      renderMain();
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function storePreviewEditImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    resizeImage(e.target.result, 200, 200, (resized) => {
+      storeEditImagePreview = resized;
+      renderMain();
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function resizeImage(dataUrl, maxW, maxH, callback) {
+  const img = new Image();
+  img.onload = () => {
+    let w = img.width, h = img.height;
+    if (w > maxW || h > maxH) {
+      const ratio = Math.min(maxW / w, maxH / h);
+      w = Math.round(w * ratio);
+      h = Math.round(h * ratio);
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    callback(canvas.toDataURL('image/png', 0.9));
+  };
+  img.src = dataUrl;
+}
+
+async function storeAddItem() {
   const name = document.getElementById('store-new-name')?.value?.trim();
   const price = parseInt(document.getElementById('store-new-price')?.value) || 25;
   const stock = parseInt(document.getElementById('store-new-stock')?.value) || 10;
   if (!name) { alert('Please enter a reward name.'); return; }
-  storeItems.push({ name, stock, price, icon });
+
+  let icon = '🎁';
+  let image_url = null;
+
+  if (storeNewImageMode === 'upload' && storeNewImagePreview) {
+    // Upload image
+    try {
+      const result = await API.uploadStoreImage(storeNewImagePreview, name.replace(/\s+/g, '-').toLowerCase());
+      image_url = result.url;
+    } catch(e) {
+      console.warn('Image upload failed, using base64 fallback');
+      image_url = storeNewImagePreview;
+    }
+  } else if (storeNewImageMode === 'gallery' && storeNewGalleryUrl) {
+    image_url = storeNewGalleryUrl;
+  } else {
+    icon = document.getElementById('store-new-icon')?.value || '🎁';
+  }
+
+  try {
+    const classId = currentUser?.classId;
+    const item = await API.createStoreItem({ classId, name, price, stock, icon, image_url });
+    if (item) {
+      storeItems.push(item);
+    } else {
+      storeItems.push({ name, stock, price, icon, image_url });
+    }
+  } catch(e) {
+    storeItems.push({ name, stock, price, icon, image_url });
+  }
+
   storeAddingNew = false;
+  storeNewImagePreview = null;
+  storeNewGalleryUrl = null;
+  storeNewImageMode = 'emoji';
   renderMain();
 }
 
-function storeSaveEdit(idx) {
-  const icon = document.getElementById('store-edit-icon')?.value || storeItems[idx].icon;
+async function storeSaveEdit(idx) {
   const name = document.getElementById('store-edit-name')?.value?.trim();
   const price = parseInt(document.getElementById('store-edit-price')?.value) || storeItems[idx].price;
   const stock = parseInt(document.getElementById('store-edit-stock')?.value) || 0;
   if (!name) { alert('Please enter a reward name.'); return; }
-  storeItems[idx] = { name, stock, price, icon };
+
+  let icon = storeItems[idx].icon;
+  let image_url = storeItems[idx].image_url;
+
+  if (storeEditImageMode === 'upload') {
+    if (storeEditImagePreview) {
+      try {
+        const result = await API.uploadStoreImage(storeEditImagePreview, name.replace(/\s+/g, '-').toLowerCase());
+        image_url = result.url;
+      } catch(e) {
+        image_url = storeEditImagePreview;
+      }
+    }
+  } else if (storeEditImageMode === 'gallery' && storeEditGalleryUrl) {
+    image_url = storeEditGalleryUrl;
+  } else {
+    icon = document.getElementById('store-edit-icon')?.value || storeItems[idx].icon;
+    image_url = null; // Switched to emoji mode, clear image
+  }
+
+  const updates = { name, price, stock, icon, image_url };
+
+  if (storeItems[idx].id) {
+    try {
+      const updated = await API.updateStoreItem(storeItems[idx].id, updates);
+      if (updated) storeItems[idx] = updated;
+      else Object.assign(storeItems[idx], updates);
+    } catch(e) {
+      Object.assign(storeItems[idx], updates);
+    }
+  } else {
+    Object.assign(storeItems[idx], updates);
+  }
+
   storeEditing = null;
+  storeEditImageMode = 'emoji';
+  storeEditImagePreview = null;
+  storeEditGalleryUrl = null;
   renderMain();
 }
 
-function storeRemoveItem(idx) {
-  if (confirm(`Remove "${storeItems[idx].name}" from the store?`)) {
-    storeItems.splice(idx, 1);
-    renderMain();
+async function storeRemoveItem(idx) {
+  if (!confirm(`Remove "${storeItems[idx].name}" from the store?`)) return;
+  if (storeItems[idx].id) {
+    try { await API.deleteStoreItem(storeItems[idx].id); } catch(e) { console.warn('Delete store item error:', e); }
   }
+  storeItems.splice(idx, 1);
+  renderMain();
 }
 
 // ---- Student Store View ----
@@ -1593,8 +1859,10 @@ function renderStudentStore() {
           else if (!canAfford) stateClass = ' insufficient';
           return `
           <div class="student-store-card${stateClass}">
-            <div class="student-store-card-icon">${item.icon}</div>
-            <div class="student-store-card-name">${item.name}</div>
+            ${item.image_url
+              ? `<img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.name)}" class="student-store-card-img">`
+              : `<div class="student-store-card-icon">${item.icon || '🎁'}</div>`}
+            <div class="student-store-card-name">${escapeHtml(item.name)}</div>
             <div class="student-store-card-price">${keysDisp(item.price)}</div>
             <div class="student-store-card-stock">${soldOut ? 'Sold Out' : item.stock + ' left'}</div>
             ${soldOut
@@ -1620,7 +1888,12 @@ async function storeBuyItem(idx) {
     });
     if (result.success) {
       currentUser.keys_earned = result.newBalance;
-      storeItems[idx].stock = Math.max(0, storeItems[idx].stock - 1);
+      const newStock = Math.max(0, storeItems[idx].stock - 1);
+      storeItems[idx].stock = newStock;
+      // Update stock in DB
+      if (storeItems[idx].id) {
+        try { await API.updateStoreItem(storeItems[idx].id, { stock: newStock }); } catch(e) {}
+      }
       renderMain();
     } else {
       alert(result.error || 'Purchase failed.');
@@ -1628,6 +1901,30 @@ async function storeBuyItem(idx) {
   } catch (e) {
     alert(e.message || 'Purchase failed. Please try again.');
   }
+}
+
+// ---- Store Sneak Peek (Student Dashboard) ----
+function renderStoreSneak() {
+  if (!storeItems || storeItems.length === 0) return '';
+  const peek = storeItems.slice(0, 4);
+  return `
+    <div class="store-peek-section" onclick="navigate('store')">
+      <div class="store-peek-header">
+        <div class="store-peek-title">🏪 Class Store</div>
+        <div class="store-peek-link">See all rewards →</div>
+      </div>
+      <div class="store-peek-grid">
+        ${peek.map(item => `
+          <div class="store-peek-item">
+            ${item.image_url
+              ? `<img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.name)}" class="store-peek-item-img">`
+              : `<div class="store-peek-item-icon">${item.icon || '🎁'}</div>`}
+            <div class="store-peek-item-name">${escapeHtml(item.name)}</div>
+            <div class="store-peek-item-price">${item.price} 🔑</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
 }
 
 // ---- Page: Book Library ----
@@ -2455,6 +2752,98 @@ function renderCelebrate() {
 }
 
 // ---- Page: Teaching Tools ----
+function renderTeacherSettings() {
+  const user = currentUser || {};
+  const grades = ['K','1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th','11th','12th'];
+  const gradeOptions = grades.map(g => `<option value="${g}" ${user.grade === g ? 'selected' : ''}>${g === 'K' ? 'Kindergarten' : g + ' Grade'}</option>`).join('');
+
+  return `
+  <div class="page-header">
+    <h1>${IC.gear} Settings</h1>
+  </div>
+  <div style="max-width:560px">
+    <div class="card" style="padding:28px">
+      <h3 style="margin:0 0 20px;font-size:1.1rem;font-weight:600">Account Settings</h3>
+      <form id="settings-form" style="display:flex;flex-direction:column;gap:16px">
+        <div>
+          <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--g600);margin-bottom:6px">Full Name</label>
+          <input type="text" id="settings-name" class="form-input" value="${user.name || ''}" style="width:100%;padding:10px 14px;border:1px solid var(--g200);border-radius:10px;font-size:0.95rem">
+        </div>
+        <div>
+          <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--g600);margin-bottom:6px">Email Address</label>
+          <input type="email" id="settings-email" class="form-input" value="${user.email || ''}" disabled style="width:100%;padding:10px 14px;border:1px solid var(--g200);border-radius:10px;font-size:0.95rem;background:var(--g50);color:var(--g400)">
+          <small style="color:var(--g400);margin-top:4px;display:block">Email cannot be changed.</small>
+        </div>
+        <div>
+          <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--g600);margin-bottom:6px">Grade Level</label>
+          <select id="settings-grade" class="form-input" style="width:100%;padding:10px 14px;border:1px solid var(--g200);border-radius:10px;font-size:0.95rem;appearance:auto">
+            <option value="">Select grade...</option>
+            ${gradeOptions}
+          </select>
+        </div>
+        <div style="margin-top:8px">
+          <button type="submit" class="btn btn-primary" id="settings-save-btn" style="padding:10px 28px">Save Changes</button>
+          <span id="settings-saved-msg" style="display:none;color:var(--green);font-size:0.875rem;margin-left:12px;font-weight:500">Saved!</span>
+        </div>
+      </form>
+    </div>
+
+    <div class="card" style="padding:28px;margin-top:20px">
+      <h3 style="margin:0 0 12px;font-size:1.1rem;font-weight:600;color:var(--red)">Danger Zone</h3>
+      <p style="color:var(--g500);font-size:0.875rem;margin:0 0 16px">Log out of your account on this device.</p>
+      <button class="btn" style="background:var(--red-l);color:var(--red);border:1px solid var(--red);padding:8px 20px" onclick="logoutAndRedirect()">
+        ${IC.logout} Log Out
+      </button>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    const form = document.getElementById('settings-form');
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('settings-save-btn');
+      const msg = document.getElementById('settings-saved-msg');
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+      try {
+        const res = await fetch('/api/auth/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: document.getElementById('settings-name').value.trim(),
+            grade: document.getElementById('settings-grade').value
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          // Update local currentUser
+          if (data.user) {
+            currentUser.name = data.user.name || currentUser.name;
+            currentUser.grade = data.user.grade || currentUser.grade;
+          }
+          msg.style.display = 'inline';
+          setTimeout(() => msg.style.display = 'none', 3000);
+          renderSidebar(); // Update sidebar with new name
+          renderHeader();
+        } else {
+          alert(data.error || 'Failed to save settings.');
+        }
+      } catch(err) {
+        alert('Failed to save. Please try again.');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Save Changes';
+    });
+  })();
+  <\/script>`;
+}
+
+function logoutAndRedirect() {
+  fetch('/api/auth/logout', { method: 'POST' })
+    .then(() => window.location.href = '/pages/signin.html');
+}
+
 function renderAITools() {
   const tools = [
     { name: 'Generate Quiz Questions',   desc: 'Create custom comprehension questions for any book in the library.', barColor: 'blue',   iconColor: 'blue',   icon: IC.layers },
@@ -3363,6 +3752,8 @@ function renderStudentDashboard() {
       </div>
     </div>
 
+    ${renderStoreSneak()}
+
     <div style="margin-top:24px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <h3 style="margin:0;font-size:1rem;font-weight:700">Browse Books</h3>
@@ -3410,8 +3801,18 @@ function renderStudentQuizzes() {
   return `
     <div class="page-header"><h1>My Quizzes</h1></div>
     <div class="stat-cards" style="grid-template-columns: repeat(2, 1fr)">
-      <div class="stat-card"><div class="stat-card-label">Quizzes Completed</div><div class="stat-card-value">${s.quizzes}</div></div>
-      <div class="stat-card"><div class="stat-card-label">Keys Earned</div><div class="stat-card-value">${s.keys}</div></div>
+      <div class="stat-card" style="display:flex;align-items:center;gap:14px">
+        <div style="width:44px;height:44px;border-radius:var(--radius-md);background:linear-gradient(135deg,#dbeafe,#bfdbfe);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+        </div>
+        <div><div class="stat-card-label">Quizzes Completed</div><div class="stat-card-value">${s.quizzes}</div></div>
+      </div>
+      <div class="stat-card" style="display:flex;align-items:center;gap:14px">
+        <div style="width:44px;height:44px;border-radius:var(--radius-md);background:linear-gradient(135deg,#fef3c7,#fde68a);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><circle cx="8" cy="8" r="4"/><path d="M10.5 10.5L21 21"/><path d="M16 16l5 0"/><path d="M19 13l0 6"/></svg>
+        </div>
+        <div><div class="stat-card-label">Keys Earned</div><div class="stat-card-value">${s.keys}</div></div>
+      </div>
     </div>
 
     ${incompleteBooks.length > 0 ? `
@@ -3943,6 +4344,121 @@ function renderOwnerSettings() {
   `;
 }
 
+// ---- Owner: Reward Gallery Management ----
+let galleryAdding = false;
+let galleryNewPreview = null;
+
+function renderOwnerGallery() {
+  return `
+    <div class="page-header">
+      <h1>Reward Gallery <span class="badge badge-gold">${rewardGallery.length}</span></h1>
+      <div class="page-header-actions">
+        <button class="btn btn-primary btn-sm" onclick="galleryAdding=true; galleryNewPreview=null; renderMain()">${IC.plus} Add Image</button>
+      </div>
+    </div>
+
+    <div class="info-panel" style="margin-bottom:20px">
+      <h4>${IC.info} Reward Image Gallery</h4>
+      <p>Upload images here for teachers to use as reward icons in their Class Store. Teachers can choose from these images when creating store rewards (stickers, badges, prizes, etc).</p>
+    </div>
+
+    ${galleryAdding ? `
+    <div class="store-edit-card" style="background:#fff;border:2px solid var(--blue);border-radius:var(--radius-md);padding:20px;margin-bottom:16px">
+      <h4 style="margin-bottom:12px;font-size:0.9375rem;font-weight:600;color:var(--g900)">Upload New Image</h4>
+      <div style="display:flex;gap:16px;align-items:end">
+        <div>
+          <label style="font-size:0.75rem;font-weight:600;color:var(--g500);display:block;margin-bottom:4px">Image</label>
+          <div style="position:relative;width:80px;height:80px;border:2px dashed var(--g300);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;background:var(--g50)" onclick="document.getElementById('gallery-new-file').click()">
+            ${galleryNewPreview
+              ? `<img src="${galleryNewPreview}" style="width:100%;height:100%;object-fit:cover">`
+              : `<span style="font-size:2rem;color:var(--g400)">+</span>`}
+            <input id="gallery-new-file" type="file" accept="image/*" style="display:none" onchange="galleryPreviewNew(this)">
+          </div>
+        </div>
+        <div style="flex:1">
+          <label style="font-size:0.75rem;font-weight:600;color:var(--g500);display:block;margin-bottom:4px">Name</label>
+          <input id="gallery-new-name" type="text" placeholder="e.g. Gold Star Sticker" style="width:100%;padding:8px 12px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:0.875rem">
+        </div>
+        <div>
+          <label style="font-size:0.75rem;font-weight:600;color:var(--g500);display:block;margin-bottom:4px">Category</label>
+          <select id="gallery-new-category" style="padding:8px 12px;border:1.5px solid var(--g200);border-radius:var(--radius-sm);font-size:0.875rem">
+            <option value="stickers">Stickers</option>
+            <option value="badges">Badges</option>
+            <option value="prizes">Prizes</option>
+            <option value="general">General</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="galleryAddItem()">Upload</button>
+          <button class="btn btn-ghost btn-sm" onclick="galleryAdding=false; galleryNewPreview=null; renderMain()">Cancel</button>
+        </div>
+      </div>
+    </div>` : ''}
+
+    ${rewardGallery.length === 0 ? `
+      <div style="padding:48px;text-align:center;color:var(--g400)">
+        <p>No images in the gallery yet. Click "Add Image" to upload reward icons for teachers to use.</p>
+      </div>` : `
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:16px">
+        ${rewardGallery.map(g => `
+          <div style="background:#fff;border:1.5px solid var(--g200);border-radius:var(--radius-md);padding:12px;text-align:center;position:relative">
+            <img src="${escapeHtml(g.image_url)}" alt="${escapeHtml(g.name)}" style="width:80px;height:80px;object-fit:cover;border-radius:var(--radius-sm);margin-bottom:8px">
+            <div style="font-size:0.8125rem;font-weight:600;color:var(--g700);margin-bottom:2px">${escapeHtml(g.name)}</div>
+            <div style="font-size:0.6875rem;color:var(--g400);text-transform:capitalize;margin-bottom:8px">${g.category || 'general'}</div>
+            <button class="btn btn-sm btn-ghost" onclick="galleryRemoveItem(${g.id})" style="color:var(--red);font-size:0.75rem">${IC.x} Remove</button>
+          </div>
+        `).join('')}
+      </div>`}
+  `;
+}
+
+function galleryPreviewNew(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    resizeImage(e.target.result, 200, 200, (resized) => {
+      galleryNewPreview = resized;
+      renderMain();
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+async function galleryAddItem() {
+  const name = document.getElementById('gallery-new-name')?.value?.trim();
+  const category = document.getElementById('gallery-new-category')?.value || 'general';
+  if (!name) { alert('Please enter a name for this image.'); return; }
+  if (!galleryNewPreview) { alert('Please select an image to upload.'); return; }
+
+  try {
+    const item = await API.addRewardGallery({ name, imageData: galleryNewPreview, category });
+    if (item) {
+      rewardGallery.push(item);
+    }
+  } catch(e) {
+    alert('Failed to upload image. Please try again.');
+    return;
+  }
+
+  galleryAdding = false;
+  galleryNewPreview = null;
+  renderMain();
+  renderSidebar(); // Update badge count
+}
+
+async function galleryRemoveItem(id) {
+  if (!confirm('Remove this image from the gallery? Teachers who are already using it will keep their existing store items.')) return;
+  try {
+    await API.deleteRewardGallery(id);
+    rewardGallery = rewardGallery.filter(g => g.id !== id);
+  } catch(e) {
+    alert('Failed to remove image.');
+  }
+  renderMain();
+  renderSidebar();
+}
+
 // ---- Boot ----
 document.addEventListener('DOMContentLoaded', async () => {
   // Detect user role from session
@@ -4031,6 +4547,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const rawAssignments = await API.getAssignments(currentUser.classId);
         assignments = rawAssignments.map(mapAssignmentFromAPI);
       } catch(e) { console.warn('Could not load assignments:', e); }
+
+      // Load store items from DB
+      await loadStoreItems();
     }
   }
 
@@ -4068,6 +4587,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       // No studentId from server — still load favorites from localStorage
       studentFavorites = _loadFavsLocal();
+    }
+
+    // Load store items for student (to show sneak peek on dashboard + store page)
+    if (currentUser?.classId) {
+      await loadStoreItems();
     }
 
     // Auto-launch onboarding wizard for new students (onboarded === 0)
@@ -4110,6 +4634,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       ownerTeachers = teachers;
       ownerStudents = students_data;
     } catch(e) { console.warn('Could not load owner data:', e); }
+    // Load reward gallery for owner
+    await loadRewardGallery();
   } else if (userRole === 'principal') {
     page = 'principal-dashboard';
   } else if (userRole === 'parent') {
@@ -4142,6 +4668,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       } catch(e) { console.warn('Could not load class analytics:', e); }
     }
+  }
+
+  // Check for deep-link from homepage (e.g. ?book=56) for logged-in users
+  const urlParams = new URLSearchParams(window.location.search);
+  const bookDeepLink = urlParams.get('book');
+  const pageDeepLink = urlParams.get('page');
+  if (bookDeepLink) {
+    page = 'book-detail';
+    renderSidebar();
+    renderHeader();
+    openBook(parseInt(bookDeepLink));
+    return;
+  }
+  if (pageDeepLink) {
+    page = pageDeepLink;
   }
 
   renderSidebar();

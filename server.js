@@ -155,11 +155,19 @@ app.post('/api/auth/login', async (req, res) => {
       return res.json({ success: true, user: sessionUser });
 
     } else {
-      // Teacher / Principal login: find by email
+      // Teacher / Parent / Principal login: find by email + verify password
       if (!email) return res.status(400).json({ error: 'Please enter your email.' });
 
       const user = await db.getUserByEmail(email);
       if (!user) return res.status(400).json({ error: 'No account found with this email. Did you sign up first?' });
+
+      // Verify password if the account has one set
+      if (user.password_hash) {
+        if (!password) return res.status(400).json({ error: 'Please enter your password.' });
+        const passwordMatch = await bcrypt.compare(password, user.password_hash);
+        if (!passwordMatch) return res.status(400).json({ error: 'Incorrect password. Please try again.' });
+      }
+      // If no password_hash yet (legacy account), allow login without password
 
       const sessionUser = await buildSessionUser(user);
       req.session.userId = user.id;
@@ -270,6 +278,35 @@ app.post('/api/auth/logout', (req, res) => {
   res.json({ success: true });
 });
 
+app.put('/api/auth/settings', async (req, res) => {
+  if (!req.session.user) return res.status(401).json({ error: 'Not authenticated' });
+  const { name, grade } = req.body;
+  const userId = req.session.userId;
+
+  try {
+    // Update user name
+    if (name && userId) {
+      await db.supabase.from('users').update({ name }).eq('id', userId);
+      req.session.user.name = name;
+    }
+
+    // Update grade on class (for teachers) or student record
+    if (grade) {
+      if (req.session.user.role === 'teacher' && req.session.user.classId) {
+        await db.supabase.from('classes').update({ grade }).eq('id', req.session.user.classId);
+      } else if (req.session.user.role === 'student' && req.session.user.studentId) {
+        await db.supabase.from('students').update({ grade }).eq('id', req.session.user.studentId);
+      }
+      req.session.user.grade = grade;
+    }
+
+    res.json({ success: true, user: req.session.user });
+  } catch (e) {
+    console.error('Settings update error:', e);
+    res.status(500).json({ error: 'Failed to update settings' });
+  }
+});
+
 app.post('/api/auth/signup', async (req, res) => {
   const { name, email, password, role, school, classCode } = req.body;
   if (!name) return res.status(400).json({ error: 'Name is required' });
@@ -282,21 +319,25 @@ app.post('/api/auth/signup', async (req, res) => {
     }
 
     if (role === 'student') {
-      if (!classCode) return res.status(400).json({ error: 'Class code is required for students' });
-      const cls = await db.getClassByCode(classCode);
-      if (!cls) return res.status(400).json({ error: 'Invalid class code. Ask your teacher for the correct code.' });
+      let cls = null;
+      if (classCode) {
+        cls = await db.getClassByCode(classCode);
+        if (!cls) return res.status(400).json({ error: 'Invalid family code. Ask your parent for the correct code.' });
+      }
 
       const userEmail = email || `${name.toLowerCase().replace(/\s+/g, '.')}@student.key2read.com`;
       const user = await db.createUser({ email: userEmail, name, role: 'student', auth_provider: 'local', school: school || '' });
-      const student = await db.createStudent(name, cls.id, user.id);
+      const grade = req.body.grade || cls?.grade || '4th';
+      const student = await db.createStudent(name, cls ? cls.id : null, user.id, grade);
 
       req.session.userId = user.id;
       req.session.user = {
         ...user,
         studentId: student.id,
-        classId: cls.id,
-        className: cls.name,
-        teacherName: cls.teacher_name,
+        classId: cls ? cls.id : null,
+        className: cls ? cls.name : null,
+        teacherName: cls ? cls.teacher_name : null,
+        grade: student.grade || grade,
         reading_level: student.reading_level || 3.0,
         reading_score: student.reading_score || 500,
         keys_earned: student.keys_earned || 0,
@@ -317,7 +358,8 @@ app.post('/api/auth/signup', async (req, res) => {
     } else if (role === 'parent') {
       // Parent signup: create user, link to class via classCode if provided
       const userEmail = email || `${name.toLowerCase().replace(/\s+/g, '.')}@parent.key2read.com`;
-      const user = await db.createUser({ email: userEmail, name, role: 'parent', auth_provider: 'local' });
+      const passwordHash = password ? await bcrypt.hash(password, 10) : null;
+      const user = await db.createUser({ email: userEmail, name, role: 'parent', auth_provider: 'local', password_hash: passwordHash });
       if (!user) return res.status(500).json({ error: 'Failed to create account' });
 
       let sessionUser = { ...user };
@@ -336,7 +378,8 @@ app.post('/api/auth/signup', async (req, res) => {
     } else {
       // Teacher signup (default)
       const userEmail = email || `${name.toLowerCase().replace(/\s+/g, '.')}@key2read.com`;
-      const user = await db.createUser({ email: userEmail, name, role: 'teacher', auth_provider: 'local', school: school || '' });
+      const passwordHash = password ? await bcrypt.hash(password, 10) : null;
+      const user = await db.createUser({ email: userEmail, name, role: 'teacher', auth_provider: 'local', school: school || '', password_hash: passwordHash });
       const grade = req.body.grade || '4th';
       const cls = await db.createClass(`${name}'s Class`, grade, user.id);
 
@@ -719,6 +762,105 @@ app.post('/api/students/:id/favorites/toggle', async (req, res) => {
   } catch (e) {
     console.error('Toggle favorite error:', e);
     res.status(500).json({ error: 'Failed to toggle favorite' });
+  }
+});
+
+// ─── CLASS STORE ITEMS CRUD ───
+
+app.get('/api/store/items', async (req, res) => {
+  const classId = req.query.classId || req.session.user?.classId;
+  if (!classId) return res.json([]);
+  try {
+    const items = await db.getStoreItems(classId);
+    res.json(items);
+  } catch (e) {
+    console.error('Get store items error:', e);
+    res.json([]);
+  }
+});
+
+app.post('/api/store/items', async (req, res) => {
+  const classId = req.body.classId || req.session.user?.classId;
+  if (!classId) return res.status(400).json({ error: 'Missing classId' });
+  try {
+    const item = await db.createStoreItem(classId, req.body);
+    if (!item) return res.status(500).json({ error: 'Failed to create item' });
+    res.json(item);
+  } catch (e) {
+    console.error('Create store item error:', e);
+    res.status(500).json({ error: 'Failed to create item' });
+  }
+});
+
+app.put('/api/store/items/:id', async (req, res) => {
+  try {
+    const item = await db.updateStoreItem(req.params.id, req.body);
+    if (!item) return res.status(500).json({ error: 'Failed to update item' });
+    res.json(item);
+  } catch (e) {
+    console.error('Update store item error:', e);
+    res.status(500).json({ error: 'Failed to update item' });
+  }
+});
+
+app.delete('/api/store/items/:id', async (req, res) => {
+  try {
+    const success = await db.deleteStoreItem(req.params.id);
+    if (!success) return res.status(500).json({ error: 'Failed to delete item' });
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Delete store item error:', e);
+    res.status(500).json({ error: 'Failed to delete item' });
+  }
+});
+
+app.post('/api/store/upload-image', async (req, res) => {
+  const { imageData, filename } = req.body;
+  if (!imageData) return res.status(400).json({ error: 'Missing image data' });
+  try {
+    const result = await db.uploadStoreImage(imageData, filename);
+    res.json(result);
+  } catch (e) {
+    console.error('Upload store image error:', e);
+    res.status(500).json({ error: 'Upload failed' });
+  }
+});
+
+// ─── REWARD GALLERY (admin-managed images) ───
+
+app.get('/api/store/gallery', async (req, res) => {
+  try {
+    const items = await db.getRewardGallery();
+    res.json(items);
+  } catch (e) {
+    console.error('Get gallery error:', e);
+    res.json([]);
+  }
+});
+
+app.post('/api/store/gallery', async (req, res) => {
+  const { name, imageData, category } = req.body;
+  if (!name || !imageData) return res.status(400).json({ error: 'Missing name or image' });
+  try {
+    // Upload image first
+    const uploadResult = await db.uploadStoreImage(imageData, name.replace(/\s+/g, '-').toLowerCase());
+    const item = await db.addRewardGalleryItem(name, uploadResult.url, category);
+    if (!item) return res.status(500).json({ error: 'Failed to add gallery item' });
+    res.json(item);
+  } catch (e) {
+    console.error('Add gallery item error:', e);
+    res.status(500).json({ error: 'Failed to add gallery item' });
+  }
+});
+
+app.delete('/api/store/gallery/:id', async (req, res) => {
+  try {
+    const success = await db.deleteRewardGalleryItem(req.params.id);
+    if (!success) return res.status(500).json({ error: 'Failed to delete gallery item' });
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Delete gallery item error:', e);
+    res.status(500).json({ error: 'Failed to delete gallery item' });
   }
 });
 

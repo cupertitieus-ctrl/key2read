@@ -188,7 +188,7 @@ ${BEST_ANSWER_RULES}
 ${QUALITY_GATE}
 
 ═══ ADDITIONAL RULES ═══
-• strategy_tip: Format MUST be "Reread this chapter to find the answer." (Do NOT reference specific page numbers — those will be added separately.)
+• strategy_tip: Must reference a SPECIFIC moment, detail, or scene from the chapter summary. Format examples: "Think about the part where [specific detail]...", "Remember when [character] did [specific action]...", "Look for the moment where [event happens]..." Do NOT use generic hints like "Reread this chapter to find the answer."
 • explanation: 2-3 sentences, friendly and encouraging tone. For the BEST answer question, also explain why the other options are weaker.
 • passage_excerpt: A short relevant quote from the chapter (1-2 sentences). May be empty if the question is about the whole chapter.
 • vocabulary_words: Array of 0-3 Tier 2/3 words from the answer choices. At least 2 out of ${questionCount} questions MUST have vocabulary_words.
@@ -206,7 +206,7 @@ Respond in valid JSON only. No text before or after the JSON.
       "options": ["A", "B", "C", "D"],
       "correct_answer": 0,
       "strategy_type": "finding-details",
-      "strategy_tip": "Reread this chapter to find the answer.",
+      "strategy_tip": "Think about the part where [specific detail from chapter]...",
       "explanation": "...",
       "vocabulary_words": ["word1"]
     }
