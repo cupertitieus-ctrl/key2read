@@ -26,9 +26,12 @@ async function generateWithRetry(book, ch, questionCount, pages) {
       );
       return generated;
     } catch (e) {
-      if (e.message && e.message.includes('rate_limit') && attempt < MAX_RETRIES) {
-        console.log(`    ⏳ Rate limited, waiting 60s before retry ${attempt + 1}/${MAX_RETRIES}...`);
-        await new Promise(r => setTimeout(r, 60000));
+      const msg = e.message || '';
+      const retryable = msg.includes('rate_limit') || msg.includes('overloaded') || msg.includes('Overloaded') || msg.includes('timed out') || msg.includes('529');
+      if (retryable && attempt < MAX_RETRIES) {
+        const waitSec = msg.includes('rate_limit') ? 60 : 90;
+        console.log(`    ⏳ ${msg.includes('rate_limit') ? 'Rate limited' : 'API overloaded/timeout'}, waiting ${waitSec}s before retry ${attempt + 1}/${MAX_RETRIES}...`);
+        await new Promise(r => setTimeout(r, waitSec * 1000));
       } else {
         throw e;
       }

@@ -185,8 +185,8 @@ async function generateChapterQuiz(bookTitle, bookAuthor, chapterNumber, chapter
     ? `\nThis chapter spans pages ${pageStart} to ${pageEnd} in the physical book.`
     : '';
   const pageTip = hasPages
-    ? `• strategy_tip: Must reference a REAL page number from this chapter (pages ${pageStart}-${pageEnd}) AND a specific moment. Format: "Go back to page [number] and reread the part where [specific detail]..." or "Look at page [number] where [character] does [action]..." ALWAYS include a real page number between ${pageStart} and ${pageEnd}. Early chapter events happen closer to page ${pageStart}, later events closer to page ${pageEnd}. Do NOT use generic hints like "Reread this chapter" or "Think about the story." Do NOT make up page numbers outside the range ${pageStart}-${pageEnd}.`
-    : `• strategy_tip: Must reference a specific moment from the chapter with as much detail as possible. Format: "Go back and reread the part where [specific detail]..." or "Think about the part where [character] does [action]..." Be as specific as possible about which moment in the chapter to revisit.`;
+    ? `• strategy_tip: Keep it SHORT and simple — just tell the student which page to look at. Format: "Go back to page [number] and reread." or "Check page [number]." Use a REAL page number between ${pageStart} and ${pageEnd} — early events near page ${pageStart}, later events near page ${pageEnd}. Do NOT give away the answer or describe what happens on that page. Do NOT make up page numbers outside ${pageStart}-${pageEnd}.`
+    : `• strategy_tip: Keep it SHORT — just tell the student to reread the chapter. Format: "Go back and reread this chapter." Do NOT give away the answer or describe specific story details.`;
 
   const prompt = `You are creating a reading comprehension quiz for children ages 6-8 (${gradeLevel || '2nd-3rd'} grade) about "${bookTitle}" by ${bookAuthor}.
 Chapter ${chapterNumber}: "${chapterTitle}"

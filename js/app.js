@@ -113,6 +113,32 @@ function sortBooksForDisplay(bookList) {
 
 let quizHistory = [];
 
+// ---- API Cache: Avoid redundant network requests ----
+// Cache quiz results so modals don't re-fetch the same data
+const _apiCache = {
+  quizResults: null,
+  quizResultsAt: 0,
+};
+const CACHE_TTL = 60000; // 60 seconds — data refreshes after this
+
+/** Get quiz results from cache or API. Avoids 3+ redundant calls from modals. */
+async function getCachedQuizResults(studentId) {
+  const now = Date.now();
+  if (_apiCache.quizResults && (now - _apiCache.quizResultsAt) < CACHE_TTL) {
+    return _apiCache.quizResults;
+  }
+  const results = await API.getQuizResults(studentId);
+  _apiCache.quizResults = results;
+  _apiCache.quizResultsAt = now;
+  return results;
+}
+
+/** Invalidate quiz results cache (call after quiz completion or purchase) */
+function invalidateQuizResultsCache() {
+  _apiCache.quizResults = null;
+  _apiCache.quizResultsAt = 0;
+}
+
 // ---- Growth Data (6 months: Sep-Feb) ----
 const months = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb'];
 let growthData = {};
@@ -699,11 +725,8 @@ async function launchQuiz(bookId, chapterNum, sid) {
 
   try {
     const quizData = await API.getChapterQuiz(bookId, chapterNum);
-    // Get book info
+    // Get book info (use globally cached books array — no extra API call)
     let book = books.find(b => b.id === bookId);
-    if (!book) {
-      try { const allBooks = await API.getBooks(); book = allBooks.find(b => b.id === bookId); } catch(e) {}
-    }
     if (!book) book = { title: 'Book Quiz', author: '' };
 
     // Determine if there's a next chapter
@@ -718,6 +741,8 @@ async function launchQuiz(bookId, chapterNum, sid) {
         s.keys = (s.keys || 0) + (results.keysEarned || 0);
         s.quizzes = (s.quizzes || 0) + 1;
       }
+      // Invalidate cached quiz results so modals fetch fresh data
+      invalidateQuizResultsCache();
       // Update currentUser so dashboard shows new scores immediately
       if (currentUser && userRole === 'student') {
         currentUser.reading_score = results.newReadingScore || currentUser.reading_score;
@@ -1964,6 +1989,7 @@ async function storeBuyItem(idx) {
     });
     if (result.success) {
       currentUser.keys_earned = result.newBalance;
+      invalidateQuizResultsCache(); // Balance changed — clear cached results
       const newStock = Math.max(0, storeItems[idx].stock - 1);
       storeItems[idx].stock = newStock;
       // Update stock in DB
@@ -2464,10 +2490,8 @@ async function launchFullBookQuiz(bookId, sid) {
 
   try {
     const quizData = await API.getFullBookQuiz(bookId);
+    // Use globally cached books array — no extra API call
     let book = books.find(b => b.id === bookId);
-    if (!book) {
-      try { const allBooks = await API.getBooks(); book = allBooks.find(b => b.id === bookId); } catch(e) {}
-    }
     if (!book) book = { title: 'Book Quiz', author: '' };
 
     // Build a synthetic chapter for the full book quiz
@@ -2497,6 +2521,8 @@ async function launchFullBookQuiz(bookId, sid) {
         s.keys = (s.keys || 0) + (results.keysEarned || 0);
         s.quizzes = (s.quizzes || 0) + 1;
       }
+      // Invalidate cached quiz results so modals fetch fresh data
+      invalidateQuizResultsCache();
       if (currentUser && userRole === 'student') {
         currentUser.reading_score = results.newReadingScore || currentUser.reading_score;
         currentUser.reading_level = results.newReadingLevel || currentUser.reading_level;
@@ -3783,7 +3809,7 @@ async function showKeysBreakdown() {
     </div>`;
 
   try {
-    const results = await API.getQuizResults(currentUser.studentId);
+    const results = await getCachedQuizResults(currentUser.studentId);
     const withKeys = results.filter(r => r.keys_earned > 0);
     const totalKeys = withKeys.reduce((sum, r) => sum + (r.keys_earned || 0), 0);
 
@@ -3908,7 +3934,7 @@ async function showCompletedQuizzes() {
     </div>`;
 
   try {
-    const results = await API.getQuizResults(currentUser.studentId);
+    const results = await getCachedQuizResults(currentUser.studentId);
     const totalQuizzes = results.length;
 
     // Group completed quizzes by book
@@ -4022,7 +4048,7 @@ async function showQuizResult(bookId, chapterNumber) {
     </div>`;
 
   try {
-    const results = await API.getQuizResults(currentUser.studentId);
+    const results = await getCachedQuizResults(currentUser.studentId);
     // Find matching result for this book + chapter (most recent)
     const match = results.find(r => r.book_id === bookId && r.chapter_number === chapterNumber)
                 || results.find(r => r.chapter_number === chapterNumber);
@@ -4039,8 +4065,6 @@ async function showQuizResult(bookId, chapterNumber) {
     const keys = match.keys_earned || 0;
     const hints = match.hints_used || 0;
     const date = match.completed_at ? new Date(match.completed_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '';
-    const timeSec = match.time_taken_seconds || 0;
-    const timeStr = timeSec > 0 ? `${Math.floor(timeSec / 60)}m ${timeSec % 60}s` : '';
     const chTitle = match.chapter_title || `Chapter ${chapterNumber}`;
     const bTitle = match.book_title || '';
 
@@ -4082,6 +4106,9 @@ async function showQuizResult(bookId, chapterNumber) {
         ${keys > 0 ? `<div style="display:flex;justify-content:space-between;padding:10px 12px;background:linear-gradient(135deg,#FFF7ED,#FEF3C7);border-radius:var(--radius-sm)">
           <span style="font-size:0.8125rem;color:var(--g600)">🔑 Keys Earned</span>
           <span style="font-size:0.875rem;font-weight:700;color:#D97706">+${keys}</span>
+        </div>` : score >= 80 ? `<div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--g50);border-radius:var(--radius-sm)">
+          <span style="font-size:0.8125rem;color:var(--g600)">🔑 Keys Earned</span>
+          <span style="font-size:0.8125rem;color:var(--g400)">0 — Keys already earned for this chapter</span>
         </div>` : `<div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--g50);border-radius:var(--radius-sm)">
           <span style="font-size:0.8125rem;color:var(--g400)">🔑 Keys Earned</span>
           <span style="font-size:0.8125rem;color:var(--g400)">Score 80%+ to earn keys!</span>
@@ -4089,10 +4116,6 @@ async function showQuizResult(bookId, chapterNumber) {
         ${date ? `<div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--g50);border-radius:var(--radius-sm)">
           <span style="font-size:0.8125rem;color:var(--g600)">📅 Date</span>
           <span style="font-size:0.8125rem;font-weight:600;color:var(--g700)">${date}</span>
-        </div>` : ''}
-        ${timeStr ? `<div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--g50);border-radius:var(--radius-sm)">
-          <span style="font-size:0.8125rem;color:var(--g600)">⏱️ Time</span>
-          <span style="font-size:0.8125rem;font-weight:600;color:var(--g700)">${timeStr}</span>
         </div>` : ''}
         ${hints > 0 ? `<div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--g50);border-radius:var(--radius-sm)">
           <span style="font-size:0.8125rem;color:var(--g600)">💡 Hints Used</span>
