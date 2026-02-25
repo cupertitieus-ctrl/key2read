@@ -427,6 +427,7 @@ function renderSidebar() {
   if ((userRole === 'student' || userRole === 'child') && currentUser) {
     const tp = {
       keys: currentUser.keys_earned || 0,
+      totalKeys: currentUser?.weeklyStats?.totalKeysEarned || currentUser.keys_earned || 0,
       quizzes: currentUser.quizzes_completed || 0,
       books: currentUser.totalBooksCompleted || 0
     };
@@ -441,8 +442,8 @@ function renderSidebar() {
       <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
         <div onclick="showKeysBreakdown()" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(255,255,255,0.08);border-radius:8px">
           <img src="/public/Key_Icon.png" alt="Keys" style="width:20px;height:20px;object-fit:contain">
-          <span style="color:rgba(255,255,255,0.7);font-size:0.8rem;flex:1">Keys</span>
-          <span style="color:#fff;font-weight:700;font-size:0.875rem">${tp.keys}</span>
+          <span style="color:rgba(255,255,255,0.7);font-size:0.8rem;flex:1">Total Keys</span>
+          <span style="color:#fff;font-weight:700;font-size:0.875rem">${tp.totalKeys}</span>
         </div>
         <div onclick="showCompletedQuizzes()" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(255,255,255,0.08);border-radius:8px">
           <img src="/public/Paper_Icon_.png" alt="Quizzes" style="width:20px;height:20px;object-fit:contain">
@@ -510,6 +511,11 @@ function renderHeader() {
                 (currentUser?.grade || '4th') + ' Grade Teacher';
   document.getElementById('dash-header').innerHTML = `
     <div class="header-tabs">
+      <button class="mobile-menu-btn" onclick="toggleMobileSidebar()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
     </div>
     <div class="header-search">
       ${IC.search}
@@ -536,6 +542,26 @@ async function handleLogout() {
   window.location.href = 'signin.html';
 }
 
+// ---- Mobile Sidebar Toggle ----
+function toggleMobileSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  if (!sidebar) return;
+  const isOpen = sidebar.classList.toggle('mobile-open');
+  let overlay = document.querySelector('.mobile-overlay');
+  if (isOpen) {
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'mobile-overlay';
+      overlay.onclick = () => toggleMobileSidebar();
+      document.querySelector('.dashboard').appendChild(overlay);
+    }
+    // Force reflow then add active class for transition
+    requestAnimationFrame(() => overlay.classList.add('active'));
+  } else {
+    if (overlay) overlay.classList.remove('active');
+  }
+}
+
 // ---- Refresh student data from server ----
 async function refreshStudentData() {
   if (!currentUser?.studentId) return;
@@ -560,6 +586,9 @@ function navigate(p, detail, sid) {
   detailId = detail != null ? detail : null;
   studentId = sid != null ? sid : null;
   if (p !== 'reports') reportStudentId = null;
+  // Close mobile sidebar if open
+  document.querySelector('.sidebar')?.classList.remove('mobile-open');
+  document.querySelector('.mobile-overlay')?.classList.remove('active');
   renderSidebar();
   renderMain();
   // Refresh data from server when navigating to student pages from quiz player
@@ -1972,8 +2001,10 @@ function renderStoreSneak() {
             ${item.image_url
               ? `<img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.name)}" class="store-peek-item-img">`
               : `<div class="store-peek-item-icon">${item.icon || '🎁'}</div>`}
-            <div class="store-peek-item-name">${escapeHtml(item.name)}</div>
-            <div class="store-peek-item-price">${item.price} 🔑</div>
+            <div class="store-peek-item-details">
+              <div class="store-peek-item-name">${escapeHtml(item.name)}</div>
+              <div class="store-peek-item-price">${item.price} 🔑</div>
+            </div>
           </div>
         `).join('')}
       </div>
@@ -2369,7 +2400,8 @@ function renderBookDetail() {
                   <span class="list-item-sub">${isCompleted ? '✅ Completed!' : (ch.summary ? ch.summary.substring(0, 80) + '...' : '5 questions')}</span>
                 </div>
               </div>
-              <div class="list-item-right">
+              <div class="list-item-right" style="display:flex;gap:8px;align-items:center">
+                ${isCompleted ? `<span class="btn btn-sm btn-outline" onclick="event.stopPropagation(); showQuizResult(${b.id}, ${ch.chapter_number})" style="font-size:0.75rem">View Results</span>` : ''}
                 <span class="btn btn-sm ${isCompleted ? 'btn-outline' : 'btn-primary'}">${isCompleted ? 'Retake Quiz' : 'Take Quiz'}</span>
               </div>
             </div>`;
@@ -3945,6 +3977,107 @@ async function showCompletedQuizzes() {
   }
 }
 
+async function showQuizResult(bookId, chapterNumber) {
+  if (!currentUser?.studentId) return;
+  const modal = document.getElementById('modal-overlay');
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width:420px">
+      <div class="modal-header">
+        <h3>Quiz Results</h3>
+        <button class="modal-close" onclick="closeModal()">${IC.x}</button>
+      </div>
+      <div class="modal-body" style="text-align:center;padding:32px">
+        <p style="color:var(--g400)">Loading...</p>
+      </div>
+    </div>`;
+  modal.classList.add('active');
+
+  try {
+    const results = await API.getQuizResults(currentUser.studentId);
+    // Find matching result for this book + chapter (most recent)
+    const match = results.find(r => r.book_id === bookId && r.chapter_number === chapterNumber)
+                || results.find(r => r.chapter_number === chapterNumber);
+    if (!match) {
+      modal.querySelector('.modal-body').innerHTML = '<p style="color:var(--g400);text-align:center">No results found for this quiz.</p>';
+      return;
+    }
+
+    const score = match.score || 0;
+    const scoreColor = score >= 80 ? '#10B981' : score >= 60 ? '#F59E0B' : '#EF4444';
+    const correct = match.correct_count || 0;
+    const total = match.total_questions || 5;
+    const missed = total - correct;
+    const keys = match.keys_earned || 0;
+    const hints = match.hints_used || 0;
+    const date = match.completed_at ? new Date(match.completed_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+    const timeSec = match.time_taken_seconds || 0;
+    const timeStr = timeSec > 0 ? `${Math.floor(timeSec / 60)}m ${timeSec % 60}s` : '';
+    const chTitle = match.chapter_title || `Chapter ${chapterNumber}`;
+    const bTitle = match.book_title || '';
+
+    const body = modal.querySelector('.modal-body');
+    body.style.textAlign = '';
+    body.style.padding = '';
+    body.innerHTML = `
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:0.8125rem;color:var(--g400);margin-bottom:4px">${bTitle}</div>
+        <div style="font-size:1rem;font-weight:700;color:var(--navy)">Ch. ${chapterNumber}: ${chTitle}</div>
+      </div>
+
+      <div style="display:flex;justify-content:center;margin-bottom:20px">
+        <div style="position:relative;width:100px;height:100px">
+          <svg viewBox="0 0 120 120" width="100" height="100">
+            <circle cx="60" cy="60" r="54" fill="none" stroke="var(--g200)" stroke-width="8"/>
+            <circle cx="60" cy="60" r="54" fill="none" stroke="${scoreColor}" stroke-width="8" stroke-linecap="round"
+              stroke-dasharray="${(score / 100) * 339.3} 339.3" transform="rotate(-90 60 60)"/>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <span style="font-size:1.5rem;font-weight:800;color:${scoreColor}">${Math.round(score)}%</span>
+            <span style="font-size:0.75rem;color:var(--g400)">${correct}/${total}</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+        <div style="background:var(--g50);padding:12px;border-radius:var(--radius-sm);text-align:center">
+          <div style="font-size:1.25rem;font-weight:800;color:var(--green)">${correct}</div>
+          <div style="font-size:0.75rem;color:var(--g400)">Correct</div>
+        </div>
+        <div style="background:var(--g50);padding:12px;border-radius:var(--radius-sm);text-align:center">
+          <div style="font-size:1.25rem;font-weight:800;color:var(--red)">${missed}</div>
+          <div style="font-size:0.75rem;color:var(--g400)">Missed</div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${keys > 0 ? `<div style="display:flex;justify-content:space-between;padding:10px 12px;background:linear-gradient(135deg,#FFF7ED,#FEF3C7);border-radius:var(--radius-sm)">
+          <span style="font-size:0.8125rem;color:var(--g600)">🔑 Keys Earned</span>
+          <span style="font-size:0.875rem;font-weight:700;color:#D97706">+${keys}</span>
+        </div>` : `<div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--g50);border-radius:var(--radius-sm)">
+          <span style="font-size:0.8125rem;color:var(--g400)">🔑 Keys Earned</span>
+          <span style="font-size:0.8125rem;color:var(--g400)">Score 80%+ to earn keys!</span>
+        </div>`}
+        ${date ? `<div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--g50);border-radius:var(--radius-sm)">
+          <span style="font-size:0.8125rem;color:var(--g600)">📅 Date</span>
+          <span style="font-size:0.8125rem;font-weight:600;color:var(--g700)">${date}</span>
+        </div>` : ''}
+        ${timeStr ? `<div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--g50);border-radius:var(--radius-sm)">
+          <span style="font-size:0.8125rem;color:var(--g600)">⏱️ Time</span>
+          <span style="font-size:0.8125rem;font-weight:600;color:var(--g700)">${timeStr}</span>
+        </div>` : ''}
+        ${hints > 0 ? `<div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--g50);border-radius:var(--radius-sm)">
+          <span style="font-size:0.8125rem;color:var(--g600)">💡 Hints Used</span>
+          <span style="font-size:0.8125rem;font-weight:600;color:var(--g700)">${hints}</span>
+        </div>` : ''}
+      </div>
+    `;
+  } catch(e) {
+    console.error('View results error:', e);
+    const body = modal.querySelector('.modal-body');
+    if (body) body.innerHTML = '<p style="color:var(--red);text-align:center">Failed to load results.</p>';
+  }
+}
+
 // ============================================================
 // ---- STUDENT DASHBOARD PAGES ----
 // ============================================================
@@ -4157,6 +4290,7 @@ function renderStudentProgress() {
 
   const w = currentUser?.weeklyStats || { keysThisWeek: 0, quizzesThisWeek: 0, booksCompletedThisWeek: 0 };
   const totalBooksCompleted = currentUser?.totalBooksCompleted || 0;
+  const totalKeysEarned = currentUser?.weeklyStats?.totalKeysEarned || s.keys;
 
   return `
     <div class="page-header"><h1>My Reading Progress</h1></div>
@@ -4188,15 +4322,19 @@ function renderStudentProgress() {
     <div class="total-progress-section" style="margin-top:24px">
       <h3 class="total-progress-title"><img src="/public/Star_Icon_.png" alt="" style="width:28px;height:28px;object-fit:contain;vertical-align:middle;margin-right:6px">Total Progress</h3>
       <div class="total-progress-cards">
-        <div class="total-progress-card">
-          <span class="total-progress-value">${s.keys}</span>
-          <span class="total-progress-label">Total Keys</span>
+        <div class="total-progress-card" onclick="showKeysBreakdown()" style="cursor:pointer">
+          <span class="total-progress-value">${totalKeysEarned}</span>
+          <span class="total-progress-label">Total Keys <span class="info-tip" data-tip="All the keys you've earned from quizzes!">ℹ️</span></span>
         </div>
-        <div class="total-progress-card">
+        <div class="total-progress-card" onclick="navigate('store')" style="cursor:pointer">
+          <span class="total-progress-value" style="color:#D97706">${s.keys}</span>
+          <span class="total-progress-label">Keys to Spend <span class="info-tip" data-tip="Keys you can use in the class store!">ℹ️</span></span>
+        </div>
+        <div class="total-progress-card" onclick="showCompletedQuizzes()" style="cursor:pointer">
           <span class="total-progress-value">${s.quizzes}</span>
           <span class="total-progress-label">Total Quizzes</span>
         </div>
-        <div class="total-progress-card">
+        <div class="total-progress-card" onclick="showCompletedBooks()" style="cursor:pointer">
           <span class="total-progress-value">${totalBooksCompleted}</span>
           <span class="total-progress-label">Total Books</span>
         </div>

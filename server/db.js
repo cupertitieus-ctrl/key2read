@@ -253,6 +253,7 @@ async function getStudentResults(studentId) {
     ...r,
     chapter_title: r.chapters?.title,
     chapter_number: r.chapters?.chapter_number,
+    book_id: r.chapters?.book_id,
     book_title: r.chapters?.books?.title,
     chapters: undefined
   }));
@@ -670,10 +671,17 @@ async function getWeeklyStats(studentId) {
     .eq('student_id', studentId)
     .gte('completed_at', mondayISO);
 
+  // Compute total keys ever earned (all-time sum from all quiz results)
+  const { data: allKeysData } = await supabase
+    .from('quiz_results')
+    .select('keys_earned')
+    .eq('student_id', studentId);
+  const totalKeysEarned = (allKeysData || []).reduce((sum, r) => sum + (r.keys_earned || 0), 0);
+
   if (!weekResults || weekResults.length === 0) {
     // Still need total books completed (all-time)
     const totalBooksCompleted = await countBooksCompleted(studentId);
-    return { keysThisWeek: 0, quizzesThisWeek: 0, growthScoreThisWeek: 0, booksCompletedThisWeek: 0, totalBooksCompleted };
+    return { keysThisWeek: 0, quizzesThisWeek: 0, growthScoreThisWeek: 0, booksCompletedThisWeek: 0, totalBooksCompleted, totalKeysEarned };
   }
 
   // 2. Simple aggregations
@@ -710,7 +718,7 @@ async function getWeeklyStats(studentId) {
   // 4. Total books completed (all time)
   const totalBooksCompleted = await countBooksCompleted(studentId);
 
-  return { keysThisWeek, quizzesThisWeek, growthScoreThisWeek, booksCompletedThisWeek, totalBooksCompleted };
+  return { keysThisWeek, quizzesThisWeek, growthScoreThisWeek, booksCompletedThisWeek, totalBooksCompleted, totalKeysEarned };
 }
 
 async function countBooksCompleted(studentId) {
