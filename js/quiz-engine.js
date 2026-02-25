@@ -539,7 +539,7 @@ const QuizEngine = (function() {
               const opts = q.options || [];
               const qVocabLower = (q.vocabulary_words || []).map(w => w.toLowerCase());
               const optionVocabWords = vocabWords.filter(w => !qVocabLower.includes(w.toLowerCase()));
-              const markedOpts = opts.map(opt => markContextualVocab(markExplicitVocab(escapeHtml(opt), optionVocabWords), [...testedWords, ...qVocabLower]));
+              const markedOpts = opts.map(opt => markContextualVocab(markExplicitVocab(escapeHtml(opt), optionVocabWords), testedWords));
               const hasVocab = markedOpts.map(m => m.includes('vocab-word'));
               const vocabCount = hasVocab.filter(Boolean).length;
 

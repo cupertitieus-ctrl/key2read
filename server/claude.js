@@ -116,7 +116,7 @@ someone, something, everyone, anything, nobody, nothing, somewhere,
 sunglasses, playground, backyard, birthday, homework, bedroom, flashlight,
 outside, inside, without, lunchbox, treehouse.
 
-IMPORTANT: Each quiz MUST include at least 2 vocabulary words in the vocabulary_words array. Choose Tier 2 academic words or Tier 3 story-specific words that help build reading skills.
+IMPORTANT: Each quiz MUST include vocabulary words spread across MULTIPLE questions (at least 2 different questions must have vocabulary_words). Not every question needs vocab, but if one question has underlined words, at least one other question must also have them. Choose Tier 2 academic words or Tier 3 story-specific words that help build reading skills.
 
 DEFINITION RULE: Any vocabulary word MUST have a definition simpler than the word itself. If you can't explain it in words a 7-year-old understands → pick a different word.
 
