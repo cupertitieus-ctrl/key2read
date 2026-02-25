@@ -4255,7 +4255,7 @@ function renderStudentDashboard() {
           <h3><img src="/public/Badge_Icon.png" alt=""> Badges</h3>
           <span class="dash-section-link" onclick="navigate('student-badges')">See all &rarr;</span>
         </div>
-        <div class="badges-combined">
+        <div class="badges-combined" onclick="navigate('student-badges')" style="cursor:pointer">
           <div class="badges-compact-grid">
             ${getStudentBadges().sort((a, b) => b.earned - a.earned).slice(0, 6).map(b => `
               <div class="badge-compact${b.earned ? '' : ' locked'}" title="${b.name}">
@@ -4486,19 +4486,48 @@ function renderStudentProgress() {
 
 function renderStudentBadges() {
   const badges = getStudentBadges();
+  const earnedCount = badges.filter(b => b.earned).length;
   return `
-    <div class="page-header"><h1>My Badges</h1></div>
-    <div class="dashboard-badge-grid" style="margin-top:8px">
-      ${badges.map(b => `
-        <div class="dashboard-badge-card${b.earned ? '' : ' locked'}" title="${b.desc}">
-          <img class="dashboard-badge-img" src="${b.img}" alt="${b.name}">
-          <div class="dashboard-badge-name">${b.name}</div>
-          <div style="font-size:0.75rem;color:var(--g500);margin-top:4px">${b.desc}</div>
-          <div class="dashboard-badge-status ${b.earned ? 'earned' : 'locked-label'}">${b.earned ? 'Earned' : 'Locked'}</div>
+    <div class="page-header">
+      <h1><img src="/public/Badge_Icon.png" alt="" style="width:48px;height:48px;object-fit:contain;vertical-align:middle;margin-right:8px">My Badges</h1>
+      <span style="font-size:1rem;color:var(--g500);font-weight:600">${earnedCount} / ${badges.length} earned</span>
+    </div>
+    <div class="all-badges-grid">
+      ${badges.map((b, i) => `
+        <div class="all-badge-card${b.earned ? ' earned' : ' locked'}" onclick="showBadgeDetail(${i})">
+          <div class="all-badge-img-wrap">
+            <img src="${b.img}" alt="${b.name}">
+            ${!b.earned ? '<div class="all-badge-lock"><img src="/public/Lock_Icon_.png" alt="Locked"></div>' : ''}
+          </div>
         </div>
       `).join('')}
     </div>
   `;
+}
+
+function showBadgeDetail(idx) {
+  const badges = getStudentBadges();
+  const b = badges[idx];
+  if (!b) return;
+  const modal = document.getElementById('modal-root');
+  modal.innerHTML = `
+    <div class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()" style="max-width:380px">
+        <div class="modal-header">
+          <h3>${b.name}</h3>
+          <button class="modal-close" onclick="closeModal()">${IC.x}</button>
+        </div>
+        <div class="modal-body" style="text-align:center;padding:24px">
+          <div style="position:relative;display:inline-block;margin-bottom:16px">
+            <img src="${b.img}" alt="${b.name}" style="width:140px;height:140px;object-fit:contain;${b.earned ? '' : 'opacity:0.4;filter:grayscale(1);'}">
+            ${!b.earned ? '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"><img src="/public/Lock_Icon_.png" alt="Locked" style="width:48px;height:48px;object-fit:contain"></div>' : ''}
+          </div>
+          <div style="font-size:1.1rem;font-weight:800;color:var(--navy);margin-bottom:8px">${b.name}</div>
+          <div style="font-size:0.9rem;color:var(--g500);margin-bottom:16px;line-height:1.5">${b.desc}</div>
+          ${b.earned ? '<div style="display:inline-block;padding:8px 20px;border-radius:999px;font-size:0.875rem;font-weight:700;background:#ECFDF5;color:#059669">✅ Badge Earned!</div>' : ''}
+        </div>
+      </div>
+    </div>`;
 }
 
 // ============================================================

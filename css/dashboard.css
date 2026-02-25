@@ -3415,6 +3415,72 @@
   line-height: 1;
 }
 
+/* --- All Badges Page --- */
+.all-badges-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+  max-width: 900px;
+}
+.all-badge-card {
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.all-badge-card:hover {
+  transform: scale(1.05);
+}
+.all-badge-img-wrap {
+  position: relative;
+  width: 100%;
+  padding-bottom: 100%;
+  overflow: hidden;
+}
+.all-badge-img-wrap > img {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.all-badge-card.locked .all-badge-img-wrap > img {
+  opacity: 0.4;
+  filter: grayscale(1);
+}
+.all-badge-lock {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 60px;
+}
+.all-badge-lock img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.all-badge-name {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--navy);
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+.all-badge-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--g500);
+}
+.all-badge-card.earned .all-badge-status {
+  color: #059669;
+}
+
 /* --- Info Tooltips --- */
 .info-tip {
   position: relative;
@@ -3593,6 +3659,11 @@
 
   .store-peek-grid {
     grid-template-columns: 1fr;
+  }
+
+  .all-badges-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
   }
 
 }
