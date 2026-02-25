@@ -77,14 +77,15 @@ async function buildSessionUser(user) {
       sessionUser.grade = cls.grade || '4th';
     }
   } else if (user.role === 'parent') {
-    // Parent: look up class_id from the user record
+    // Parent: look up their family class
     if (user.class_id) {
-      const { data: cls } = await db.supabase.from('classes').select('id, name, class_code, users!teacher_id (name)').eq('id', user.class_id).single();
+      const { data: cls } = await db.supabase.from('classes').select('id, name, class_code, grade').eq('id', user.class_id).single();
       if (cls) {
         sessionUser.classId = cls.id;
         sessionUser.classCode = cls.class_code;
+        sessionUser.familyCode = cls.class_code;
         sessionUser.className = cls.name;
-        sessionUser.teacherName = cls.users?.name || '';
+        sessionUser.grade = cls.grade || '4th';
       }
     }
     sessionUser.plan = user.plan || 'free';
@@ -130,17 +131,21 @@ app.post('/api/auth/login', async (req, res) => {
       return res.json({ success: true, user: sessionUser });
 
     } else if (role === 'child') {
-      // Homeschool child login: find by name where no class assigned
+      // Homeschool child login: find by name + family code
       if (!name) return res.status(400).json({ error: 'Please enter your name.' });
+      if (!classCode) return res.status(400).json({ error: 'Please enter your family code.' });
+
+      const cls = await db.getClassByCode(classCode);
+      if (!cls) return res.status(400).json({ error: 'Invalid family code. Ask your parent for the correct code.' });
 
       const { data: studentRecords } = await db.supabase
         .from('students')
         .select('*, users!user_id (id, email, name, role)')
-        .is('class_id', null)
+        .eq('class_id', cls.id)
         .ilike('name', name.trim());
 
       if (!studentRecords || studentRecords.length === 0) {
-        return res.status(400).json({ error: `No homeschool account found for "${name}". Did you sign up first?` });
+        return res.status(400).json({ error: `No child named "${name}" found. Did you sign up first?` });
       }
 
       const studentRecord = studentRecords[0];
@@ -384,24 +389,27 @@ app.post('/api/auth/signup', async (req, res) => {
       return res.json({ success: true, user });
 
     } else if (role === 'parent') {
-      // Parent signup: create user, link to class via classCode if provided
+      // Parent signup: create user + family class with a family code
       const userEmail = email || `${name.toLowerCase().replace(/\s+/g, '.')}@parent.key2read.com`;
       const passwordHash = password ? await bcrypt.hash(password, 10) : null;
       const user = await db.createUser({ email: userEmail, name, role: 'parent', auth_provider: 'local', password_hash: passwordHash });
       if (!user) return res.status(500).json({ error: 'Failed to create account' });
 
-      let sessionUser = { ...user };
-      if (classCode) {
-        const cls = await db.getClassByCode(classCode);
-        if (cls) {
-          sessionUser.classId = cls.id;
-          sessionUser.classCode = cls.class_code;
-          sessionUser.className = cls.name;
-        }
-      }
+      // Create a family "class" for the parent (generates a family code)
+      const familyClass = await db.createClass(`${name}'s Family`, '4th', user.id);
+      // Link the family class to the parent
+      await db.supabase.from('users').update({ class_id: familyClass.id }).eq('id', user.id);
+
+      const sessionUser = {
+        ...user,
+        classId: familyClass.id,
+        classCode: familyClass.class_code,
+        familyCode: familyClass.class_code,
+        className: familyClass.name
+      };
       req.session.userId = user.id;
       req.session.user = sessionUser;
-      return res.json({ success: true, user: sessionUser });
+      return res.json({ success: true, user: sessionUser, familyCode: familyClass.class_code });
 
     } else {
       // Teacher signup (default)

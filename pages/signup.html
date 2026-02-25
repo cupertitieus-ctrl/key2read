@@ -123,11 +123,11 @@
           <input type="text" id="district" class="form-input" placeholder="Lincoln Unified School District">
         </div>
 
-        <!-- Class Code (Student — required) -->
+        <!-- Class/Family Code (Student/Child) -->
         <div class="form-group" id="field-classcode" style="display:none">
-          <label class="form-label" for="classcode">Class Code</label>
+          <label class="form-label" for="classcode" id="classcode-label">Class Code</label>
           <input type="text" id="classcode" class="form-input" placeholder="Enter your class code">
-          <small style="color:var(--g400);margin-top:4px;display:block">Ask your teacher for the class code.</small>
+          <small id="classcode-hint" style="color:var(--g400);margin-top:4px;display:block">Ask your teacher for the class code.</small>
         </div>
 
         <!-- Grade Level (Child/Student) -->
@@ -260,10 +260,17 @@ function selectRole(el) {
     fieldClasscode.style.display    = '';
     fieldStudentGrade.style.display = '';
     fieldPassword.style.display     = 'none';
+    document.getElementById('classcode-label').textContent = 'Class Code';
+    document.getElementById('classcode').placeholder = 'Enter your class code';
+    document.getElementById('classcode-hint').textContent = 'Ask your teacher for the class code.';
   } else if (role === 'child') {
-    // Homeschool child: Grade only, no class code
+    // Homeschool child: Family Code + Grade
+    fieldClasscode.style.display    = '';
     fieldStudentGrade.style.display = '';
     fieldPassword.style.display     = 'none';
+    document.getElementById('classcode-label').textContent = 'Family Code';
+    document.getElementById('classcode').placeholder = 'Enter your family code';
+    document.getElementById('classcode-hint').textContent = 'Ask your parent for the family code.';
   }
 }
 
@@ -329,13 +336,16 @@ document.getElementById('signup-form').addEventListener('submit', async function
       showError(err.message || 'Signup failed. Please try again.');
     }
   } else if (role === 'child') {
-    // Homeschool child: Grade only, no class code
+    // Homeschool child: Family Code + Grade
+    const familyCode = document.getElementById('classcode').value.trim();
     const grade = document.getElementById('student-grade').value;
+    if (!familyCode) return showError('Please enter your family code.');
     if (!grade) return showError('Please select your grade level.');
 
     try {
-      await API.post('/api/auth/signup', { name, role: 'student', grade });
+      await API.post('/api/auth/signup', { name, role: 'student', classCode: familyCode, grade });
       localStorage.setItem('k2r_child_name', name);
+      localStorage.setItem('k2r_child_familycode', familyCode);
       window.location.href = 'dashboard.html';
     } catch (err) {
       showError(err.message || 'Signup failed. Please try again.');

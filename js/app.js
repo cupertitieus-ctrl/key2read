@@ -375,6 +375,8 @@ function renderSidebar() {
       { id: 'reports',    icon: IC.chart, label: 'Growth Reports' },
       { section: 'Resources' },
       { id: 'library',    icon: IC.book,  label: 'Book Library' },
+      { section: 'Account' },
+      { id: 'parent-settings', icon: IC.gear, label: 'Settings' },
     ];
   } else if (userRole === 'guest') {
     items = [
@@ -403,6 +405,7 @@ function renderSidebar() {
   const roleLabel = userRole === 'student' ? (currentUser?.grade || '4th') + ' Grade Student' :
                     userRole === 'owner' ? 'Platform Owner' :
                     userRole === 'principal' ? 'School Principal' :
+                    userRole === 'parent' ? 'Parent' :
                     (currentUser?.grade || '4th') + ' Grade Teacher';
 
   let html = `
@@ -546,6 +549,7 @@ function renderMain() {
     case 'celebrate':  el.innerHTML = renderCelebrate(); break;
     case 'aitools':    el.innerHTML = renderAITools(); break;
     case 'teacher-settings': el.innerHTML = renderTeacherSettings(); break;
+    case 'parent-settings': el.innerHTML = renderParentSettings(); break;
     case 'reports':
       if (reportStudentId !== null) { el.innerHTML = renderStudentReport(); break; }
       el.innerHTML = renderReports();
@@ -2840,8 +2844,103 @@ function renderTeacherSettings() {
 }
 
 function logoutAndRedirect() {
+  // Clear student/child auto-login data
+  localStorage.removeItem('k2r_student_name');
+  localStorage.removeItem('k2r_student_classcode');
+  localStorage.removeItem('k2r_child_name');
+  localStorage.removeItem('k2r_child_familycode');
   fetch('/api/auth/logout', { method: 'POST' })
     .then(() => window.location.href = '/pages/signin.html');
+}
+
+function renderParentSettings() {
+  const user = currentUser || {};
+  const familyCode = user.familyCode || user.classCode || '';
+
+  return `
+  <div class="page-header">
+    <h1>${IC.gear} Settings</h1>
+  </div>
+  <div style="max-width:560px">
+    ${familyCode ? `
+    <div class="card" style="padding:28px;margin-bottom:20px">
+      <h3 style="margin:0 0 16px;font-size:1.1rem;font-weight:600">Family Code</h3>
+      <p style="color:var(--g500);font-size:0.875rem;margin:0 0 16px">Share this code with your child so they can sign up and start reading.</p>
+      <div style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--g50);border-radius:12px;border:2px dashed var(--g200)">
+        <span style="font-size:1.75rem;font-weight:700;letter-spacing:2px;color:var(--blue);font-family:monospace">${familyCode}</span>
+        <button class="btn btn-sm btn-outline" onclick="navigator.clipboard.writeText('${familyCode}'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy',1500)" style="margin-left:auto">Copy</button>
+      </div>
+      <div style="margin-top:16px;padding:14px;background:#FFF7ED;border-radius:10px;border:1px solid #FED7AA">
+        <p style="margin:0;font-size:0.8125rem;color:#9A3412"><strong>How to add your child:</strong></p>
+        <ol style="margin:8px 0 0;padding-left:20px;font-size:0.8125rem;color:#9A3412;line-height:1.6">
+          <li>Go to the <a href="signup.html" style="color:#2563EB;text-decoration:underline">signup page</a></li>
+          <li>Select <strong>Child</strong> role</li>
+          <li>Enter your child's name, the family code <strong>${familyCode}</strong>, and their grade</li>
+        </ol>
+      </div>
+    </div>` : ''}
+
+    <div class="card" style="padding:28px">
+      <h3 style="margin:0 0 20px;font-size:1.1rem;font-weight:600">Account Settings</h3>
+      <form id="parent-settings-form" style="display:flex;flex-direction:column;gap:16px">
+        <div>
+          <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--g600);margin-bottom:6px">Full Name</label>
+          <input type="text" id="parent-settings-name" class="form-input" value="${user.name || ''}" style="width:100%;padding:10px 14px;border:1px solid var(--g200);border-radius:10px;font-size:0.95rem">
+        </div>
+        <div>
+          <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--g600);margin-bottom:6px">Email Address</label>
+          <input type="email" class="form-input" value="${user.email || ''}" disabled style="width:100%;padding:10px 14px;border:1px solid var(--g200);border-radius:10px;font-size:0.95rem;background:var(--g50);color:var(--g400)">
+          <small style="color:var(--g400);margin-top:4px;display:block">Email cannot be changed.</small>
+        </div>
+        <div style="margin-top:8px">
+          <button type="submit" class="btn btn-primary" id="parent-settings-save" style="padding:10px 28px">Save Changes</button>
+          <span id="parent-settings-msg" style="display:none;color:var(--green);font-size:0.875rem;margin-left:12px;font-weight:500">Saved!</span>
+        </div>
+      </form>
+    </div>
+
+    <div class="card" style="padding:28px;margin-top:20px">
+      <h3 style="margin:0 0 12px;font-size:1.1rem;font-weight:600;color:var(--red)">Danger Zone</h3>
+      <p style="color:var(--g500);font-size:0.875rem;margin:0 0 16px">Log out of your account on this device.</p>
+      <button class="btn" style="background:var(--red-l);color:var(--red);border:1px solid var(--red);padding:8px 20px" onclick="logoutAndRedirect()">
+        ${IC.logout} Log Out
+      </button>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    const form = document.getElementById('parent-settings-form');
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('parent-settings-save');
+      const msg = document.getElementById('parent-settings-msg');
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+      try {
+        const res = await fetch('/api/auth/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: document.getElementById('parent-settings-name').value.trim() })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (data.user) currentUser.name = data.user.name || currentUser.name;
+          msg.style.display = 'inline';
+          setTimeout(() => msg.style.display = 'none', 3000);
+          renderSidebar();
+          renderHeader();
+        } else {
+          alert(data.error || 'Failed to save settings.');
+        }
+      } catch(err) {
+        alert('Failed to save. Please try again.');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Save Changes';
+    });
+  })();
+  <\/script>`;
 }
 
 function renderAITools() {
