@@ -1171,197 +1171,79 @@ function buildEmptyComponents() {
 // ─── CLASS ANALYTICS (batch summary for Students table) ───
 
 async function getClassAnalytics(classId) {
-  // Try to read precomputed analytics columns first (fast path)
-  const { data: precomputed, error: preErr } = await supabase
-    .from('students')
-    .select('id, name, initials, color, grade, reading_score, accuracy, quizzes_completed, comprehension_label, comprehension_pct, reasoning_label, reasoning_pct, vocab_words_learned, independence_label, persistence_label, score_trend')
-    .eq('class_id', classId || 1)
-    .or('is_teacher_demo.is.null,is_teacher_demo.eq.false')
-    .order('name');
-
-  // If precomputed columns exist AND at least one student has actual analytics data, use fast path
-  const hasAnalytics = !preErr && precomputed && precomputed.length > 0 &&
-    precomputed[0].comprehension_label !== undefined &&
-    precomputed.some(s => s.comprehension_label !== null || s.independence_label !== null || s.persistence_label !== null);
-  if (hasAnalytics) {
-    return precomputed.map(s => ({
-      id: s.id,
-      name: s.name,
-      initials: s.initials,
-      color: s.color,
-      readingScore: s.reading_score || 500,
-      scoreTrend: s.score_trend || 'stable',
-      comprehension: s.comprehension_label || 'No Data',
-      comprehensionPct: s.comprehension_pct,
-      reasoning: s.reasoning_label || 'No Data',
-      reasoningPct: s.reasoning_pct,
-      vocabWordsLearned: s.vocab_words_learned || 0,
-      independence: s.independence_label || 'No Data',
-      persistence: s.persistence_label || 'No Data'
-    }));
-  }
-
-  // Fallback: columns don't exist yet — compute from quiz data (one-time until migration runs)
-  // 1. Get all students in the class (exclude teacher demo accounts)
+  // Get all students in the class (exclude teacher demo accounts)
   const { data: studentRows } = await supabase
     .from('students')
     .select('id, name, initials, color, grade, reading_score, accuracy, quizzes_completed')
     .eq('class_id', classId || 1)
+    .or('is_teacher_demo.is.null,is_teacher_demo.eq.false')
     .order('name');
   const students = studentRows || [];
   if (students.length === 0) return [];
 
-  const studentIds = students.map(s => s.id);
+  // Compute LIVE performance for each student using the same method as the profile
+  // This ensures the student list always matches what the teacher sees when clicking a student
+  const scoreToLabel = (s) => s >= 750 ? 'Strong' : s >= 450 ? 'Developing' : 'Needs Support';
+  const indToLabel = (s) => s >= 750 ? 'High' : s >= 450 ? 'Improving' : 'Needs Support';
+  const persToLabel = (s) => s >= 750 ? 'High' : s >= 450 ? 'Moderate' : 'Low';
 
-  // 2. Batch fetch all quiz_results for these students
-  const { data: allResults } = await supabase
-    .from('quiz_results')
-    .select('id, student_id, chapter_id, answers, score, correct_count, total_questions, hints_used, attempt_data, vocab_lookups, completed_at')
-    .in('student_id', studentIds)
-    .order('completed_at', { ascending: true });
-  const results = allResults || [];
+  const analyticsResults = await Promise.all(students.map(async (s) => {
+    try {
+      const perf = await getStudentPerformance(s.id);
+      const comp = perf.components || {};
+      const compScore = comp.comprehension?.score || 0;
+      const effortScore = comp.effort?.score || 0;
+      const indScore = comp.independence?.score || 0;
+      const persScore = comp.persistence?.score || 0;
+      const vocabScore = comp.vocabulary?.score || 0;
 
-  // 3. Collect unique chapter_ids from results
-  const chapterIds = [...new Set(results.map(r => r.chapter_id))];
+      // Derive vocab words from vocabulary details
+      const vocabWordsLearned = comp.vocabulary?.details?.uniqueWordsLooked || 0;
 
-  // 4. Batch fetch quiz_questions for those chapters
-  let questionsByChapter = {};
-  if (chapterIds.length > 0) {
-    const { data: allQuestions } = await supabase
-      .from('quiz_questions')
-      .select('id, chapter_id, question_number, question_type, correct_answer, options')
-      .in('chapter_id', chapterIds)
-      .order('question_number');
-    for (const q of (allQuestions || [])) {
-      if (!questionsByChapter[q.chapter_id]) questionsByChapter[q.chapter_id] = [];
-      questionsByChapter[q.chapter_id].push(q);
-    }
-  }
+      const result = {
+        id: s.id,
+        name: s.name,
+        initials: s.initials,
+        color: s.color,
+        readingScore: perf.readingScore,
+        scoreTrend: perf.trend === 'improving' ? 'up' : perf.trend === 'declining' ? 'down' : 'stable',
+        comprehension: compScore > 0 ? scoreToLabel(compScore) : 'No Data',
+        comprehensionPct: comp.comprehension?.details?.avgQuizScore || null,
+        reasoning: effortScore > 0 ? scoreToLabel(effortScore) : 'No Data',
+        reasoningPct: null,
+        vocabWordsLearned,
+        independence: indScore > 0 ? indToLabel(indScore) : 'No Data',
+        persistence: persScore > 0 ? persToLabel(persScore) : 'No Data'
+      };
 
-  // 5. Group results by student
-  const resultsByStudent = {};
-  for (const r of results) {
-    if (!resultsByStudent[r.student_id]) resultsByStudent[r.student_id] = [];
-    resultsByStudent[r.student_id].push(r);
-  }
-
-  // 6. Time boundaries for trend calculation
-  const now = new Date();
-  const dayOfWeek = now.getUTCDay();
-  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-  const thisMonday = new Date(now);
-  thisMonday.setUTCDate(now.getUTCDate() - daysSinceMonday);
-  thisMonday.setUTCHours(0, 0, 0, 0);
-  const lastMonday = new Date(thisMonday);
-  lastMonday.setUTCDate(thisMonday.getUTCDate() - 7);
-
-  // 7. Compute analytics per student
-  const analyticsResults = students.map(s => {
-    const studentResults = resultsByStudent[s.id] || [];
-    const recent = studentResults.slice(-20); // last 20 quizzes
-
-    // --- Per-question-type accuracy ---
-    const typeStats = { literal: { correct: 0, total: 0 }, 'cause-effect': { correct: 0, total: 0 },
-      vocabulary: { correct: 0, total: 0 }, inference: { correct: 0, total: 0 }, 'best-answer': { correct: 0, total: 0 } };
-
-    for (const r of recent) {
-      const questions = questionsByChapter[r.chapter_id] || [];
-      const answers = Array.isArray(r.answers) ? r.answers : [];
-      for (let i = 0; i < questions.length && i < answers.length; i++) {
-        const q = questions[i];
-        const qType = q.question_type || 'literal';
-        const opts = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []);
-        const correctText = opts[q.correct_answer] || '';
-        const isCorrect = answers[i] === correctText;
-        if (typeStats[qType]) {
-          typeStats[qType].total++;
-          if (isCorrect) typeStats[qType].correct++;
+      // Backfill: sync the computed data to the students table
+      supabase.from('students').update({
+        reading_score: perf.readingScore,
+        comprehension_label: result.comprehension === 'No Data' ? null : result.comprehension,
+        reasoning_label: result.reasoning === 'No Data' ? null : result.reasoning,
+        vocab_words_learned: vocabWordsLearned,
+        independence_label: result.independence === 'No Data' ? null : result.independence,
+        persistence_label: result.persistence === 'No Data' ? null : result.persistence,
+        score_trend: result.scoreTrend,
+        analytics_updated_at: new Date().toISOString()
+      }).eq('id', s.id).then(({ error }) => {
+        if (error && !error.message?.includes('does not exist')) {
+          console.error('Backfill analytics error for student', s.id, error.message);
         }
-      }
+      });
+
+      return result;
+    } catch(e) {
+      // Fallback for this student
+      return {
+        id: s.id, name: s.name, initials: s.initials, color: s.color,
+        readingScore: s.reading_score || 500, scoreTrend: 'stable',
+        comprehension: 'No Data', comprehensionPct: null,
+        reasoning: 'No Data', reasoningPct: null,
+        vocabWordsLearned: 0, independence: 'No Data', persistence: 'No Data'
+      };
     }
-
-    // Comprehension = literal accuracy
-    const compTotal = typeStats.literal.total;
-    const compPct = compTotal > 0 ? Math.round(typeStats.literal.correct / compTotal * 100) : null;
-    const comprehension = compPct === null ? 'No Data' : compPct >= 75 ? 'Strong' : compPct >= 50 ? 'Developing' : 'Needs Support';
-
-    // Reasoning = inference + cause-effect + best-answer combined
-    const reasonTotal = typeStats.inference.total + typeStats['cause-effect'].total + typeStats['best-answer'].total;
-    const reasonCorrect = typeStats.inference.correct + typeStats['cause-effect'].correct + typeStats['best-answer'].correct;
-    const reasonPct = reasonTotal > 0 ? Math.round(reasonCorrect / reasonTotal * 100) : null;
-    const reasoning = reasonPct === null ? 'No Data' : reasonPct >= 75 ? 'Strong' : reasonPct >= 50 ? 'Developing' : 'Needs Support';
-
-    // Vocabulary words learned (unique vocab lookups across all quizzes)
-    const allVocab = studentResults.flatMap(r => Array.isArray(r.vocab_lookups) ? r.vocab_lookups : []);
-    const vocabWordsLearned = [...new Set(allVocab.map(w => (w || '').toLowerCase()).filter(Boolean))].length;
-
-    // Independence: hint usage rate across recent quizzes
-    const hintRates = recent.map(r => {
-      const hints = r.hints_used || 0;
-      const numQ = r.total_questions || 5;
-      return hints / numQ;
-    });
-    const avgHintRate = hintRates.length > 0 ? hintRates.reduce((a, b) => a + b, 0) / hintRates.length : 0;
-    const independence = recent.length === 0 ? 'No Data' : avgHintRate <= 0.2 ? 'High' : avgHintRate <= 0.5 ? 'Improving' : 'Needs Support';
-
-    // Persistence: first-attempt mastery rate
-    const allAttempts = recent.filter(r => r.attempt_data && Array.isArray(r.attempt_data) && r.attempt_data.length > 0)
-      .flatMap(r => r.attempt_data);
-    const firstTryCorrect = allAttempts.filter(a => a === 1).length;
-    const firstAttemptPct = allAttempts.length > 0 ? Math.round(firstTryCorrect / allAttempts.length * 100) : null;
-    const persistence = firstAttemptPct === null ? 'No Data' : firstAttemptPct >= 70 ? 'High' : firstAttemptPct >= 40 ? 'Moderate' : 'Low';
-
-    // Reading Score trend
-    const thisWeekResults = studentResults.filter(r => new Date(r.completed_at) >= thisMonday);
-    const lastWeekResults = studentResults.filter(r => {
-      const d = new Date(r.completed_at);
-      return d >= lastMonday && d < thisMonday;
-    });
-    const thisWeekChange = thisWeekResults.reduce((sum, r) => sum + (r.score || 0), 0);
-    const lastWeekChange = lastWeekResults.reduce((sum, r) => sum + (r.score || 0), 0);
-    const thisWeekAvg = thisWeekResults.length > 0 ? thisWeekChange / thisWeekResults.length : null;
-    const lastWeekAvg = lastWeekResults.length > 0 ? lastWeekChange / lastWeekResults.length : null;
-    let scoreTrend = 'stable';
-    if (thisWeekAvg !== null && lastWeekAvg !== null) {
-      if (thisWeekAvg > lastWeekAvg + 5) scoreTrend = 'up';
-      else if (thisWeekAvg < lastWeekAvg - 5) scoreTrend = 'down';
-    }
-
-    return {
-      id: s.id,
-      name: s.name,
-      initials: s.initials,
-      color: s.color,
-      readingScore: s.reading_score || 500,
-      scoreTrend,
-      comprehension,
-      comprehensionPct: compPct,
-      reasoning,
-      reasoningPct: reasonPct,
-      vocabWordsLearned,
-      independence,
-      persistence
-    };
-  });
-
-  // Backfill: write computed analytics back to students table (fire-and-forget)
-  for (const a of analyticsResults) {
-    supabase.from('students').update({
-      comprehension_label: a.comprehension === 'No Data' ? null : a.comprehension,
-      comprehension_pct: a.comprehensionPct,
-      reasoning_label: a.reasoning === 'No Data' ? null : a.reasoning,
-      reasoning_pct: a.reasoningPct,
-      vocab_words_learned: a.vocabWordsLearned,
-      independence_label: a.independence === 'No Data' ? null : a.independence,
-      persistence_label: a.persistence === 'No Data' ? null : a.persistence,
-      score_trend: a.scoreTrend,
-      analytics_updated_at: new Date().toISOString()
-    }).eq('id', a.id).then(({ error }) => {
-      if (error && !error.message?.includes('does not exist')) {
-        console.error('Backfill analytics error for student', a.id, error.message);
-      }
-    });
-  }
+  }));
 
   return analyticsResults;
 }

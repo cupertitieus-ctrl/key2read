@@ -1389,13 +1389,16 @@ async function refreshStudentList() {
         for (const a of analytics) { analyticsMap[a.id] = a; }
         for (const s of students) {
           const a = analyticsMap[s.id];
-          if (a && s._raw) {
-            s._raw.comprehension_label = a.comprehension !== 'No Data' ? a.comprehension : null;
-            s._raw.reasoning_label = a.reasoning !== 'No Data' ? a.reasoning : null;
-            s._raw.vocab_words_learned = a.vocabWordsLearned || 0;
-            s._raw.independence_label = a.independence !== 'No Data' ? a.independence : null;
-            s._raw.persistence_label = a.persistence !== 'No Data' ? a.persistence : null;
-            s._raw.score_trend = a.scoreTrend || 'stable';
+          if (a) {
+            if (a.readingScore) s.score = a.readingScore;
+            if (s._raw) {
+              s._raw.comprehension_label = a.comprehension !== 'No Data' ? a.comprehension : null;
+              s._raw.reasoning_label = a.reasoning !== 'No Data' ? a.reasoning : null;
+              s._raw.vocab_words_learned = a.vocabWordsLearned || 0;
+              s._raw.independence_label = a.independence !== 'No Data' ? a.independence : null;
+              s._raw.persistence_label = a.persistence !== 'No Data' ? a.persistence : null;
+              s._raw.score_trend = a.scoreTrend || 'stable';
+            }
           }
         }
       }
@@ -4763,15 +4766,19 @@ document.addEventListener('DOMContentLoaded', async () => {
           for (const a of analytics) { analyticsMap[a.id] = a; }
           for (const s of students) {
             const a = analyticsMap[s.id];
-            if (a && s._raw) {
-              s._raw.comprehension_label = a.comprehension !== 'No Data' ? a.comprehension : null;
-              s._raw.comprehension_pct = a.comprehensionPct;
-              s._raw.reasoning_label = a.reasoning !== 'No Data' ? a.reasoning : null;
-              s._raw.reasoning_pct = a.reasoningPct;
-              s._raw.vocab_words_learned = a.vocabWordsLearned || 0;
-              s._raw.independence_label = a.independence !== 'No Data' ? a.independence : null;
-              s._raw.persistence_label = a.persistence !== 'No Data' ? a.persistence : null;
-              s._raw.score_trend = a.scoreTrend || 'stable';
+            if (a) {
+              // Sync the reading score from live analytics
+              if (a.readingScore) s.score = a.readingScore;
+              if (s._raw) {
+                s._raw.comprehension_label = a.comprehension !== 'No Data' ? a.comprehension : null;
+                s._raw.comprehension_pct = a.comprehensionPct;
+                s._raw.reasoning_label = a.reasoning !== 'No Data' ? a.reasoning : null;
+                s._raw.reasoning_pct = a.reasoningPct;
+                s._raw.vocab_words_learned = a.vocabWordsLearned || 0;
+                s._raw.independence_label = a.independence !== 'No Data' ? a.independence : null;
+                s._raw.persistence_label = a.persistence !== 'No Data' ? a.persistence : null;
+                s._raw.score_trend = a.scoreTrend || 'stable';
+              }
             }
           }
         }
@@ -4891,13 +4898,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           for (const a of analytics) { analyticsMap[a.id] = a; }
           for (const s of students) {
             const a = analyticsMap[s.id];
-            if (a && s._raw) {
-              s._raw.comprehension_label = a.comprehension !== 'No Data' ? a.comprehension : null;
-              s._raw.reasoning_label = a.reasoning !== 'No Data' ? a.reasoning : null;
-              s._raw.vocab_words_learned = a.vocabWordsLearned || 0;
-              s._raw.independence_label = a.independence !== 'No Data' ? a.independence : null;
-              s._raw.persistence_label = a.persistence !== 'No Data' ? a.persistence : null;
-              s._raw.score_trend = a.scoreTrend || 'stable';
+            if (a) {
+              if (a.readingScore) s.score = a.readingScore;
+              if (s._raw) {
+                s._raw.comprehension_label = a.comprehension !== 'No Data' ? a.comprehension : null;
+                s._raw.reasoning_label = a.reasoning !== 'No Data' ? a.reasoning : null;
+                s._raw.vocab_words_learned = a.vocabWordsLearned || 0;
+                s._raw.independence_label = a.independence !== 'No Data' ? a.independence : null;
+                s._raw.persistence_label = a.persistence !== 'No Data' ? a.persistence : null;
+                s._raw.score_trend = a.scoreTrend || 'stable';
+              }
             }
           }
         }
