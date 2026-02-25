@@ -578,7 +578,7 @@ const QuizEngine = (function() {
           ${answered && fbForThis ? `
             <div class="quiz-feedback correct">
               <div class="quiz-feedback-header">
-                <span class="quiz-feedback-icon">✅</span> Great Job!
+                <span class="quiz-feedback-icon">✅</span> Correct!
               </div>
               <p class="quiz-feedback-text">${escapeHtml(fbForThis.feedback || q.explanation || '')}</p>
             </div>
