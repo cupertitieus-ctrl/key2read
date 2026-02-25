@@ -4351,11 +4351,13 @@ function renderStudentProgress() {
       <div class="total-progress-cards">
         <div class="total-progress-card" onclick="showKeysBreakdown()" style="cursor:pointer">
           <span class="total-progress-value">${totalKeysEarned}</span>
-          <span class="total-progress-label">Total Keys <span class="info-tip" data-tip="All the keys you've earned from quizzes!">ℹ️</span></span>
+          <span class="total-progress-label">Total Keys</span>
+          <span class="total-progress-desc">All the keys you've ever earned from quizzes. This number only goes up!</span>
         </div>
         <div class="total-progress-card" onclick="navigate('store')" style="cursor:pointer">
           <span class="total-progress-value" style="color:#D97706">${s.keys}</span>
-          <span class="total-progress-label">Keys to Spend <span class="info-tip" data-tip="Keys you can use in the class store!">ℹ️</span></span>
+          <span class="total-progress-label">Keys to Spend</span>
+          <span class="total-progress-desc">Keys you have left to use in the class store. Goes down when you buy rewards!</span>
         </div>
         <div class="total-progress-card" onclick="showCompletedQuizzes()" style="cursor:pointer">
           <span class="total-progress-value">${s.quizzes}</span>
