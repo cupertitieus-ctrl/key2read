@@ -197,7 +197,7 @@ ${BEST_ANSWER_RULES}
 ${QUALITY_GATE}
 
 ═══ ADDITIONAL RULES ═══
-• strategy_tip: Must reference a SPECIFIC moment, detail, or scene from the chapter summary. Format examples: "Think about the part where [specific detail]...", "Remember when [character] did [specific action]...", "Look for the moment where [event happens]..." Do NOT use generic hints like "Reread this chapter to find the answer."
+• strategy_tip: Must reference a SPECIFIC page number AND a specific moment from the chapter. Format: "Go back to page [number] and reread the part where [specific detail]..." or "Look at page [number] where [character] does [action]..." or "On page [number], pay attention to [specific event]..." ALWAYS include a page number. Do NOT use generic hints like "Reread this chapter" or "Think about the story." The page number should correspond to where in the chapter this event occurs (estimate based on chapter position: early events = lower page numbers starting from the chapter's first page, later events = higher page numbers).
 • explanation: 2-3 sentences, friendly and encouraging tone. For the BEST answer question, also explain why the other options are weaker.
 • passage_excerpt: A short relevant quote from the chapter (1-2 sentences). May be empty if the question is about the whole chapter.
 • vocabulary_words: Array of 0-3 Tier 2/3 words from the answer choices. At least 2 out of ${questionCount} questions MUST have vocabulary_words.
