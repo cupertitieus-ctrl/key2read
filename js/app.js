@@ -2011,31 +2011,32 @@ function showStoreItemPreview(idx) {
   const myKeys = currentUser?.keys_earned || 0;
   const canAfford = myKeys >= item.price;
   const soldOut = item.stock <= 0;
-  const modal = document.getElementById('modal-overlay');
+  const modal = document.getElementById('modal-root');
   modal.innerHTML = `
-    <div class="modal-content" style="max-width:400px">
-      <div class="modal-header">
-        <h3>${escapeHtml(item.name)}</h3>
-        <button class="modal-close" onclick="closeModal()">${IC.x}</button>
-      </div>
-      <div class="modal-body" style="text-align:center;padding:24px">
-        ${item.image_url
-          ? `<img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.name)}" style="width:200px;height:200px;object-fit:cover;border-radius:var(--radius-lg);margin-bottom:16px;box-shadow:0 4px 12px rgba(0,0,0,0.1)">`
-          : `<div style="font-size:5rem;margin-bottom:16px">${item.icon || '🎁'}</div>`}
-        <div style="font-size:1.25rem;font-weight:800;color:var(--navy);margin-bottom:8px">${escapeHtml(item.name)}</div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:16px">
-          <img src="/public/Key_Icon.png" alt="Keys" style="width:24px;height:24px;object-fit:contain">
-          <span style="font-size:1.25rem;font-weight:800;color:#D97706">${item.price} Keys</span>
+    <div class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()" style="max-width:400px">
+        <div class="modal-header">
+          <h3>${escapeHtml(item.name)}</h3>
+          <button class="modal-close" onclick="closeModal()">${IC.x}</button>
         </div>
-        <div style="font-size:0.8125rem;color:var(--g400);margin-bottom:20px">${soldOut ? 'Sold Out' : item.stock + ' left in stock'}</div>
-        ${soldOut
-          ? `<button class="btn btn-ghost w-full" disabled>Sold Out</button>`
-          : canAfford
-            ? `<button class="btn btn-primary w-full" onclick="closeModal(); storeBuyItem(${idx})">Buy for ${item.price} Keys</button>`
-            : `<button class="btn btn-ghost w-full" disabled>Need ${item.price - myKeys} more keys</button>`}
+        <div class="modal-body" style="text-align:center;padding:24px">
+          ${item.image_url
+            ? `<img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.name)}" style="width:200px;height:200px;object-fit:cover;border-radius:var(--radius-lg);margin-bottom:16px;box-shadow:0 4px 12px rgba(0,0,0,0.1)">`
+            : `<div style="font-size:5rem;margin-bottom:16px">${item.icon || '🎁'}</div>`}
+          <div style="font-size:1.25rem;font-weight:800;color:var(--navy);margin-bottom:8px">${escapeHtml(item.name)}</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:16px">
+            <img src="/public/Key_Icon.png" alt="Keys" style="width:24px;height:24px;object-fit:contain">
+            <span style="font-size:1.25rem;font-weight:800;color:#D97706">${item.price} Keys</span>
+          </div>
+          <div style="font-size:0.8125rem;color:var(--g400);margin-bottom:20px">${soldOut ? 'Sold Out' : item.stock + ' left in stock'}</div>
+          ${soldOut
+            ? `<button class="btn btn-ghost w-full" disabled>Sold Out</button>`
+            : canAfford
+              ? `<button class="btn btn-primary w-full" onclick="closeModal(); storeBuyItem(${idx})">Buy for ${item.price} Keys</button>`
+              : `<button class="btn btn-ghost w-full" disabled>Need ${item.price - myKeys} more keys</button>`}
+        </div>
       </div>
     </div>`;
-  modal.classList.add('active');
 }
 
 // ---- Page: Book Library ----
@@ -4006,18 +4007,19 @@ async function showCompletedQuizzes() {
 
 async function showQuizResult(bookId, chapterNumber) {
   if (!currentUser?.studentId) return;
-  const modal = document.getElementById('modal-overlay');
+  const modal = document.getElementById('modal-root');
   modal.innerHTML = `
-    <div class="modal-content" style="max-width:420px">
-      <div class="modal-header">
-        <h3>Quiz Results</h3>
-        <button class="modal-close" onclick="closeModal()">${IC.x}</button>
-      </div>
-      <div class="modal-body" style="text-align:center;padding:32px">
-        <p style="color:var(--g400)">Loading...</p>
+    <div class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()" style="max-width:420px">
+        <div class="modal-header">
+          <h3>Quiz Results</h3>
+          <button class="modal-close" onclick="closeModal()">${IC.x}</button>
+        </div>
+        <div class="modal-body" style="text-align:center;padding:32px">
+          <p style="color:var(--g400)">Loading...</p>
+        </div>
       </div>
     </div>`;
-  modal.classList.add('active');
 
   try {
     const results = await API.getQuizResults(currentUser.studentId);

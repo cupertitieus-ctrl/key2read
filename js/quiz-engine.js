@@ -361,6 +361,7 @@ const QuizEngine = (function() {
     'extremely': { word: 'extremely', definition: 'Way more than normal — like REALLY, REALLY a lot', pos: 'adverb' },
     'famous': { word: 'famous', definition: 'Everyone knows who you are!', pos: 'adjective' },
     'frighten': { word: 'frighten', definition: 'To scare someone — making them feel afraid', pos: 'verb' },
+    'frightening': { word: 'frightening', definition: 'Something that makes you feel scared or afraid', pos: 'adjective' },
     'genuine': { word: 'genuine', definition: 'Real and true — not fake or pretend', pos: 'adjective' },
     'imagines': { word: 'imagines', definition: 'Makes pictures in your head of things that are not really there', pos: 'verb' },
     'investigated': { word: 'investigated', definition: 'Looked into something closely to find out the truth', pos: 'verb' },

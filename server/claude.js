@@ -109,13 +109,14 @@ If fewer than 2 → do NOT include it in vocabulary_words.
 
 NEVER underline: pronouns (someone, something, everyone, anything, nobody, nothing, somewhere, it, they, them),
 compound everyday words (sunglasses, playground, backyard, birthday, homework, bedroom, outside, inside, without, flashlight, lunchbox, treehouse, rainstorm),
-common feeling words kids already know (frightening, scary, happy, sad, angry, tired, hungry),
 filler words, words clearly below grade level, proper nouns.
 
 COMMON MISTAKES — These are NOT vocabulary words, NEVER include them:
 someone, something, everyone, anything, nobody, nothing, somewhere,
 sunglasses, playground, backyard, birthday, homework, bedroom, flashlight,
-frightening, scary, outside, inside, without, lunchbox, treehouse.
+outside, inside, without, lunchbox, treehouse.
+
+IMPORTANT: Each quiz MUST include at least 2 vocabulary words in the vocabulary_words array. Choose Tier 2 academic words or Tier 3 story-specific words that help build reading skills.
 
 DEFINITION RULE: Any vocabulary word MUST have a definition simpler than the word itself. If you can't explain it in words a 7-year-old understands → pick a different word.
 
