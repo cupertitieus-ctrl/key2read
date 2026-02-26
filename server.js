@@ -520,6 +520,18 @@ app.get('/api/class/:classId/popular-books', async (req, res) => {
   }
 });
 
+// ─── WEEKLY GROWTH DATA (for teacher dashboard trend chart) ───
+app.get('/api/class/:classId/weekly-growth', async (req, res) => {
+  try {
+    const weeks = parseInt(req.query.weeks) || 4;
+    const data = await db.getWeeklyGrowthData(parseInt(req.params.classId), weeks);
+    res.json(data);
+  } catch (e) {
+    console.error('Weekly growth error:', e);
+    res.status(500).json({ error: 'Failed to load weekly growth data' });
+  }
+});
+
 // ─── RECENT ACTIVITY (for teacher dashboard) ───
 app.get('/api/class/:classId/recent-activity', async (req, res) => {
   try {

@@ -38,6 +38,7 @@ const API = {
   getClassAnalytics: (classId) => API.get(`/api/class/${classId}/analytics`),
   getPopularBooks: (classId) => API.get(`/api/class/${classId}/popular-books`),
   getRecentActivity: (classId) => API.get(`/api/class/${classId}/recent-activity`),
+  getWeeklyGrowth: (classId, weeks) => API.get(`/api/class/${classId}/weekly-growth?weeks=${weeks || 4}`),
   getRecentPurchases: (classId) => API.get(`/api/class/${classId}/recent-purchases`),
 
   // Teacher

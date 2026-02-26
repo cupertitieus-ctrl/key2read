@@ -1659,6 +1659,69 @@ async function getPopularBooks(classId) {
     .slice(0, 8);
 }
 
+// ─── Weekly Growth Data for a class (for Class Reading Score Trend chart) ───
+async function getWeeklyGrowthData(classId, weeks) {
+  weeks = weeks || 4;
+  // Get all students in this class
+  const { data: classStudents, error: sErr } = await supabase
+    .from('students')
+    .select('id')
+    .eq('class_id', classId)
+    .or('is_teacher_demo.is.null,is_teacher_demo.eq.false');
+  if (sErr || !classStudents || classStudents.length === 0) return [];
+
+  const studentIds = classStudents.map(s => s.id);
+
+  // Calculate week boundaries going back N weeks from current Monday
+  const now = new Date();
+  const dayOfWeek = now.getUTCDay();
+  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const thisMonday = new Date(now);
+  thisMonday.setUTCDate(now.getUTCDate() - daysSinceMonday);
+  thisMonday.setUTCHours(0, 0, 0, 0);
+
+  // Build week boundaries (from oldest to newest)
+  const weekBoundaries = [];
+  for (let i = weeks; i >= 0; i--) {
+    const d = new Date(thisMonday);
+    d.setUTCDate(thisMonday.getUTCDate() - (i * 7));
+    weekBoundaries.push(d);
+  }
+
+  // Get all quiz results for these students in the time window
+  const startDate = weekBoundaries[0].toISOString();
+  const { data: results, error: rErr } = await supabase
+    .from('quiz_results')
+    .select('student_id, score, completed_at')
+    .in('student_id', studentIds)
+    .gte('completed_at', startDate)
+    .order('completed_at');
+
+  if (rErr) { console.error('getWeeklyGrowthData error:', rErr); return []; }
+
+  // Bucket results into weeks and compute average score per week
+  const weeklyData = [];
+  for (let w = 0; w < weeks; w++) {
+    const weekStart = weekBoundaries[w];
+    const weekEnd = weekBoundaries[w + 1];
+    const label = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    const weekResults = (results || []).filter(r => {
+      const d = new Date(r.completed_at);
+      return d >= weekStart && d < weekEnd;
+    });
+
+    if (weekResults.length === 0) {
+      weeklyData.push({ label, avgScore: null, quizCount: 0 });
+    } else {
+      const avg = Math.round(weekResults.reduce((sum, r) => sum + (r.score || 0), 0) / weekResults.length);
+      weeklyData.push({ label, avgScore: avg, quizCount: weekResults.length });
+    }
+  }
+
+  return weeklyData;
+}
+
 // ─── Recent Activity for a class ───
 async function getRecentActivity(classId) {
   // Get all students in this class
@@ -1751,7 +1814,8 @@ module.exports = {
   addRewardGalleryItem,
   deleteRewardGalleryItem,
   getPopularBooks,
-  getRecentActivity
+  getRecentActivity,
+  getWeeklyGrowthData
 };
 
 async function getFullBookQuiz(bookId) {

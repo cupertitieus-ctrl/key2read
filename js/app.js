@@ -801,13 +801,21 @@ function toggleMobileSidebar() {
 async function refreshStudentData() {
   if (!currentUser?.studentId) return;
   try {
-    const [ws, bp] = await Promise.all([
+    const [ws, bp, studentData] = await Promise.all([
       API.getWeeklyStats(currentUser.studentId),
-      API.getBookProgress(currentUser.studentId)
+      API.getBookProgress(currentUser.studentId),
+      API.getStudent(currentUser.studentId)
     ]);
     currentUser.weeklyStats = ws;
     currentUser.totalBooksCompleted = ws.totalBooksCompleted || 0;
     currentUser.bookProgress = bp;
+    // Sync keys and quizzes from server so dashboard stays accurate
+    if (studentData) {
+      currentUser.keys_earned = studentData.keys_earned || 0;
+      currentUser.quizzes_completed = studentData.quizzes_completed || 0;
+      currentUser.reading_score = studentData.reading_score || currentUser.reading_score;
+      currentUser.accuracy = studentData.accuracy || currentUser.accuracy;
+    }
   } catch(e) {
     console.warn('refreshStudentData error:', e);
   }
@@ -1019,24 +1027,8 @@ function renderTeacherDashboard() {
       </div>`;
   }
 
-  // Build reading score trend chart using growthData
-  // Only show the current week score when no real weekly data exists
-  const hasGrowthData = students.some(s => growthData[s.id]);
-  let trendScores, trendLabels;
-  if (hasGrowthData) {
-    const classScores = months.map((_, mi) => {
-      const valid = students.filter(s => growthData[s.id]);
-      if (valid.length === 0) return 0;
-      return Math.round(valid.reduce((sum, s) => sum + growthData[s.id].scores[mi], 0) / valid.length);
-    });
-    trendScores = classScores.slice(-4);
-    trendLabels = months.slice(-4);
-  } else {
-    // No weekly growth data — show current average across last 4 weeks
-    trendScores = months.slice(-4).map(() => avgScore);
-    trendLabels = months.slice(-4);
-  }
-  const trendChart = svgLineChart(trendScores, trendLabels, 620, 500);
+  // Trend chart placeholder — will be populated with real data from API
+  const trendChart = '<div id="trend-chart-container" style="display:flex;align-items:center;justify-content:center;min-height:200px;color:var(--g400);font-size:0.875rem">Loading chart...</div>';
 
   // Build reading score pie chart
   const needsSupport = students.filter(s => (s.reading_score || s.score || 0) < 400).length;
@@ -1101,8 +1093,8 @@ function renderTeacherDashboard() {
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px">
       <div class="list-card" style="padding:24px">
-        <h3 style="margin:0 0 4px 0">📚 Top 3 Books This Week</h3>
-        <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">The most popular books your students are reading</p>
+        <h3 style="margin:0 0 4px 0">📚 Top 3 Books</h3>
+        <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">The most popular books your students are reading of all time</p>
         <div id="popular-books-chart">
           <div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Loading...</div>
         </div>
@@ -1110,9 +1102,9 @@ function renderTeacherDashboard() {
       <div class="list-card" style="padding:24px">
         <div style="display:flex;align-items:center;justify-content:space-between">
           <h3 style="margin:0 0 4px 0">📖 Books Ranked by Popularity</h3>
-          <button class="btn btn-sm btn-outline" onclick="showTop10BooksModal()" style="font-size:0.7rem">View Top 10 with Covers</button>
+          <button class="btn btn-sm btn-outline" onclick="showTop10BooksModal()" style="font-size:0.7rem">View Top 10 of All Time</button>
         </div>
-        <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">Books your class is reading ranked by popularity</p>
+        <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">All-time books ranked by popularity</p>
         <div id="popular-books-list">
           <div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Loading...</div>
         </div>
@@ -1142,6 +1134,28 @@ function renderTeacherDashboard() {
 function loadTeacherDashboardData() {
   const classId = currentUser?.classId;
   if (!classId) return;
+
+  // Weekly growth chart (real data from quiz_results)
+  API.getWeeklyGrowth(classId, 4).then(function(data) {
+    var container = document.getElementById('trend-chart-container');
+    if (!container) return;
+    if (!data || data.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">No quiz data yet — chart will appear once students start taking quizzes!</div>';
+      return;
+    }
+    // Fill null weeks with interpolated or zero values for chart continuity
+    var scores = data.map(function(w) { return w.avgScore !== null ? w.avgScore : 0; });
+    var labels = data.map(function(w) { return w.label; });
+    var hasAnyData = data.some(function(w) { return w.avgScore !== null; });
+    if (!hasAnyData) {
+      container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">No quiz data yet — chart will appear once students start taking quizzes!</div>';
+      return;
+    }
+    container.innerHTML = svgLineChart(scores, labels, 620, 500);
+  }).catch(function() {
+    var container = document.getElementById('trend-chart-container');
+    if (container) container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Could not load chart data</div>';
+  });
 
   // Popular books
   API.getPopularBooks(classId).then(data => {
@@ -1181,7 +1195,7 @@ function loadTeacherDashboardData() {
     if (listEl) {
       listEl.innerHTML = data.slice(0, 10).map((b, i) => {
         const rankColors = ['#F59E0B', '#94A3B8', '#CD7F32'];
-        const rankBg = i < 3 ? rankColors[i] : 'var(--g300)';
+        const rankBg = i < 3 ? rankColors[i] : 'var(--navy)';
         const namesList = (b.studentNames || []).slice(0, 3).map(n => n.split(' ')[0]).join(', ');
         const extra = (b.studentNames || []).length > 3 ? ' +' + ((b.studentNames || []).length - 3) + ' more' : '';
         return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;' + (i < data.slice(0,10).length - 1 ? 'border-bottom:1px solid var(--g100);' : '') + '">' +
@@ -1395,12 +1409,11 @@ function showTop10BooksModal() {
   const data = window._popularBooksData;
   if (!data || data.length === 0) { showToast('No book data yet'); return; }
   const top10 = data.slice(0, 10);
-  const medals = ['🥇', '🥈', '🥉'];
   const borderColors = ['#F59E0B', '#94A3B8', '#CD7F32'];
   const modal = document.getElementById('modal-root');
   modal.innerHTML = '<div class="modal-overlay" onclick="closeModal(event)">' +
     '<div class="modal" onclick="event.stopPropagation()" style="max-width:700px">' +
-      '<div class="modal-header"><h3>📚 Top 10 Books This Week</h3><button class="modal-close" onclick="closeModal()">' + IC.x + '</button></div>' +
+      '<div class="modal-header"><h3>📚 Top 10 Books of All Time</h3><button class="modal-close" onclick="closeModal()">' + IC.x + '</button></div>' +
       '<div class="modal-body" style="padding:24px">' +
         '<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(110px, 1fr));gap:16px">' +
           top10.map(function(b, i) {
@@ -1408,14 +1421,15 @@ function showTop10BooksModal() {
               ? '<img src="' + b.coverUrl + '" alt="' + escapeHtml(b.title) + '" style="width:100%;height:auto;border-radius:6px;display:block" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
               : '';
             var border = i < 3 ? borderColors[i] : 'var(--g200)';
-            var medal = i < 3 ? '<span style="position:absolute;top:-10px;left:-10px;font-size:1.75rem">' + medals[i] + '</span>' : '<span style="position:absolute;top:-8px;left:-8px;width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800">' + (i+1) + '</span>';
+            var rankBg = i < 3 ? borderColors[i] : 'var(--navy)';
+            var numberBadge = '<span style="position:absolute;top:-12px;left:-12px;width:34px;height:34px;border-radius:50%;background:' + rankBg + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.95rem;font-weight:900;box-shadow:0 2px 6px rgba(0,0,0,0.2)">' + (i+1) + '</span>';
             return '<div style="text-align:center;cursor:pointer" onclick="closeModal();showPopularBookDetail(' + i + ')">' +
               '<div style="position:relative;margin-bottom:6px">' +
                 '<div style="border:2px solid ' + border + ';border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);background:#fff">' +
                   coverHtml +
                   '<div style="display:' + (b.coverUrl ? 'none' : 'flex') + ';width:100%;height:140px;background:linear-gradient(135deg,var(--blue),var(--purple));align-items:center;justify-content:center;color:#fff;font-weight:700;padding:8px;font-size:0.65rem;text-align:center">' + escapeHtml(b.title) + '</div>' +
                 '</div>' +
-                medal +
+                numberBadge +
               '</div>' +
               '<p style="font-size:0.7rem;font-weight:700;color:var(--g800);margin:0 0 2px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(b.title) + '</p>' +
               '<p style="font-size:0.6rem;color:var(--g400);margin:0">' + b.studentCount + ' ' + (b.studentCount === 1 ? 'reader' : 'readers') + '</p>' +
