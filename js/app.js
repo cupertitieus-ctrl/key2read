@@ -625,6 +625,7 @@ function renderSidebar() {
       { id: 'reports',    icon: IC.chart, label: 'Growth Reports' },
       { section: 'Management' },
       { id: 'store',      icon: IC.bag,   label: 'Class Store',          badge: String(storeItems.length), badgeCls: 'gold' },
+      { id: 'purchases',  icon: IC.key,   label: 'Recent Purchases',     badge: window._purchaseCount > 0 ? String(window._purchaseCount) : '', badgeCls: 'purple' },
       { id: 'library',    icon: IC.book,  label: 'Book Library' },
       { section: 'Tools' },
       { id: 'celebrate',  icon: IC.star,  label: 'Celebrate Students' },
@@ -847,6 +848,19 @@ function renderMain() {
       el.innerHTML = renderStudents();
       break;
     case 'store':      el.innerHTML = userRole === 'student' ? renderStudentStore() : renderStore(); if (userRole !== 'student') loadStorePurchaseNotifications(); break;
+    case 'purchases':
+      if (!window._purchaseData && currentUser?.classId) {
+        API.getRecentPurchases(currentUser.classId).then(data => {
+          window._purchaseData = data || [];
+          window._purchaseCount = (data || []).length;
+          renderSidebar();
+          el.innerHTML = renderPurchasesPage();
+        });
+        el.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--g400)">Loading purchases...</div>';
+      } else {
+        el.innerHTML = renderPurchasesPage();
+      }
+      break;
     case 'library':    el.innerHTML = renderLibrary(); initLibrarySearch(); break;
     case 'book-detail': el.innerHTML = renderBookDetail(); break;
     case 'celebrate':  el.innerHTML = renderCelebrate(); loadCertificateData(); break;
@@ -1216,6 +1230,9 @@ function loadTeacherDashboardData() {
 
   // Purchase notifications
   API.getRecentPurchases(classId).then(data => {
+    window._purchaseCount = (data || []).length;
+    window._purchaseData = data || [];
+    renderSidebar(); // refresh badge count
     const el = document.getElementById('purchase-notifications');
     if (!el) return;
     if (!data || data.length === 0) {
@@ -2206,6 +2223,35 @@ function storeItemIcon(item, size) {
     return `<img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.name)}" style="width:${size}px;height:${size}px;object-fit:cover;border-radius:var(--radius-sm)">`;
   }
   return `<span style="font-size:${Math.round(size * 0.65)}px;line-height:1;display:flex;align-items:center;justify-content:center;width:${size}px;height:${size}px">${item.icon || '🎁'}</span>`;
+}
+
+function renderPurchasesPage() {
+  const data = window._purchaseData || [];
+  const purchaseRows = data.length === 0
+    ? '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">No purchases yet — when students spend Keys in the store, you\'ll see them here!</div>'
+    : data.map(function(p) {
+        var timeAgo = formatTimeAgo(p.purchasedAt);
+        var st = students.find(function(s) { return s.name === p.studentName; });
+        var initials = p.studentName.split(' ').map(function(n) { return n[0]; }).join('').substring(0, 2).toUpperCase();
+        var color = st ? st.color : '#8B5CF6';
+        return '<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--g100)">' +
+          '<div style="width:36px;height:36px;border-radius:50%;background:' + color + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.7rem;flex-shrink:0">' + escapeHtml(initials) + '</div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div><span style="font-weight:700;color:var(--navy)">' + escapeHtml(p.studentName) + '</span> <span style="color:var(--g500)">purchased</span> <span style="font-weight:700;color:var(--purple)">' + escapeHtml(p.itemName) + '</span></div>' +
+            '<div style="font-size:0.75rem;color:var(--g400);margin-top:2px">' + timeAgo + '</div>' +
+          '</div>' +
+          '<div style="font-weight:700;color:var(--gold);font-size:0.9rem;flex-shrink:0">🔑 ' + p.price + '</div>' +
+        '</div>';
+      }).join('');
+
+  return '<div class="page-header"><h1>' + IC.key + ' Recent Purchases</h1></div>' +
+    '<div class="list-card" style="margin-top:8px">' +
+      '<div style="padding:16px 20px;border-bottom:1px solid var(--g150);display:flex;align-items:center;justify-content:space-between">' +
+        '<span style="font-weight:700;color:var(--navy)">' + data.length + ' purchase' + (data.length !== 1 ? 's' : '') + '</span>' +
+        '<span style="font-size:0.8rem;color:var(--g400)">Students spending Keys in the Class Store</span>' +
+      '</div>' +
+      purchaseRows +
+    '</div>';
 }
 
 function renderStore() {

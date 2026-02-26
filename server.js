@@ -359,10 +359,11 @@ app.post('/api/auth/signup', async (req, res) => {
       let cls = null;
       if (classCode) {
         cls = await db.getClassByCode(classCode);
-        if (!cls) return res.status(400).json({ error: 'Invalid family code. Ask your parent for the correct code.' });
+        if (!cls) return res.status(400).json({ error: 'Invalid class code. Please check the code and try again.' });
       }
 
-      const userEmail = email || `${name.toLowerCase().replace(/\s+/g, '.')}@student.key2read.com`;
+      const uniqueSuffix = Date.now().toString(36);
+      const userEmail = email || `${name.toLowerCase().replace(/\s+/g, '.')}.${uniqueSuffix}@student.key2read.com`;
       const user = await db.createUser({ email: userEmail, name, role: 'student', auth_provider: 'local', school: school || '' });
       const grade = req.body.grade || cls?.grade || '4th';
       const student = await db.createStudent(name, cls ? cls.id : null, user.id, grade);
