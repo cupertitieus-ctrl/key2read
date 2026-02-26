@@ -1237,8 +1237,10 @@ function loadTeacherDashboardData() {
     if (el) el.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--g400);font-size:0.875rem">Could not load activity</div>';
   });
 
-  // Purchase notifications
+  // Purchase notifications — always fetch fresh
+  window._purchaseData = null;
   API.getRecentPurchases(classId).then(data => {
+    console.log('Purchase data loaded:', data?.length || 0, 'items');
     window._purchaseCount = (data || []).length;
     window._purchaseData = data || [];
     renderSidebar(); // refresh badge count
