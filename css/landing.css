@@ -478,6 +478,58 @@
   line-height: 1.65;
 }
 
+/* Expandable feature detail */
+.feature-card { cursor: pointer; }
+.feature-detail {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, opacity 0.3s ease, margin 0.3s ease;
+  opacity: 0;
+  margin-top: 0;
+}
+.feature-detail ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.feature-detail li {
+  position: relative;
+  padding: 6px 0 6px 20px;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--g600);
+}
+.feature-detail li::before {
+  content: '\2713';
+  position: absolute;
+  left: 0;
+  color: var(--green, #10B981);
+  font-weight: 700;
+}
+.feature-expand-hint {
+  display: block;
+  margin-top: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--blue);
+  transition: opacity 0.2s;
+}
+.feature-card.expanded .feature-detail {
+  max-height: 300px;
+  opacity: 1;
+  margin-top: 16px;
+}
+.feature-card.expanded .feature-expand-hint {
+  opacity: 0;
+}
+.feature-card.expanded {
+  border-color: transparent;
+  box-shadow: var(--sh-lg);
+}
+.feature-card.expanded::before {
+  opacity: 1;
+}
+
 /* --- Growth Banner --- */
 .growth-banner-section {
   padding: 0 32px 0;
