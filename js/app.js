@@ -319,14 +319,61 @@ function miniChart(data, color, w, h) {
   </svg>`;
 }
 
+// Vertical bar chart for teacher dashboard
+function svgBarChart(data, labels, w, h) {
+  w = w || 620; h = h || 500;
+  const pad = { top: 30, right: 20, bottom: 36, left: 50 };
+  const cw = w - pad.left - pad.right;
+  const ch = h - pad.top - pad.bottom;
+  const maxVal = Math.max(...data);
+  const minVal = Math.max(0, Math.min(...data) - 50);
+  const range = maxVal - minVal || 1;
+  const barCount = data.length;
+  const gap = cw * 0.15 / barCount;
+  const barW = (cw - gap * (barCount + 1)) / barCount;
+
+  const barColors = ['#2563EB', '#10B981', '#F59E0B', '#8B5CF6'];
+
+  // Gridlines
+  const gridCount = 4;
+  let gridLines = '';
+  for (let i = 0; i <= gridCount; i++) {
+    const y = pad.top + (i / gridCount) * ch;
+    const val = Math.round(maxVal + 20 - (i / gridCount) * (range + 20));
+    gridLines += `<line x1="${pad.left}" y1="${y}" x2="${w - pad.right}" y2="${y}" stroke="#E5E7EB" stroke-width="1" stroke-dasharray="4,4"/>`;
+    gridLines += `<text x="${pad.left - 8}" y="${y + 4}" text-anchor="end" fill="#9CA3AF" font-size="11">${val}</text>`;
+  }
+
+  let bars = '';
+  let barLabels = '';
+  let xLabels = '';
+  data.forEach((v, i) => {
+    const x = pad.left + gap + i * (barW + gap);
+    const barH = ((v - minVal) / range) * ch;
+    const y = pad.top + ch - barH;
+    bars += `<rect x="${x}" y="${y}" width="${barW}" height="${barH}" rx="6" fill="${barColors[i % barColors.length]}"/>`;
+    barLabels += `<text x="${x + barW / 2}" y="${y - 10}" text-anchor="middle" fill="${barColors[i % barColors.length]}" font-size="13" font-weight="700">${v}</text>`;
+    xLabels += `<text x="${x + barW / 2}" y="${h - 8}" text-anchor="middle" fill="#6B7280" font-size="11" font-weight="500">${labels[i]}</text>`;
+  });
+
+  return `<svg class="svg-chart svg-chart-stretch" viewBox="0 0 ${w} ${h}" width="100%" preserveAspectRatio="xMidYMid meet">
+    ${gridLines}
+    ${bars}
+    ${barLabels}
+    ${xLabels}
+  </svg>`;
+}
+
 // Colorful gradient area chart for teacher dashboard
 function svgGradientAreaChart(data, labels, w, h) {
   w = w || 600; h = h || 220;
   const pad = { top: 24, right: 20, bottom: 30, left: 50 };
   const cw = w - pad.left - pad.right;
   const ch = h - pad.top - pad.bottom;
-  const min = Math.min(...data) - 20;
-  const max = Math.max(...data) + 20;
+  const dataMin = Math.min(...data);
+  const dataMax = Math.max(...data);
+  const min = dataMin - 20;
+  const max = dataMax + 20;
   const range = max - min || 1;
 
   const pts = data.map((v, i) => {
@@ -358,7 +405,7 @@ function svgGradientAreaChart(data, labels, w, h) {
   let dots = pts.map((p, i) => `<circle cx="${p.x}" cy="${p.y}" r="6" fill="${dotColors[i % dotColors.length]}" stroke="#fff" stroke-width="3"/>`).join('');
   let dotLabels = pts.map((p, i) => `<text x="${p.x}" y="${p.y - 14}" text-anchor="middle" fill="${dotColors[i % dotColors.length]}" font-size="12" font-weight="700">${p.v}</text>`).join('');
 
-  return `<svg class="svg-chart" viewBox="0 0 ${w} ${h}" width="100%" preserveAspectRatio="xMidYMid meet">
+  return `<svg class="svg-chart svg-chart-stretch" viewBox="0 0 ${w} ${h}" width="100%" preserveAspectRatio="xMidYMid meet">
     <defs>
       <linearGradient id="areaGrad" x1="0" y1="0" x2="1" y2="0">
         <stop offset="0%" stop-color="#2563EB"/>
@@ -367,10 +414,10 @@ function svgGradientAreaChart(data, labels, w, h) {
         <stop offset="75%" stop-color="#EF4444"/>
         <stop offset="100%" stop-color="#8B5CF6"/>
       </linearGradient>
-      <linearGradient id="areaFill" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stop-color="#2563EB" stop-opacity="0.12"/>
-        <stop offset="50%" stop-color="#10B981" stop-opacity="0.08"/>
-        <stop offset="100%" stop-color="#8B5CF6" stop-opacity="0.12"/>
+      <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#2563EB" stop-opacity="0.6"/>
+        <stop offset="50%" stop-color="#3B82F6" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="#93C5FD" stop-opacity="0.1"/>
       </linearGradient>
     </defs>
     ${gridLines}
@@ -920,7 +967,7 @@ function renderTeacherDashboard() {
       })
     : months.map(() => avgScore);
 
-  const trendChart = svgGradientAreaChart(classScores, months, 620, 220);
+  const trendChart = svgBarChart(classScores.slice(-4), months.slice(-4), 620, 500);
 
   // Build reading score pie chart
   const needsSupport = students.filter(s => (s.reading_score || s.score || 0) < 400).length;
@@ -950,23 +997,23 @@ function renderTeacherDashboard() {
     <div class="stat-cards stat-cards-5">
       <div class="stat-card clickable-card" onclick="document.getElementById('dashboard-roster')?.scrollIntoView({behavior:'smooth'})">
         <div class="stat-card-label">Students <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Students', 'The total number of students in your class. Click to scroll to your student roster.')">?</button></div>
-        <div class="stat-card-value" style="color:var(--blue)">${students.length}</div>
+        <div class="stat-card-value">${students.length}</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('reports')">
         <div class="stat-card-label">Average Reading Score <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Reading Score', 'A score from 0 to 1000 that measures how well your class is reading overall. It\\'s based on quiz scores, reading effort, independence (using fewer hints), vocabulary growth, and persistence. Click to see Growth Reports.')">?</button></div>
-        <div class="stat-card-value" style="color:var(--green)">${avgScore}</div>
+        <div class="stat-card-value">${avgScore}</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('reports')">
         <div class="stat-card-label">Average Comprehension <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Comprehension', 'The average percentage of quiz questions your students answer correctly. A higher number means students are understanding what they read. Click to see Growth Reports.')">?</button></div>
-        <div class="stat-card-value" style="color:var(--gold)">${avgAcc}%</div>
+        <div class="stat-card-value">${avgAcc}%</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('store')">
         <div class="stat-card-label">Total Keys Earned <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Total Keys Earned', 'Keys are rewards students earn by passing quizzes with 80% or higher. Students can spend keys in the Class Store to redeem prizes you set up. Click to manage the store.')">?</button></div>
-        <div class="stat-card-value" style="color:var(--purple)">${totalKeys.toLocaleString()}</div>
+        <div class="stat-card-value">${totalKeys.toLocaleString()}</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('quizzes')">
         <div class="stat-card-label">Quizzes Completed <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Quizzes Completed', 'The total number of chapter quizzes all your students have completed. Each book chapter has its own quiz. Click to view assignments.')">?</button></div>
-        <div class="stat-card-value" style="color:var(--orange)">${totalQuizzes}</div>
+        <div class="stat-card-value">${totalQuizzes}</div>
       </div>
     </div>
 
@@ -976,21 +1023,18 @@ function renderTeacherDashboard() {
         <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">How your students are performing across reading levels</p>
         ${pieChart}
       </div>
-      <div class="list-card" style="padding:24px;cursor:pointer" onclick="navigate('reports')">
+      <div class="list-card" style="padding:24px;cursor:pointer;display:flex;flex-direction:column" onclick="navigate('reports')">
         <h3 style="margin:0 0 4px 0">📈 Class Reading Score Trend</h3>
-        <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">Weekly average score · <span style="color:var(--blue);font-weight:600">View Full Report →</span></p>
-        ${trendChart}
+        <p style="font-size:0.8rem;color:var(--g400);margin:0 0 8px 0">Weekly average score · <span style="color:var(--blue);font-weight:600">View Full Report →</span></p>
+        <div style="flex:1;display:flex;align-items:stretch">${trendChart}</div>
       </div>
     </div>
 
     <div class="list-card" style="padding:24px;margin-top:20px">
-      <h3 style="margin:0 0 4px 0">📚 Most Popular Book This Week</h3>
-      <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">Books your students are reading the most</p>
-      <div style="display:flex;gap:24px;align-items:flex-start">
-        <div id="popular-books-chart" style="flex:1;min-width:0">
-          <div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Loading...</div>
-        </div>
-        <div id="popular-book-cover" style="flex-shrink:0"></div>
+      <h3 style="margin:0 0 4px 0">📚 Top 3 Books This Week</h3>
+      <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">The most popular books your students are reading</p>
+      <div id="popular-books-chart">
+        <div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Loading...</div>
       </div>
     </div>
 
@@ -1026,33 +1070,29 @@ function loadTeacherDashboardData() {
       el.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">No book data yet — students need to complete some quizzes!</div>';
       return;
     }
-    const maxCount = Math.max(...data.map(b => b.studentCount), 1);
-    const colors = ['#2563EB', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
     // Store data globally so click handler can access it
     window._popularBooksData = data;
-    el.innerHTML = data.map((b, i) => {
-      const barWidth = Math.round((b.studentCount / maxCount) * 100);
-      const color = colors[i % colors.length];
-      return `<div class="bar-chart-row popular-book-row" style="cursor:pointer" onclick="showPopularBookDetail(${i})">
-        <span class="bar-chart-label" title="${escapeHtml(b.title)}">${escapeHtml(b.title.length > 22 ? b.title.substring(0, 20) + '…' : b.title)}</span>
-        <div class="bar-chart-track"><div class="bar-chart-fill" style="width:${barWidth}%;background:linear-gradient(90deg, ${color}, ${color}88)"></div></div>
-        <span class="bar-chart-value">${b.studentCount} ${b.studentCount === 1 ? 'student' : 'students'}</span>
-      </div>`;
-    }).join('');
-    // Show the #1 book cover
-    const coverEl = document.getElementById('popular-book-cover');
-    if (coverEl && data[0]) {
-      const top = data[0];
-      coverEl.innerHTML = top.coverUrl
-        ? `<div style="text-align:center">
-            <img src="${top.coverUrl}" alt="${escapeHtml(top.title)}" style="width:140px;height:auto;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.15);cursor:pointer" onclick="showPopularBookDetail(0)" onerror="this.parentElement.innerHTML='<div style=\\'width:140px;height:180px;background:var(--g100);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--g400);text-align:center;padding:12px\\'>#1 ${escapeHtml(top.title)}</div>'">
-            <p style="font-size:0.75rem;color:var(--g500);margin:8px 0 0;font-weight:600">#1 Most Read</p>
-          </div>`
-        : `<div style="text-align:center">
-            <div style="width:140px;height:180px;background:linear-gradient(135deg, var(--blue), var(--purple));border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;padding:16px;font-size:0.85rem;text-align:center;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.15)" onclick="showPopularBookDetail(0)">${escapeHtml(top.title)}</div>
-            <p style="font-size:0.75rem;color:var(--g500);margin:8px 0 0;font-weight:600">#1 Most Read</p>
-          </div>`;
-    }
+    const top3 = data.slice(0, 3);
+    const medals = ['🥇', '🥈', '🥉'];
+    const borderColors = ['#F59E0B', '#94A3B8', '#CD7F32'];
+    el.innerHTML = `<div style="display:flex;gap:24px;justify-content:center;flex-wrap:wrap">
+      ${top3.map((b, i) => {
+        const cover = b.coverUrl
+          ? `<img src="${b.coverUrl}" alt="${escapeHtml(b.title)}" style="width:100%;height:auto;border-radius:10px;display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+          : '';
+        return `<div style="text-align:center;cursor:pointer;width:160px" onclick="showPopularBookDetail(${i})">
+          <div style="position:relative;margin-bottom:10px">
+            <div style="border:3px solid ${borderColors[i]};border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.12);background:#fff">
+              ${cover}
+              <div style="display:${b.coverUrl ? 'none' : 'flex'};width:100%;height:200px;background:linear-gradient(135deg, var(--blue), var(--purple));align-items:center;justify-content:center;color:#fff;font-weight:700;padding:16px;font-size:0.85rem;text-align:center">${escapeHtml(b.title)}</div>
+            </div>
+            <span style="position:absolute;top:-10px;left:-10px;font-size:1.5rem">${medals[i]}</span>
+          </div>
+          <p style="font-size:0.8rem;font-weight:700;color:var(--g800);margin:0 0 2px;line-height:1.3">${escapeHtml(b.title.length > 28 ? b.title.substring(0, 26) + '…' : b.title)}</p>
+          <p style="font-size:0.7rem;color:var(--g400);margin:0">${b.studentCount} ${b.studentCount === 1 ? 'student' : 'students'}</p>
+        </div>`;
+      }).join('')}
+    </div>`;
   }).catch(() => {
     const el = document.getElementById('popular-books-chart');
     if (el) el.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--g400);font-size:0.875rem">Could not load book data</div>';
