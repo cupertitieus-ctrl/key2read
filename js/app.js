@@ -5589,17 +5589,17 @@ function renderStudentQuizzes() {
   return `
     <div class="page-header"><h1>My Quizzes</h1></div>
     <div class="stat-cards" style="grid-template-columns: repeat(2, 1fr)">
-      <div class="stat-card" style="display:flex;align-items:center;gap:14px">
+      <div class="stat-card clickable-card" onclick="showCompletedQuizzes()" style="display:flex;align-items:center;gap:14px;cursor:pointer">
         <div style="width:44px;height:44px;border-radius:var(--radius-md);background:linear-gradient(135deg,#dbeafe,#bfdbfe);display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
         </div>
-        <div><div class="stat-card-label">Quizzes Completed</div><div class="stat-card-value">${s.quizzes}</div></div>
+        <div><div class="stat-card-label">Quizzes Completed</div><div class="stat-card-value">${s.quizzes}</div><div style="font-size:0.7rem;color:var(--blue);font-weight:600;margin-top:2px">Tap to view details</div></div>
       </div>
-      <div class="stat-card" style="display:flex;align-items:center;gap:14px">
+      <div class="stat-card clickable-card" onclick="showKeysBreakdown()" style="display:flex;align-items:center;gap:14px;cursor:pointer">
         <div style="width:44px;height:44px;border-radius:var(--radius-md);background:linear-gradient(135deg,#fef3c7,#fde68a);display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><circle cx="8" cy="8" r="4"/><path d="M10.5 10.5L21 21"/><path d="M16 16l5 0"/><path d="M19 13l0 6"/></svg>
         </div>
-        <div><div class="stat-card-label">Keys Earned</div><div class="stat-card-value">${s.keys}</div></div>
+        <div><div class="stat-card-label">Keys Earned</div><div class="stat-card-value">${s.keys}</div><div style="font-size:0.7rem;color:var(--gold, #d97706);font-weight:600;margin-top:2px">Tap to view history</div></div>
       </div>
     </div>
 
