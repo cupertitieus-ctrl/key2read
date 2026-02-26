@@ -1134,27 +1134,21 @@ function loadTeacherDashboardData() {
     const top3 = data.slice(0, 3);
     const medals = ['🥇', '🥈', '🥉'];
     const borderColors = ['#F59E0B', '#94A3B8', '#CD7F32'];
-    el.innerHTML = `<div style="display:flex;gap:28px;justify-content:center;flex-wrap:wrap">
+    el.innerHTML = `<div style="display:flex;gap:14px;justify-content:center">
       ${top3.map((b, i) => {
         const cover = b.coverUrl
-          ? `<img src="${b.coverUrl}" alt="${escapeHtml(b.title)}" style="width:100%;height:auto;border-radius:10px;display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+          ? `<img src="${b.coverUrl}" alt="${escapeHtml(b.title)}" style="width:100%;height:auto;border-radius:8px;display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
           : '';
-        const namesList = (b.studentNames || []).slice(0, 4).map(n => escapeHtml(n.split(' ')[0])).join(', ');
-        const extra = (b.studentNames || []).length > 4 ? ' +' + ((b.studentNames || []).length - 4) + ' more' : '';
-        return `<div style="text-align:center;cursor:pointer;width:200px" onclick="showPopularBookDetail(${i})">
-          <div style="position:relative;margin-bottom:10px">
-            <div style="border:3px solid ${borderColors[i]};border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.12);background:#fff">
+        return `<div style="text-align:center;cursor:pointer;flex:1;min-width:0;max-width:130px" onclick="showPopularBookDetail(${i})">
+          <div style="position:relative;margin-bottom:8px">
+            <div style="border:3px solid ${borderColors[i]};border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.12);background:#fff">
               ${cover}
-              <div style="display:${b.coverUrl ? 'none' : 'flex'};width:100%;height:200px;background:linear-gradient(135deg, var(--blue), var(--purple));align-items:center;justify-content:center;color:#fff;font-weight:700;padding:16px;font-size:0.85rem;text-align:center">${escapeHtml(b.title)}</div>
+              <div style="display:${b.coverUrl ? 'none' : 'flex'};width:100%;height:160px;background:linear-gradient(135deg, var(--blue), var(--purple));align-items:center;justify-content:center;color:#fff;font-weight:700;padding:10px;font-size:0.75rem;text-align:center">${escapeHtml(b.title)}</div>
             </div>
-            <span style="position:absolute;top:-16px;left:-16px;font-size:2.75rem">${medals[i]}</span>
+            <span style="position:absolute;top:-12px;left:-12px;font-size:2rem">${medals[i]}</span>
           </div>
-          <p style="font-size:0.85rem;font-weight:700;color:var(--g800);margin:0 0 4px;line-height:1.3">${escapeHtml(b.title.length > 30 ? b.title.substring(0, 28) + '…' : b.title)}</p>
-          <div style="display:flex;gap:10px;justify-content:center;margin:6px 0 8px">
-            <span style="font-size:0.7rem;background:var(--blue-p);color:var(--blue);padding:3px 8px;border-radius:99px;font-weight:600">👥 ${b.studentCount} ${b.studentCount === 1 ? 'reader' : 'readers'}</span>
-            <span style="font-size:0.7rem;background:var(--green-p, #ECFDF5);color:var(--green);padding:3px 8px;border-radius:99px;font-weight:600">📝 ${b.quizCount} ${b.quizCount === 1 ? 'quiz' : 'quizzes'}</span>
-          </div>
-          <p style="font-size:0.7rem;color:var(--g400);margin:0;line-height:1.4">${namesList}${extra}</p>
+          <p style="font-size:0.75rem;font-weight:700;color:var(--g800);margin:0 0 2px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(b.title)}</p>
+          <p style="font-size:0.65rem;color:var(--g400);margin:0">${b.studentCount} ${b.studentCount === 1 ? 'reader' : 'readers'} · ${b.quizCount} ${b.quizCount === 1 ? 'quiz' : 'quizzes'}</p>
         </div>`;
       }).join('')}
     </div>`;
