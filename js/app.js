@@ -2143,6 +2143,30 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
       </div>
     </div>
 
+    ${(() => {
+      const isTeacher = userRole === 'teacher' || userRole === 'owner' || userRole === 'principal' || userRole === 'parent';
+      if (!isTeacher) return '';
+      const raw = s._raw || {};
+      let animalsArr = [];
+      try { animalsArr = typeof raw.favorite_animals === 'string' ? JSON.parse(raw.favorite_animals || '[]') : (raw.favorite_animals || []); } catch(e) { animalsArr = []; }
+      if (!animalsArr || animalsArr.length === 0) return '';
+      const followed = animalsArr.length <= 3;
+      const icon = followed ? '&#9989;' : '&#9888;&#65039;';
+      const statusText = followed ? 'Yes — followed instructions' : 'No — selected ' + animalsArr.length + ' (instruction said "Pick up to 3")';
+      const statusColor = followed ? 'var(--green, #22C55E)' : 'var(--orange, #F59E0B)';
+      const bgColor = followed ? '#F0FDF4' : '#FFFBEB';
+      const borderColor = followed ? '#BBF7D0' : '#FDE68A';
+      return `
+        <div class="section-header" style="margin-top:24px"><h3>&#128203; Instruction Following</h3></div>
+        <div style="background:${bgColor};border:1px solid ${borderColor};border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:12px">
+          <span style="font-size:1.5rem">${icon}</span>
+          <div>
+            <div style="font-weight:700;color:${statusColor};font-size:0.95rem">${statusText}</div>
+            <div style="color:var(--g500);font-size:0.8rem;margin-top:2px">Based on onboarding survey: "Favorite Animals (Pick up to 3)" — student selected ${animalsArr.length} animal${animalsArr.length !== 1 ? 's' : ''}</div>
+          </div>
+        </div>`;
+    })()}
+
     ${quizHistoryHtml}
 
     ${(() => {
@@ -5357,7 +5381,8 @@ async function saveOnboarding() {
     s.interests.favoriteGenre = genreSelect ? genreSelect.value : 'Fantasy';
     s.interests.onboarded = true;
 
-    // Save to backend DB
+    // Save to backend DB (favorite_animals array length vs "Pick up to 3" instruction
+    // reveals instruction-following ability — teachers can see this in student details)
     try {
       await API.updateSurvey(s.id, {
         interest_tags: JSON.stringify(selectedInterests),
@@ -5418,7 +5443,7 @@ function getOnboardingBodyHtml(s) {
   } else if (onboardingStep === 1) {
     stepContent = `
       <h3 style="text-align:center;margin-bottom:4px">What do you love?</h3>
-      <p style="text-align:center;color:var(--g500);margin-bottom:20px">Pick 2\u20134 topics that interest you the most.</p>
+      <p style="text-align:center;color:var(--g500);margin-bottom:20px"><strong style="color:var(--navy)">Pick 2\u20134 topics</strong> that interest you the most.</p>
       <div class="interest-grid">
         ${interestCategories.map(cat => {
           const selected = selectedInterests.includes(cat.id) ? 'selected' : '';
@@ -5475,7 +5500,7 @@ function getOnboardingBodyHtml(s) {
       <p style="text-align:center;color:var(--g500);margin-bottom:20px">This helps us make your quizzes super interesting.</p>
 
       <div class="survey-section">
-        <div class="survey-section-label">Favorite Animals (pick a few!)</div>
+        <div class="survey-section-label">Favorite Animals (<strong style="color:var(--navy)">Pick up to 3</strong>)</div>
         <div class="survey-chips">
           ${animalOptions.map(a => `
             <div class="survey-chip ${(window._surveyAnimals||[]).includes(a.id)?'selected':''}" onclick="toggleSurveyChip('animals','${a.id}')">
