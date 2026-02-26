@@ -1153,9 +1153,9 @@ function loadTeacherDashboardData() {
     var scores = data.map(function(w) { return w.avgScore; });
     var labels = data.map(function(w) { return w.label; });
     if (scores.length === 1) {
-      // Only one data point — show as a value instead of a useless single-dot chart
-      container.innerHTML = '<div style="text-align:center;padding:40px 0"><div style="font-size:2.5rem;font-weight:800;color:var(--blue)">' + scores[0] + '</div><div style="font-size:0.85rem;color:var(--g400);margin-top:4px">Class avg reading score · ' + labels[0] + '</div></div>';
-      return;
+      // Single data point — show as line from starting score (500) to current
+      scores.unshift(500);
+      labels.unshift('Start');
     }
     container.innerHTML = svgLineChart(scores, labels, 620, 500);
   }).catch(function(err) {
@@ -4509,8 +4509,8 @@ function loadReportsChartData() {
     var scores = data.map(function(w) { return w.avgScore; });
     var labels = data.map(function(w) { return w.label; });
     if (scores.length === 1) {
-      container.innerHTML = '<div style="text-align:center;padding:40px 0"><div style="font-size:2.5rem;font-weight:800;color:var(--blue)">' + scores[0] + '</div><div style="font-size:0.85rem;color:var(--g400);margin-top:4px">Class avg reading score \u00b7 ' + labels[0] + '</div></div>';
-      return;
+      scores.unshift(500);
+      labels.unshift('Start');
     }
     container.innerHTML = svgLineChart(scores, labels, 620, 280);
   }).catch(function() {
