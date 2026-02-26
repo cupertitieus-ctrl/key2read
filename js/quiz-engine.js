@@ -19,6 +19,7 @@ const QuizEngine = (function() {
   let hintShown = [];            // per-question: true if hint was shown (auto or manual)
   let attempts = [];             // per-question: number of attempts made
   let wrongPicks = [];           // per-question: Set of wrong answer indices
+  let studentPicks = [];         // per-question: the student's actual final answer index (before reveal overwrites)
   let showRetryModal = false;    // true when wrong-answer overlay is visible
   let showRevealModal = false;   // true when correct answer is revealed after 2 wrong attempts
 
@@ -466,6 +467,7 @@ const QuizEngine = (function() {
     hintShown = [];
     attempts = [];
     wrongPicks = [];
+    studentPicks = [];
     showRetryModal = false;
     showRevealModal = false;
     quizResults = null;
@@ -752,9 +754,20 @@ const QuizEngine = (function() {
             <div class="quiz-results-detail-list">
               ${r.results.map((res, i) => {
                 const q = currentQuiz.questions[i];
+                const qText = escapeHtml((q.personalized_text || q.question_text).replace(/<[^>]*>/g, '').replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1').substring(0, 80));
+                const correctText = escapeHtml(q.options[q.correct_answer] || '');
+                const pickIdx = studentPicks[i];
+                const pickedText = pickIdx !== undefined && q.options ? escapeHtml(q.options[pickIdx] || '') : '';
+                const showWrong = !res.isCorrect && pickedText && pickedText !== correctText;
                 return '<div class="quiz-result-item ' + (res.isCorrect ? 'correct' : 'incorrect') + '">' +
                   '<div class="quiz-result-icon">' + (res.isCorrect ? '✅' : '❌') + (res.hintUsed ? ' <span class="quiz-result-retry" title="Used a hint">🔄</span>' : '') + '</div>' +
-                  '<div class="quiz-result-info"><div class="quiz-result-text">' + escapeHtml((q.personalized_text || q.question_text).replace(/<[^>]*>/g, '').replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1').substring(0, 80)) + '...</div></div>' +
+                  '<div class="quiz-result-info">' +
+                    '<div class="quiz-result-text">' + qText + '...</div>' +
+                    (showWrong
+                      ? '<div style="margin-top:4px;font-size:0.82rem"><span style="color:#EF4444;font-weight:600">You picked: ' + pickedText + '</span></div>' +
+                        '<div style="font-size:0.82rem"><span style="color:#22C55E;font-weight:600">Correct answer: ' + correctText + '</span></div>'
+                      : (res.isCorrect ? '<div style="margin-top:4px;font-size:0.82rem;color:#22C55E;font-weight:600">✓ ' + correctText + '</div>' : '')) +
+                  '</div>' +
                   '</div>';
               }).join('')}
             </div>` : ''}
@@ -838,6 +851,7 @@ const QuizEngine = (function() {
 
     if (isCorrect) {
       // Correct — lock in the answer
+      studentPicks[currentQuestion] = answers[currentQuestion];
       answered = true;
       try {
         const fb = await API.getFeedback({
@@ -867,6 +881,7 @@ const QuizEngine = (function() {
       if (attempts[currentQuestion] >= 2) {
         // Second wrong attempt — reveal the correct answer, lock question
         answered = true;
+        studentPicks[currentQuestion] = answers[currentQuestion]; // save what they actually picked
         answers[currentQuestion] = q.correct_answer; // record correct for scoring display
         showRevealModal = true;
         feedback[currentQuestion] = { isCorrect: false, feedback: '', revealed: true };
