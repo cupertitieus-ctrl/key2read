@@ -3749,119 +3749,129 @@ function closeCelebration() {
 
 function downloadCertificatePDF(params) {
   if (!window.jspdf || !window.jspdf.jsPDF) {
-    alert('PDF library not loaded. Please try again.');
+    alert('PDF library not loaded. Please refresh the page and try again.');
     return;
   }
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-  const w = 297, h = 210;
-  const book = params ? { title: params.bookTitle || 'Book', author: params.bookAuthor || '' } : (books.find(b => b.id === selectedBookId) || { title: 'Book', author: '' });
-  const studentName = params ? params.studentName : (currentUser?.name || 'Student');
-  const score = params ? (params.score ? 'Score: ' + params.score + '%' : '') : (document.querySelector('.celebration-cert-meta span:last-child')?.textContent || '');
-  const dateStr = params ? (params.dateStr || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })) : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const w = 297, h = 210;
+    const book = params ? { title: params.bookTitle || 'Book', author: params.bookAuthor || '' } : (books.find(b => b.id === selectedBookId) || { title: 'Book', author: '' });
+    const studentName = params ? params.studentName : (currentUser?.name || 'Student');
+    const score = params ? (params.score ? 'Score: ' + params.score + '%' : '') : (document.querySelector('.celebration-cert-meta span:last-child')?.textContent || '');
+    const dateStr = params ? (params.dateStr || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })) : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    // Strip non-Latin1 characters for jsPDF compatibility
+    const safe = (str) => str.replace(/[^\x00-\xFF]/g, '');
 
-  // Soft cream background
-  doc.setFillColor(255, 252, 240);
-  doc.rect(0, 0, w, h, 'F');
+    // Soft cream background
+    doc.setFillColor(255, 252, 240);
+    doc.rect(0, 0, w, h, 'F');
 
-  // Outer decorative border (navy/gold double border)
-  doc.setDrawColor(30, 58, 138);
-  doc.setLineWidth(3);
-  doc.rect(8, 8, w - 16, h - 16);
-  doc.setDrawColor(217, 167, 44);
-  doc.setLineWidth(1.5);
-  doc.rect(13, 13, w - 26, h - 26);
-  doc.setDrawColor(30, 58, 138);
-  doc.setLineWidth(0.5);
-  doc.rect(17, 17, w - 34, h - 34);
+    // Outer decorative border (navy/gold double border)
+    doc.setDrawColor(30, 58, 138);
+    doc.setLineWidth(3);
+    doc.rect(8, 8, w - 16, h - 16);
+    doc.setDrawColor(217, 167, 44);
+    doc.setLineWidth(1.5);
+    doc.rect(13, 13, w - 26, h - 26);
+    doc.setDrawColor(30, 58, 138);
+    doc.setLineWidth(0.5);
+    doc.rect(17, 17, w - 34, h - 34);
 
-  // Corner stars
-  const corners = [[24, 24], [w - 24, 24], [24, h - 24], [w - 24, h - 24]];
-  doc.setFillColor(217, 167, 44);
-  corners.forEach(([cx, cy]) => {
-    doc.circle(cx, cy, 3, 'F');
-  });
+    // Corner gold circles
+    const corners = [[24, 24], [w - 24, 24], [24, h - 24], [w - 24, h - 24]];
+    doc.setFillColor(217, 167, 44);
+    corners.forEach(([cx, cy]) => {
+      doc.circle(cx, cy, 3, 'F');
+    });
 
-  // Gold ribbon line
-  doc.setDrawColor(217, 167, 44);
-  doc.setLineWidth(0.8);
-  doc.line(w / 2 - 70, 42, w / 2 + 70, 42);
+    // Gold ribbon line above title
+    doc.setDrawColor(217, 167, 44);
+    doc.setLineWidth(0.8);
+    doc.line(w / 2 - 70, 35, w / 2 + 70, 35);
 
-  // Title
-  doc.setFontSize(30);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(30, 58, 138);
-  doc.text('Certificate of Achievement', w / 2, 38, { align: 'center' });
+    // Title
+    doc.setFontSize(30);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 58, 138);
+    doc.text('Certificate of Achievement', w / 2, 48, { align: 'center' });
 
-  // Gold ribbon line below title
-  doc.line(w / 2 - 70, 44, w / 2 + 70, 44);
+    // Gold ribbon line below title
+    doc.line(w / 2 - 70, 52, w / 2 + 70, 52);
 
-  // Star divider
-  doc.setFontSize(14);
-  doc.setTextColor(217, 167, 44);
-  doc.text('★  ★  ★', w / 2, 55, { align: 'center' });
+    // Star divider (using asterisks — safe for jsPDF)
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(217, 167, 44);
+    doc.text('*   *   *', w / 2, 62, { align: 'center' });
 
-  // "This certifies that"
-  doc.setFontSize(13);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100, 100, 100);
-  doc.text('This certifies that', w / 2, 68, { align: 'center' });
+    // "This certifies that"
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text('This certifies that', w / 2, 75, { align: 'center' });
 
-  // Student name with underline
-  doc.setFontSize(28);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(30, 58, 138);
-  doc.text(studentName, w / 2, 84, { align: 'center' });
-  doc.setDrawColor(217, 167, 44);
-  doc.setLineWidth(0.5);
-  const nameWidth = doc.getTextWidth(studentName);
-  doc.line(w / 2 - nameWidth / 2 - 5, 87, w / 2 + nameWidth / 2 + 5, 87);
+    // Student name with underline
+    const safeName = safe(studentName);
+    doc.setFontSize(28);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 58, 138);
+    doc.text(safeName, w / 2, 90, { align: 'center' });
+    doc.setDrawColor(217, 167, 44);
+    doc.setLineWidth(0.5);
+    const nameWidth = doc.getTextWidth(safeName);
+    doc.line(w / 2 - nameWidth / 2 - 5, 93, w / 2 + nameWidth / 2 + 5, 93);
 
-  // "has successfully completed"
-  doc.setFontSize(13);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100, 100, 100);
-  doc.text('has successfully completed all chapters and quizzes for', w / 2, 100, { align: 'center' });
+    // "has successfully completed"
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text('has successfully completed all chapters and quizzes for', w / 2, 106, { align: 'center' });
 
-  // Book title
-  doc.setFontSize(22);
-  doc.setFont('helvetica', 'bolditalic');
-  doc.setTextColor(139, 92, 246);
-  doc.text('"' + (book.title || 'Book') + '"', w / 2, 116, { align: 'center' });
+    // Book title
+    const safeBookTitle = safe(book.title || 'Book');
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bolditalic');
+    doc.setTextColor(139, 92, 246);
+    doc.text('"' + safeBookTitle + '"', w / 2, 120, { align: 'center' });
 
-  // Author
-  if (book.author) {
+    // Author
+    if (book.author) {
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(120, 120, 120);
+      doc.text('by ' + safe(book.author), w / 2, 130, { align: 'center' });
+    }
+
+    // Decorative line before date
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.line(w / 2 - 40, 145, w / 2 + 40, 145);
+
+    // Date and score
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text(safe(dateStr), w / 2, 155, { align: 'center' });
+    if (score) doc.text(safe(score), w / 2, 163, { align: 'center' });
+
+    // Branding
     doc.setFontSize(12);
-    doc.setFont('helvetica', 'italic');
-    doc.setTextColor(120, 120, 120);
-    doc.text('by ' + book.author, w / 2, 126, { align: 'center' });
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 58, 138);
+    doc.text('key2read', w / 2, 180, { align: 'center' });
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(150, 150, 150);
+    doc.text('Building Critical Thinking Skills Through Reading', w / 2, 186, { align: 'center' });
+
+    // Save
+    const safeTitle = (book.title || 'Book').replace(/[^a-zA-Z0-9]/g, '-');
+    doc.save(safeTitle + '-Certificate.pdf');
+  } catch(e) {
+    console.error('Certificate PDF error:', e);
+    alert('Could not generate PDF: ' + e.message);
   }
-
-  // Decorative line before date
-  doc.setDrawColor(200, 200, 200);
-  doc.setLineWidth(0.3);
-  doc.line(w / 2 - 40, 140, w / 2 + 40, 140);
-
-  // Date and score
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100, 100, 100);
-  doc.text(dateStr, w / 2, 150, { align: 'center' });
-  if (score) doc.text(score, w / 2, 158, { align: 'center' });
-
-  // Branding with key emoji
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(30, 58, 138);
-  doc.text('key2read', w / 2, 178, { align: 'center' });
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(150, 150, 150);
-  doc.text('Building Critical Thinking Skills Through Reading', w / 2, 184, { align: 'center' });
-
-  // Save
-  const safeTitle = (book.title || 'Book').replace(/[^a-zA-Z0-9]/g, '-');
-  doc.save(`${safeTitle}-Certificate.pdf`);
 }
 
 function printCertificate(params) {
