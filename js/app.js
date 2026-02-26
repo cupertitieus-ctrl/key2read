@@ -1721,48 +1721,53 @@ function renderQuizzes() {
 
     <div class="stat-cards stat-cards-5">
       <div class="stat-card clickable-card" onclick="navigate('teacher-dashboard')">
+        <div class="stat-card-icon"><img src="/public/Student_Outline_Icon.png" alt="Students"></div>
         <div class="stat-card-label">Students</div>
         <div class="stat-card-value">${students.length}</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('reports')">
+        <div class="stat-card-icon"><img src="/public/Book_Outline_Icon.png" alt="Reading Score"></div>
         <div class="stat-card-label">Average Reading Score <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Reading Score', 'A composite score (0–1000) based on quiz accuracy, reading effort, independence (fewer hints), vocabulary growth, and persistence. Each quiz adjusts the score up or down based on performance. Click to see Growth Reports.')">?</button></div>
         <div class="stat-card-value">${avgScore}</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('reports')">
+        <div class="stat-card-icon"><img src="/public/Comprehension_Outline_Icon.png" alt="Comprehension"></div>
         <div class="stat-card-label">Average Comprehension <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Comprehension', 'The average percentage of quiz questions your students answer correctly. A higher number means students are understanding what they read.')">?</button></div>
         <div class="stat-card-value">${avgAcc}%</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('store')">
+        <div class="stat-card-icon"><img src="/public/Key_Outline_Icon.png" alt="Keys Earned"></div>
         <div class="stat-card-label">Total Keys Earned <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Total Keys Earned', 'Keys are rewards students earn by passing quizzes with 80% or higher. Students can spend keys in the Class Store to redeem prizes you set up.')">?</button></div>
         <div class="stat-card-value">${totalKeys.toLocaleString()}</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('library')">
+        <div class="stat-card-icon"><img src="/public/Book_Outline_Icon.png" alt="Books"></div>
         <div class="stat-card-label">Books Available</div>
         <div class="stat-card-value">${books.length}</div>
       </div>
     </div>
 
     <div class="list-card" style="padding:24px;margin-bottom:20px">
-      <h3 style="margin:0 0 16px 0;font-size:1rem;font-weight:700;color:var(--navy)">How Quizzes Work</h3>
+      <h3 style="margin:0 0 16px 0;font-size:1rem;font-weight:700;color:var(--navy)">How Does the Software Work?</h3>
       <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:16px">
         <div style="text-align:center;padding:16px 12px;background:var(--blue-p, #EFF6FF);border-radius:var(--radius-md);cursor:pointer" onclick="navigate('library')">
-          <div style="font-size:1.75rem;margin-bottom:8px">📚</div>
-          <div style="font-size:0.8125rem;font-weight:700;color:var(--navy);margin-bottom:4px">1. Pick a Book</div>
+          <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Stacked_Book_Outline.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
+          <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">1. Pick a Book</div>
           <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">Students choose a chapter book from the library</div>
         </div>
         <div style="text-align:center;padding:16px 12px;background:var(--green-l, #ECFDF5);border-radius:var(--radius-md)">
-          <div style="font-size:1.75rem;margin-bottom:8px">📖</div>
-          <div style="font-size:0.8125rem;font-weight:700;color:var(--navy);margin-bottom:4px">2. Read a Chapter</div>
+          <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Book_Outline_Icon_Black.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
+          <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">2. Read a Chapter</div>
           <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">Students read the physical book chapter by chapter</div>
         </div>
         <div style="text-align:center;padding:16px 12px;background:var(--gold-l, #FFFBEB);border-radius:var(--radius-md)">
-          <div style="font-size:1.75rem;margin-bottom:8px">📝</div>
-          <div style="font-size:0.8125rem;font-weight:700;color:var(--navy);margin-bottom:4px">3. Take the Quiz</div>
+          <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Quiz_Outline_Icon_Blk.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
+          <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">3. Take the Quiz</div>
           <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">5 questions test comprehension, vocabulary, and reasoning</div>
         </div>
         <div style="text-align:center;padding:16px 12px;background:var(--purple-l, #F5F3FF);border-radius:var(--radius-md);cursor:pointer" onclick="navigate('reports')">
-          <div style="font-size:1.75rem;margin-bottom:8px">🔑</div>
-          <div style="font-size:0.8125rem;font-weight:700;color:var(--navy);margin-bottom:4px">4. Earn Keys & Grow</div>
+          <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Key_Outline_Icon_Blk.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
+          <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">4. Earn Keys & Grow</div>
           <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">Score 80%+ to earn Keys and boost their Reading Score</div>
         </div>
       </div>
@@ -4870,18 +4875,22 @@ function renderReports() {
 
     <div class="stat-cards">
       <div class="stat-card" style="cursor:pointer" onclick="showStatHelp('Average Reading Score', 'A composite score (0–1000) based on quiz accuracy, reading effort, independence (fewer hints), vocabulary growth, and persistence. Each quiz adjusts the score up or down based on performance.')">
+        <div class="stat-card-icon"><img src="/public/Book_Outline_Icon.png" alt="Reading Score"></div>
         <div class="stat-card-label">Average Reading Score <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Reading Score', 'A composite score (0–1000) based on quiz accuracy, reading effort, independence (fewer hints), vocabulary growth, and persistence. Each quiz adjusts the score up or down based on performance.')">?</button></div>
         <div class="stat-card-value">${avgScore}</div>
       </div>
       <div class="stat-card" style="cursor:pointer" onclick="showStatHelp('Average Accuracy', 'The average percentage of quiz questions your students answer correctly across all quizzes taken.')">
+        <div class="stat-card-icon"><img src="/public/Comprehension_Outline_Icon.png" alt="Accuracy"></div>
         <div class="stat-card-label">Average Accuracy <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Accuracy', 'The average percentage of quiz questions your students answer correctly across all quizzes taken.')">?</button></div>
         <div class="stat-card-value">${avgAcc}%</div>
       </div>
       <div class="stat-card" style="cursor:pointer" onclick="showStatHelp('Total Keys Earned', 'Keys are rewards students earn by passing quizzes with 80% or higher. Students can spend keys in the Class Store.')">
+        <div class="stat-card-icon"><img src="/public/Key_Outline_Icon.png" alt="Keys Earned"></div>
         <div class="stat-card-label">Total Keys Earned <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Total Keys Earned', 'Keys are rewards students earn by passing quizzes with 80% or higher. Students can spend keys in the Class Store.')">?</button></div>
         <div class="stat-card-value">${totalKeysAll.toLocaleString()}</div>
       </div>
       <div class="stat-card">
+        <div class="stat-card-icon"><img src="/public/Student_Outline_Icon.png" alt="Students"></div>
         <div class="stat-card-label">Students</div>
         <div class="stat-card-value">${students.length}</div>
       </div>
