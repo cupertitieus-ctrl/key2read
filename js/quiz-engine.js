@@ -528,12 +528,15 @@ const QuizEngine = (function() {
     const vocabWords = [...new Set([...questionVocab, ...chapterVocab, ...perQuestionVocab])]
       .filter(w => !testedWords.includes(w.toLowerCase()));
 
-    let markedText = markContextualVocab(markExplicitVocab(escapeHtml(questionText), vocabWords), testedWords);
+    // Strip any raw HTML tags (like <u>) that Claude may have included in the question text
+    var cleanQuestionText = questionText.replace(/<[^>]*>/g, '');
+    let markedText = markContextualVocab(markExplicitVocab(escapeHtml(cleanQuestionText), vocabWords), testedWords);
 
     // Mark vocab in passage too
     let markedPassage = '';
     if (q.passage_excerpt) {
-      markedPassage = markContextualVocab(markExplicitVocab(escapeHtml(q.passage_excerpt), vocabWords), testedWords);
+      var cleanPassage = q.passage_excerpt.replace(/<[^>]*>/g, '');
+      markedPassage = markContextualVocab(markExplicitVocab(escapeHtml(cleanPassage), vocabWords), testedWords);
     }
 
     const answerForThis = answers[currentQuestion];
@@ -639,7 +642,7 @@ const QuizEngine = (function() {
             <div class="quiz-reveal-answer">
               <p>"${escapeHtml(q.options[q.correct_answer] || '')}"</p>
             </div>
-            ${q.explanation ? `<div class="quiz-reveal-explanation"><strong>Why?</strong> ${escapeHtml(q.explanation)}</div>` : ''}
+            ${q.explanation ? `<div class="quiz-reveal-explanation"><strong>Why?</strong> ${escapeHtml(q.explanation.replace(/<[^>]*>/g, ''))}</div>` : ''}
             <p class="quiz-retry-message">That's okay — every question helps you learn! Let's keep going.</p>
             <button class="btn btn-primary quiz-retry-btn" onclick="QuizEngine.dismissRevealModal()">Next Question →</button>
           </div>
@@ -737,7 +740,7 @@ const QuizEngine = (function() {
                 const q = currentQuiz.questions[i];
                 return '<div class="quiz-result-item ' + (res.isCorrect ? 'correct' : 'incorrect') + '">' +
                   '<div class="quiz-result-icon">' + (res.isCorrect ? '✅' : '❌') + (res.hintUsed ? ' <span class="quiz-result-retry" title="Used a hint">🔄</span>' : '') + '</div>' +
-                  '<div class="quiz-result-info"><div class="quiz-result-text">' + escapeHtml((q.personalized_text || q.question_text).substring(0, 80)) + '...</div></div>' +
+                  '<div class="quiz-result-info"><div class="quiz-result-text">' + escapeHtml((q.personalized_text || q.question_text).replace(/<[^>]*>/g, '').substring(0, 80)) + '...</div></div>' +
                   '</div>';
               }).join('')}
             </div>` : ''}
