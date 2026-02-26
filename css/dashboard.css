@@ -727,6 +727,73 @@
   }
 }
 
+/* ─── WEEKLY WINS SECTION (My Reading Progress page) ─── */
+.weekly-wins-section {
+  margin-bottom: 24px;
+}
+.weekly-wins-section .weekly-wins-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.weekly-wins-title {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--g800);
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+.weekly-wins-reset {
+  font-size: 0.75rem;
+  color: var(--teal, #0ea5a9);
+  font-weight: 600;
+}
+.weekly-wins-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.weekly-win-card {
+  background: #fff;
+  border: 2px solid var(--g200);
+  border-radius: var(--radius-lg, 16px);
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.weekly-win-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.weekly-win-keys { border-color: #F5A623; background: #FFFBF0; }
+.weekly-win-quizzes { border-color: #7BC142; background: #F5FFF0; }
+.weekly-win-books { border-color: #F87171; background: #FFF5F5; }
+.weekly-win-emoji {
+  margin-bottom: 8px;
+}
+.weekly-win-value {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--g800);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.weekly-win-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--g500);
+}
+@media (max-width: 600px) {
+  .weekly-wins-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ─── TOTAL PROGRESS SECTION ─── */
 .total-progress-section {
   margin-bottom: 24px;
@@ -741,7 +808,8 @@
 }
 
 .total-progress-cards {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
 }
 
@@ -749,39 +817,49 @@
   background: var(--g50);
   border: 1px solid var(--g200);
   border-radius: var(--radius-md);
-  padding: 14px 20px;
+  padding: 16px 20px;
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
   animation: slideUp 0.5s var(--ease-out) 320ms both;
+}
+.total-progress-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .total-progress-value {
   font-family: var(--font-display);
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: var(--g700);
 }
 
 .total-progress-label {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--g400);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--g500);
 }
 
 .total-progress-desc {
-  font-size: 0.6875rem;
+  font-size: 0.7rem;
   font-weight: 400;
   color: var(--g400);
   line-height: 1.4;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 /* ─── RESPONSIVE: Total Progress ─── */
 @media (max-width: 768px) {
   .total-progress-cards {
-    flex-direction: column;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .total-progress-cards {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -4565,5 +4643,73 @@
 
   .overview-score-number {
     font-size: 2.25rem;
+  }
+}
+
+/* ─── PRINT STYLES ─── */
+@media print {
+  /* Hide non-printable elements */
+  .sidebar, .mobile-nav, .mobile-overlay, .no-print,
+  .page-header-actions, .report-share-badge,
+  .stat-help-btn, button, .btn {
+    display: none !important;
+  }
+
+  /* Show the print logo */
+  .print-logo {
+    display: inline-block !important;
+  }
+
+  /* Clean page layout */
+  body {
+    background: #fff !important;
+    margin: 0;
+    padding: 0;
+  }
+  .dash-main, .app-main {
+    margin: 0 !important;
+    padding: 20px !important;
+    max-width: 100% !important;
+  }
+  .app-layout {
+    display: block !important;
+  }
+
+  /* Cards and charts */
+  .stat-card, .list-card, .chart-container, .report-header-card, .data-table-wrap {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+
+  /* Ensure SVG charts print */
+  svg {
+    max-width: 100% !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Report header logo */
+  .report-header-card {
+    margin-bottom: 16px;
+  }
+
+  /* Data table */
+  .data-table {
+    font-size: 0.8rem;
+  }
+  .data-table th, .data-table td {
+    padding: 6px 8px !important;
+  }
+
+  /* Page breaks */
+  .report-charts-grid {
+    break-inside: avoid;
+  }
+
+  /* Colors print correctly */
+  .badge, .stat-card-value, .growth-arrow {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 }

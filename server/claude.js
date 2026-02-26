@@ -128,16 +128,17 @@ SKILL TARGETING — Prefer these word types:
 • Thinking words (decide, realize, notice, discover)`;
 
 const ANSWER_RULES = `
-═══ ANSWER CHOICE RULES ═══
+═══ ANSWER CHOICE RULES (CRITICAL — FOLLOW EXACTLY) ═══
 
 Every question must have exactly 4 answer choices following these rules:
 1. ONE clearly correct or BEST answer
 2. NO obvious throwaway wrong answers — every wrong answer must be plausible
 3. Wrong answers should be based on common misunderstandings children make (misreading, confusing characters, surface-level thinking)
-4. All 4 choices must be within ~20% of each other in character length
-5. Correct answer position MUST be varied — spread across 0, 1, 2, 3 across the quiz. Never put the correct answer at the same position more than twice.
+4. **LENGTH RULE (MANDATORY)**: All 4 choices MUST be nearly IDENTICAL in word count and character length. The correct answer must NOT be the longest. If the correct answer needs detail, add similar detail to the wrong answers. Count the words in each option — they should all be within 2-3 words of each other. NEVER make the correct answer obviously longer or more detailed than the distractors.
+5. Correct answer position MUST be varied — spread across 0, 1, 2, 3 across the quiz. Never put the correct answer at the same position more than twice. Use ALL four positions.
 6. Each answer choice must start with DIFFERENT words — never 3+ options starting with the same phrase
-7. When vocabulary words appear in answer choices, at least 2 choices must contain vocabulary-level words (so underlines don't give away the answer)`;
+7. **VOCABULARY WORD RULE (CRITICAL)**: When vocabulary words appear in answer choices, ALL 4 choices should contain similar vocabulary-level words — not just the correct answer. If you underline a word in the question text, do NOT make it appear only in the correct answer option. Underlined/highlighted words must NEVER be a clue to the correct answer.
+8. NEVER make one option stand out by being more specific, more complete, or using different formatting than the others. All 4 options should look equally credible at first glance.`;
 
 const BEST_ANSWER_RULES = `
 ═══ BEST ANSWER QUESTION (Special Rules) ═══

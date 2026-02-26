@@ -816,6 +816,8 @@ async function refreshStudentData() {
       currentUser.reading_score = studentData.reading_score || currentUser.reading_score;
       currentUser.accuracy = studentData.accuracy || currentUser.accuracy;
     }
+    // Initialize badge tracking if not yet done
+    if (Object.keys(_shownBadges || {}).length === 0) initShownBadges();
   } catch(e) {
     console.warn('refreshStudentData error:', e);
   }
@@ -855,7 +857,7 @@ function renderMain() {
       if (studentId !== null) { el.innerHTML = renderStudentProfile(); break; }
       el.innerHTML = renderStudents();
       break;
-    case 'store':      el.innerHTML = userRole === 'student' ? renderStudentStore() : renderStore(); if (userRole !== 'student') loadStorePurchaseNotifications(); break;
+    case 'store':      el.innerHTML = userRole === 'student' ? renderStudentStore() : renderStore(); if (userRole === 'student') loadStudentRecentPurchases(); else loadStorePurchaseNotifications(); break;
     case 'purchases':
       if (!window._purchaseData && currentUser?.classId) {
         API.getRecentPurchases(currentUser.classId).then(data => {
@@ -878,6 +880,7 @@ function renderMain() {
     case 'reports':
       if (reportStudentId !== null) { el.innerHTML = renderStudentReport(); break; }
       el.innerHTML = renderReports();
+      loadReportsChartData();
       break;
     case 'quiz-player':
       el.innerHTML = '<div id="quiz-player-root"></div>';
@@ -1001,6 +1004,8 @@ async function launchQuiz(bookId, chapterNum, sid) {
       }
       // Refresh all student data from server so My Quizzes, dashboard, and Weekly Wins stay in sync
       await refreshStudentData();
+      // Check if any new badges were earned
+      checkAndShowNewBadges();
     }, nextChapterInfo);
     QuizEngine.render();
   } catch(e) {
@@ -2697,7 +2702,14 @@ function renderStudentStore() {
             <div class="student-store-card-stock">${soldOut ? 'Sold Out' : item.stock + ' left'}</div>
           </div>`;
         }).join('')}
-      </div>`}`;
+      </div>`}
+
+    <div style="margin-top:24px">
+      <h3 style="font-size:1rem;font-weight:700;color:var(--g700);margin:0 0 12px 0">🛒 My Recent Purchases</h3>
+      <div id="student-recent-purchases">
+        <div style="text-align:center;padding:16px;color:var(--g400);font-size:0.85rem">Loading...</div>
+      </div>
+    </div>`;
 }
 
 async function storeBuyItem(idx) {
@@ -2730,6 +2742,39 @@ async function storeBuyItem(idx) {
   } catch (e) {
     alert(e.message || 'Purchase failed. Please try again.');
   }
+}
+
+// ---- Load student's recent purchases for store page ----
+function loadStudentRecentPurchases() {
+  var classId = currentUser?.classId;
+  if (!classId) return;
+  API.getRecentPurchases(classId).then(function(data) {
+    var el = document.getElementById('student-recent-purchases');
+    if (!el) return;
+    // Filter to only this student's purchases
+    var myPurchases = (data || []).filter(function(p) { return p.studentName === currentUser?.name; });
+    if (myPurchases.length === 0) {
+      el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--g400);font-size:0.85rem">No purchases yet \u2014 spend your keys on a reward!</div>';
+      return;
+    }
+    el.innerHTML = myPurchases.slice(0, 10).map(function(p) {
+      var dateStr = p.purchasedAt ? new Date(p.purchasedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+      var timeAgo = formatTimeAgo(p.purchasedAt);
+      var statusText = p.fulfilled ? '<span style="color:var(--green, #10B981);font-weight:600">\u2713 Prize received</span>' : '<span style="color:var(--g400)">Waiting for teacher</span>';
+      return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--g100)">' +
+        '<div style="font-size:1.5rem">\uD83C\uDF81</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div><span style="font-weight:600;color:var(--purple)">' + escapeHtml(p.itemName) + '</span>' +
+          ' <span style="color:var(--g500)">for</span> ' +
+          '<span style="font-weight:600;color:var(--gold)">\uD83D\uDD11 ' + p.price + ' Keys</span></div>' +
+          '<div style="font-size:0.72rem;color:var(--g400);margin-top:2px">' + dateStr + ' \u00b7 ' + timeAgo + ' \u00b7 ' + statusText + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }).catch(function() {
+    var el = document.getElementById('student-recent-purchases');
+    if (el) el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--g400);font-size:0.85rem">Could not load purchases</div>';
+  });
 }
 
 // ---- Store Sneak Peek (Student Dashboard) ----
@@ -4328,34 +4373,18 @@ function renderReports() {
       </div>`;
   }
 
-  // Aggregate class data (use growthData if available, else use current student scores)
-  const hasGrowthData = students.some(s => growthData[s.id]);
-  const classScores = hasGrowthData
-    ? months.map((_, mi) => {
-        const validStudents = students.filter(s => growthData[s.id]);
-        if (validStudents.length === 0) return 0;
-        return Math.round(validStudents.reduce((sum, s) => sum + growthData[s.id].scores[mi], 0) / validStudents.length);
-      })
-    : months.map(() => Math.round(students.reduce((sum, s) => sum + s.score, 0) / students.length));
-  const classAccuracy = hasGrowthData
-    ? months.map((_, mi) => {
-        const validStudents = students.filter(s => growthData[s.id]);
-        if (validStudents.length === 0) return 0;
-        return Math.round(validStudents.reduce((sum, s) => sum + growthData[s.id].accuracy[mi], 0) / validStudents.length);
-      })
-    : months.map(() => Math.round(students.reduce((sum, s) => sum + s.accuracy, 0) / students.length));
+  // Aggregate class data
+  const avgScore = Math.round(students.reduce((sum, s) => sum + (s.reading_score || s.score || 0), 0) / students.length);
+  const avgAcc = Math.round(students.reduce((sum, s) => sum + (s.accuracy || 0), 0) / students.length);
   const totalKeysAll = students.reduce((s, st) => s + (st.keys || 0), 0);
-  const improvingCount = students.filter(s => {
-    const gd = growthData[s.id];
-    return gd ? gd.scores[gd.scores.length - 1] > gd.scores[0] : false;
-  }).length;
+  const improvingCount = 0; // will be updated when real data loads
 
   return `
     <div class="page-header">
       <h1>${IC.chart} Growth Reports</h1>
       <div class="page-header-actions">
-        <button class="btn btn-ghost btn-sm">${IC.printer} Print Report</button>
-        <button class="btn btn-primary btn-sm">${IC.download} Export PDF</button>
+        <button class="btn btn-ghost btn-sm" onclick="printReport()">${IC.printer} Print Report</button>
+        <button class="btn btn-primary btn-sm" onclick="printReport()">${IC.download} Export PDF</button>
       </div>
     </div>
 
@@ -4364,17 +4393,17 @@ function renderReports() {
       <div class="report-header-body">
         <div class="report-header-top">
           <div style="display:flex;align-items:center;gap:12px">
-            <img src="/public/logo.png" alt="key2read" style="height:40px;width:auto">
+            <img src="/public/logo.png" alt="key2read" style="height:40px;width:auto" class="print-logo">
             <div>
               <h2>Class Growth Report</h2>
               <div class="report-meta">
                 <span>${currentUser?.name || 'Teacher'}'s Class</span>
-                <span>${IC.calendar} Last 8 Weeks</span>
+                <span>${IC.calendar} Last 12 Weeks</span>
                 <span>${students.length} Students</span>
               </div>
             </div>
           </div>
-          <div class="report-share-badge">
+          <div class="report-share-badge no-print">
             <span class="badge badge-green">${IC.check} Ready to Share</span>
           </div>
         </div>
@@ -4383,28 +4412,28 @@ function renderReports() {
 
     <div class="stat-cards">
       <div class="stat-card">
-        <div class="stat-card-label">Average Reading Score <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Reading Score', 'A score from 0 to 1000 that measures how well your class is reading overall. It combines quiz scores, reading effort, independence (using fewer hints), vocabulary growth, and persistence. The arrow shows growth over the last 8 weeks.')">?</button></div>
-        <div class="stat-card-value">${classScores[classScores.length - 1]} ${growthArrow(classScores[0], classScores[classScores.length - 1])}</div>
+        <div class="stat-card-label">Average Reading Score</div>
+        <div class="stat-card-value">${avgScore}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-label">Average Accuracy <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Accuracy', 'The average percentage of quiz questions your students answer correctly on the first try. This tells you how well students are understanding what they read. The arrow shows change over the last 8 weeks.')">?</button></div>
-        <div class="stat-card-value">${classAccuracy[classAccuracy.length - 1]}% ${growthArrow(classAccuracy[0], classAccuracy[classAccuracy.length - 1])}</div>
+        <div class="stat-card-label">Average Accuracy</div>
+        <div class="stat-card-value">${avgAcc}%</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-label">Total Keys Earned <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Total Keys Earned', 'The total number of Keys all your students have earned by passing quizzes with 80% or higher. Students can spend Keys in the Class Store on rewards you set up.')">?</button></div>
+        <div class="stat-card-label">Total Keys Earned</div>
         <div class="stat-card-value">${totalKeysAll.toLocaleString()}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-label">Students Improving <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Students Improving', 'The number of students whose reading score has gone up over the last 8 weeks. If a student\\'s current score is higher than their score 8 weeks ago, they count as improving.')">?</button></div>
-        <div class="stat-card-value">${improvingCount}/${students.length}</div>
+        <div class="stat-card-label">Students</div>
+        <div class="stat-card-value">${students.length}</div>
       </div>
     </div>
 
     <div class="report-charts-grid">
       <div class="chart-container">
         <h3>📈 Class Reading Score Trend</h3>
-        <p class="chart-subtitle">Average reading score across all students, last 8 weeks</p>
-        ${svgGradientAreaChart(classScores, months, 620, 220)}
+        <p class="chart-subtitle">Average reading score across all students</p>
+        <div id="reports-trend-chart" style="display:flex;align-items:center;justify-content:center;min-height:200px;color:var(--g400);font-size:0.875rem">Loading chart...</div>
       </div>
       <div class="chart-container">
         <h3>🥧 Reading Score Distribution</h3>
@@ -4429,47 +4458,28 @@ function renderReports() {
         <thead>
           <tr>
             <th>Student</th>
-            <th>Week 1 <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Week 1 Score', 'The student\\'s reading score at the start of the 8-week period. This is the baseline used to measure recent growth.')">?</button></th>
-            <th>Current <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Current Score', 'The student\\'s current reading score this week. Compare this to Week 1 to see how much they\\'ve grown.')">?</button></th>
-            <th>Change <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Change', 'The number of points the student\\'s reading score went up or down over the last 8 weeks. A green arrow means improvement, red means decline.')">?</button></th>
-            <th>Trend <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Trend', 'A mini chart showing the student\\'s reading score over the last 8 weeks. An upward line means steady growth.')">?</button></th>
-            <th>Status <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Status', 'Improving = score went up 5% or more. Steady = score stayed about the same. Declining = score went down. New = student just joined.')">?</button></th>
+            <th>Reading Score</th>
+            <th>Accuracy</th>
+            <th>Quizzes</th>
+            <th>Keys Earned</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
-          ${[...students].sort((a, b) => {
-            const aGd = growthData[a.id];
-            const bGd = growthData[b.id];
-            const aGain = aGd ? aGd.scores[aGd.scores.length - 1] - aGd.scores[0] : 0;
-            const bGain = bGd ? bGd.scores[bGd.scores.length - 1] - bGd.scores[0] : 0;
-            return bGain - aGain;
-          }).map(s => {
-            const gd = growthData[s.id];
-            if (!gd) {
-              return `
-              <tr onclick="reportStudentId=${s.id}; renderMain();" style="cursor:pointer">
-                <td><div class="student-cell">${avatar(s)} <span class="student-name">${s.name}</span> ${warnTag(s)}</div></td>
-                <td>${s.score}</td>
-                <td><strong>${s.score}</strong></td>
-                <td><span style="color:var(--g400)">New</span></td>
-                <td><span style="color:var(--g400)">\u2014</span></td>
-                <td><span class="badge badge-blue">New</span></td>
-              </tr>`;
-            }
-            const gain = gd.scores[gd.scores.length - 1] - gd.scores[0];
-            const gainPct = Math.round((gain / gd.scores[0]) * 100);
-            let statusCls = 'green', statusLabel = 'Improving';
-            if (gainPct < 5) { statusCls = 'gold'; statusLabel = 'Steady'; }
-            if (gainPct < 0) { statusCls = 'red'; statusLabel = 'Declining'; }
-            return `
-            <tr onclick="reportStudentId=${s.id}; renderMain();" style="cursor:pointer">
-              <td><div class="student-cell">${avatar(s)} <span class="student-name">${s.name}</span> ${warnTag(s)}</div></td>
-              <td>${gd.scores[0]}</td>
-              <td><strong>${gd.scores[gd.scores.length - 1]}</strong></td>
-              <td><span class="growth-arrow ${gain >= 0 ? 'up' : 'down'}">${gain >= 0 ? IC.arrowUp + '+' : IC.arrowDown}${Math.abs(gain)} pts</span></td>
-              <td>${miniChart(gd.scores, gain >= 50 ? 'var(--green)' : 'var(--gold)', 80, 28)}</td>
-              <td><span class="badge badge-${statusCls}">${statusLabel}</span></td>
-            </tr>`;
+          ${[...students].sort((a, b) => (b.reading_score || b.score || 0) - (a.reading_score || a.score || 0)).map(s => {
+            const sc = s.reading_score || s.score || 0;
+            let statusCls = 'green', statusLabel = 'On Track';
+            if (sc < 400) { statusCls = 'red'; statusLabel = 'Needs Support'; }
+            else if (sc < 600) { statusCls = 'gold'; statusLabel = 'Developing'; }
+            else if (sc >= 800) { statusCls = 'blue'; statusLabel = 'Advanced'; }
+            return '<tr onclick="reportStudentId=' + s.id + '; renderMain();" style="cursor:pointer">' +
+              '<td><div class="student-cell">' + avatar(s) + ' <span class="student-name">' + s.name + '</span> ' + warnTag(s) + '</div></td>' +
+              '<td><strong>' + sc + '</strong></td>' +
+              '<td>' + (s.accuracy || 0) + '%</td>' +
+              '<td>' + (s.quizzes || 0) + '</td>' +
+              '<td>' + (s.keys || 0) + '</td>' +
+              '<td><span class="badge badge-' + statusCls + '">' + statusLabel + '</span></td>' +
+            '</tr>';
           }).join('')}
         </tbody>
       </table>
@@ -4478,12 +4488,40 @@ function renderReports() {
     <div class="info-panel" style="margin-top:24px">
       <h4>${IC.bulb} Key Insights</h4>
       <ul class="insight-list">
-        <li>${improvingCount} of ${students.length} students showed reading score improvement over the last 8 weeks</li>
-        <li>Class average reading score changed by ${classScores[classScores.length - 1] - classScores[0]} points (${classScores[classScores.length - 1] - classScores[0] >= 0 ? '+' : ''}${Math.round(((classScores[classScores.length - 1] - classScores[0]) / (classScores[0] || 1)) * 100)}%)</li>
-        <li>Average accuracy went from ${classAccuracy[0]}% to ${classAccuracy[classAccuracy.length - 1]}% (${classAccuracy[classAccuracy.length - 1] - classAccuracy[0] >= 0 ? '+' : ''}${classAccuracy[classAccuracy.length - 1] - classAccuracy[0]} percentage points)</li>
+        <li>${students.filter(s => (s.reading_score || s.score || 0) >= 600).length} of ${students.length} students are On Track or Advanced</li>
+        <li>Class average reading score: ${avgScore} · Average accuracy: ${avgAcc}%</li>
         <li>Students collectively earned ${totalKeysAll.toLocaleString()} Keys, demonstrating consistent engagement</li>
       </ul>
     </div>`;
+}
+
+// ---- Load async chart data for reports page ----
+function loadReportsChartData() {
+  const classId = currentUser?.classId;
+  if (!classId) return;
+  API.getWeeklyGrowth(classId, 12).then(function(data) {
+    var container = document.getElementById('reports-trend-chart');
+    if (!container) return;
+    if (!data || data.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">No quiz data yet \u2014 chart will appear once students start taking quizzes!</div>';
+      return;
+    }
+    var scores = data.map(function(w) { return w.avgScore; });
+    var labels = data.map(function(w) { return w.label; });
+    if (scores.length === 1) {
+      container.innerHTML = '<div style="text-align:center;padding:40px 0"><div style="font-size:2.5rem;font-weight:800;color:var(--blue)">' + scores[0] + '</div><div style="font-size:0.85rem;color:var(--g400);margin-top:4px">Class avg reading score \u00b7 ' + labels[0] + '</div></div>';
+      return;
+    }
+    container.innerHTML = svgGradientAreaChart(scores, labels, 620, 220);
+  }).catch(function() {
+    var container = document.getElementById('reports-trend-chart');
+    if (container) container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Could not load chart data</div>';
+  });
+}
+
+// ---- Print / Export Report ----
+function printReport() {
+  window.print();
 }
 
 // ---- Page: Individual Student Report ----
@@ -4546,8 +4584,8 @@ function renderStudentReport() {
             </div>
           </div>
           <div class="page-header-actions">
-            <button class="btn btn-ghost btn-sm">${IC.printer} Print</button>
-            <button class="btn btn-primary btn-sm">${IC.download} Export PDF</button>
+            <button class="btn btn-ghost btn-sm" onclick="printReport()">${IC.printer} Print</button>
+            <button class="btn btn-primary btn-sm" onclick="printReport()">${IC.download} Export PDF</button>
           </div>
         </div>
       </div>
@@ -4693,6 +4731,11 @@ async function saveOnboarding() {
   window._surveyFunFact = '';
   closeModal();
   renderMain();
+
+  // Show badge earned popup for "Learned About You" badge
+  setTimeout(function() {
+    showBadgeEarnedPopup({ img: '/public/Learned_About_You.png', name: 'Learned About You', desc: 'You filled out your student profile! Now your quizzes will be personalized just for you.' });
+  }, 600);
 }
 
 // ---- Onboarding Body Content (extracted so modal shell doesn't re-render) ----
@@ -5757,6 +5800,63 @@ function showBadgeDetail(idx) {
         </div>
       </div>
     </div>`;
+}
+
+// ---- Badge Earned Popup ----
+function showBadgeEarnedPopup(badge) {
+  const modal = document.getElementById('modal-root');
+  modal.innerHTML = '<div class="modal-overlay" onclick="closeModal(event)">' +
+    '<div class="modal" onclick="event.stopPropagation()" style="max-width:380px;text-align:center;overflow:visible">' +
+      '<div class="modal-body" style="padding:32px">' +
+        '<div style="font-size:3rem;margin-bottom:8px">🎉</div>' +
+        '<div style="font-size:1.4rem;font-weight:800;color:var(--navy);margin-bottom:4px;font-family:var(--font-display)">Congratulations!</div>' +
+        '<div style="font-size:1rem;color:var(--g500);margin-bottom:16px">You earned a new badge!</div>' +
+        '<div style="position:relative;display:inline-block;margin-bottom:16px">' +
+          '<img src="' + badge.img + '" alt="' + badge.name + '" style="width:160px;height:160px;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.2))">' +
+        '</div>' +
+        '<div style="font-size:1.15rem;font-weight:800;color:var(--purple);margin-bottom:6px">' + badge.name + '</div>' +
+        '<div style="font-size:0.9rem;color:var(--g500);margin-bottom:24px;line-height:1.5">' + badge.desc + '</div>' +
+        '<button class="btn btn-primary" onclick="closeModal()" style="min-width:160px;font-size:1rem;padding:12px 24px">Awesome!</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+// Track which badges have been shown this session to avoid re-showing
+var _shownBadges = {};
+
+function checkAndShowNewBadges() {
+  var badges = getStudentBadges();
+  var newlyEarned = badges.filter(function(b) { return b.earned && !_shownBadges[b.name]; });
+  // Mark all currently earned badges as shown
+  badges.forEach(function(b) { if (b.earned) _shownBadges[b.name] = true; });
+  // Show popup for first newly earned badge (with delay to not overlap quiz results)
+  if (newlyEarned.length > 0) {
+    var queue = newlyEarned.slice();
+    function showNext() {
+      if (queue.length === 0) return;
+      var badge = queue.shift();
+      showBadgeEarnedPopup(badge);
+      // If multiple badges, show the next one after this modal closes
+      if (queue.length > 0) {
+        var origClose = window.closeModal;
+        window.closeModal = function(e) {
+          origClose(e);
+          window.closeModal = origClose;
+          setTimeout(showNext, 400);
+        };
+      }
+    }
+    setTimeout(showNext, 1500);
+  }
+}
+
+// Initialize shown badges on load so we don't re-trigger for existing badges
+function initShownBadges() {
+  try {
+    var badges = getStudentBadges();
+    badges.forEach(function(b) { if (b.earned) _shownBadges[b.name] = true; });
+  } catch(e) {}
 }
 
 // ============================================================

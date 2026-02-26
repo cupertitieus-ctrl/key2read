@@ -408,20 +408,49 @@ const QuizEngine = (function() {
     'filming': { word: 'filming', definition: 'Recording a video with a camera or phone', pos: 'verb' }
   };
 
-  // ─── Shuffle answer options so correct answer isn't always B ───
+  // ─── Shuffle answer options with balanced position distribution ───
   function shuffleOptions(questions) {
-    return questions.map(q => {
+    // First pass: shuffle each question independently
+    var shuffled = questions.map(function(q) {
       if (!q.options || q.options.length < 2) return q;
-      const correctText = q.options[q.correct_answer];
-      // Build index array and shuffle using Fisher-Yates
-      const indices = q.options.map((_, i) => i);
-      for (let i = indices.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [indices[i], indices[j]] = [indices[j], indices[i]];
+      var correctText = q.options[q.correct_answer];
+      var indices = q.options.map(function(_, i) { return i; });
+      for (var i = indices.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = indices[i]; indices[i] = indices[j]; indices[j] = tmp;
       }
-      const newOptions = indices.map(i => q.options[i]);
-      const newCorrect = newOptions.indexOf(correctText);
-      return { ...q, options: newOptions, correct_answer: newCorrect };
+      var newOptions = indices.map(function(idx) { return q.options[idx]; });
+      var newCorrect = newOptions.indexOf(correctText);
+      return Object.assign({}, q, { options: newOptions, correct_answer: newCorrect });
+    });
+
+    // Second pass: check distribution and rebalance if needed
+    if (shuffled.length < 3) return shuffled;
+    var counts = [0, 0, 0, 0];
+    shuffled.forEach(function(q) { counts[q.correct_answer]++; });
+    var maxAllowed = Math.ceil(shuffled.length / 2);
+    var needsRebalance = counts.some(function(c) { return c > maxAllowed; });
+    if (!needsRebalance) return shuffled;
+
+    // Build target positions ensuring even spread
+    var targets = [];
+    for (var t = 0; t < shuffled.length; t++) targets.push(t % 4);
+    // Shuffle targets
+    for (var i = targets.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = targets[i]; targets[i] = targets[j]; targets[j] = tmp;
+    }
+
+    return shuffled.map(function(q, qi) {
+      if (!q.options || q.options.length < 2) return q;
+      var targetPos = targets[qi];
+      var currentPos = q.correct_answer;
+      if (currentPos === targetPos) return q;
+      var newOptions = q.options.slice();
+      var swp = newOptions[currentPos];
+      newOptions[currentPos] = newOptions[targetPos];
+      newOptions[targetPos] = swp;
+      return Object.assign({}, q, { options: newOptions, correct_answer: targetPos });
     });
   }
 
