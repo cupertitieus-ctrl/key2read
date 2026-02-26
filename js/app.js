@@ -668,6 +668,7 @@ function renderSidebar() {
       { id: 'purchases',  icon: IC.key,   label: 'Recent Purchases',     badge: window._purchaseCount > 0 ? String(window._purchaseCount) : '', badgeCls: 'purple' },
       { id: 'library',    icon: IC.book,  label: 'Book Library' },
       { section: 'Tools' },
+      { id: 'class-goals', icon: IC.trend, label: 'Class Goals' },
       { id: 'celebrate',  icon: IC.star,  label: 'Celebrate Students' },
       { id: 'aitools',    icon: IC.bulb,  label: 'Teaching Tools' },
       { section: 'Account' },
@@ -915,6 +916,7 @@ function renderMain() {
     case 'book-detail': el.innerHTML = renderBookDetail(); break;
     case 'celebrate':  el.innerHTML = renderCelebrate(); loadCertificateData(); break;
     case 'aitools':    el.innerHTML = renderAITools(); break;
+    case 'class-goals': el.innerHTML = renderClassGoals(); loadClassGoalsData(); break;
     case 'teacher-settings': el.innerHTML = renderTeacherSettings(); break;
     case 'parent-settings': el.innerHTML = renderParentSettings(); break;
     case 'reports':
@@ -3999,6 +4001,280 @@ function renderParentSettings() {
     });
   })();
   <\/script>`;
+}
+
+// ─── CLASS GOALS ───────────────────────────────────────────────
+let classGoalsData = [];
+let classGoalsLoaded = false;
+
+function renderClassGoals() {
+  const classId = currentUser?.classId;
+  return `
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div>
+        <h2 style="margin:0;font-size:1.5rem">&#127919; Class Goals</h2>
+        <p style="color:var(--g400);margin:4px 0 0;font-size:0.85rem">Set goals for your class and track progress together</p>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openCreateGoalModal()">&#10133; New Goal</button>
+    </div>
+
+    <div id="class-goals-list" style="margin-top:24px">
+      <div style="text-align:center;padding:40px 0;color:var(--g400)">Loading goals...</div>
+    </div>
+
+    ${renderCreateGoalModal()}
+    ${renderGoalProgressModal()}
+  `;
+}
+
+function renderCreateGoalModal() {
+  return `
+    <div id="create-goal-modal" class="modal-overlay" style="display:none">
+      <div class="modal-box" style="max-width:480px">
+        <div class="modal-header">
+          <h3 style="margin:0">&#127919; Create Class Goal</h3>
+          <button class="modal-close" onclick="closeGoalModal('create-goal-modal')">&times;</button>
+        </div>
+        <div style="padding:20px">
+          <div style="margin-bottom:16px">
+            <label style="display:block;font-weight:600;margin-bottom:6px;font-size:0.85rem">Goal Title</label>
+            <input type="text" id="goal-title" placeholder="e.g. Everyone takes 1 quiz this week" style="width:100%;padding:10px 12px;border:1px solid var(--g200);border-radius:var(--radius-sm);font-size:0.9rem" />
+          </div>
+          <div style="margin-bottom:16px">
+            <label style="display:block;font-weight:600;margin-bottom:6px;font-size:0.85rem">Goal Type</label>
+            <select id="goal-type" onchange="toggleGoalBookField()" style="width:100%;padding:10px 12px;border:1px solid var(--g200);border-radius:var(--radius-sm);font-size:0.9rem">
+              <option value="quizzes">Complete Quizzes</option>
+              <option value="book">Complete a Book</option>
+            </select>
+          </div>
+          <div id="goal-target-field" style="margin-bottom:16px">
+            <label style="display:block;font-weight:600;margin-bottom:6px;font-size:0.85rem">How many quizzes?</label>
+            <input type="number" id="goal-target" value="1" min="1" max="50" style="width:100%;padding:10px 12px;border:1px solid var(--g200);border-radius:var(--radius-sm);font-size:0.9rem" />
+          </div>
+          <div id="goal-book-field" style="margin-bottom:16px;display:none">
+            <label style="display:block;font-weight:600;margin-bottom:6px;font-size:0.85rem">Which Book?</label>
+            <select id="goal-book" style="width:100%;padding:10px 12px;border:1px solid var(--g200);border-radius:var(--radius-sm);font-size:0.9rem">
+              ${(window.books || []).map(b => `<option value="${b.id}">${escapeHtml(b.title)}</option>`).join('')}
+            </select>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+            <button class="btn btn-ghost btn-sm" onclick="closeGoalModal('create-goal-modal')">Cancel</button>
+            <button class="btn btn-primary btn-sm" onclick="submitClassGoal()">Create Goal</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderGoalProgressModal() {
+  return `
+    <div id="goal-progress-modal" class="modal-overlay" style="display:none">
+      <div class="modal-box" style="max-width:500px">
+        <div class="modal-header">
+          <h3 id="goal-progress-title" style="margin:0">Goal Progress</h3>
+          <button class="modal-close" onclick="closeGoalModal('goal-progress-modal')">&times;</button>
+        </div>
+        <div id="goal-progress-content" style="padding:20px">
+          <p style="color:var(--g400);text-align:center">Loading...</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleGoalBookField() {
+  const type = document.getElementById('goal-type')?.value;
+  const targetField = document.getElementById('goal-target-field');
+  const bookField = document.getElementById('goal-book-field');
+  if (type === 'book') {
+    if (targetField) targetField.style.display = 'none';
+    if (bookField) bookField.style.display = 'block';
+  } else {
+    if (targetField) targetField.style.display = 'block';
+    if (bookField) bookField.style.display = 'none';
+  }
+}
+
+function openCreateGoalModal() {
+  const m = document.getElementById('create-goal-modal');
+  if (m) m.style.display = 'flex';
+}
+
+async function submitClassGoal() {
+  const classId = currentUser?.classId;
+  if (!classId) return;
+  const title = document.getElementById('goal-title')?.value?.trim();
+  const goalType = document.getElementById('goal-type')?.value || 'quizzes';
+  const targetCount = parseInt(document.getElementById('goal-target')?.value) || 1;
+  const bookId = goalType === 'book' ? parseInt(document.getElementById('goal-book')?.value) : null;
+
+  if (!title) { alert('Please enter a goal title'); return; }
+
+  try {
+    await API.createClassGoal(classId, { title, goalType, targetCount, bookId });
+    closeGoalModal('create-goal-modal');
+    document.getElementById('goal-title').value = '';
+    loadClassGoalsData();
+  } catch (e) {
+    alert('Error creating goal: ' + e.message);
+  }
+}
+
+async function loadClassGoalsData() {
+  const classId = currentUser?.classId;
+  if (!classId) return;
+  try {
+    const goals = await API.getClassGoals(classId);
+    classGoalsData = goals || [];
+    classGoalsLoaded = true;
+    renderGoalsList();
+  } catch (e) {
+    console.error('Error loading goals:', e);
+    const el = document.getElementById('class-goals-list');
+    if (el) el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--g400)">Could not load goals</div>';
+  }
+}
+
+function renderGoalsList() {
+  const el = document.getElementById('class-goals-list');
+  if (!el) return;
+
+  if (classGoalsData.length === 0) {
+    el.innerHTML = `
+      <div style="text-align:center;padding:60px 20px">
+        <div style="font-size:3rem;margin-bottom:12px">&#127919;</div>
+        <h3 style="margin:0 0 8px;color:var(--g600)">No Goals Yet</h3>
+        <p style="color:var(--g400);margin:0 0 20px;font-size:0.9rem">Create a class goal to motivate your students and track progress together!</p>
+        <button class="btn btn-primary btn-sm" onclick="openCreateGoalModal()">&#10133; Create First Goal</button>
+      </div>
+    `;
+    return;
+  }
+
+  const totalStudents = students.length;
+
+  el.innerHTML = classGoalsData.map(goal => {
+    const typeLabel = goal.goal_type === 'book' ? '&#128218; Complete a Book' : `&#128221; Complete ${goal.target_count} Quiz${goal.target_count > 1 ? 'zes' : ''}`;
+    const goalId = goal.id;
+
+    return `
+      <div class="list-card" style="margin-bottom:16px;padding:0;overflow:hidden" id="goal-card-${goalId}">
+        <div style="padding:20px">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px">
+            <div>
+              <h3 style="margin:0 0 4px;font-size:1.1rem">${escapeHtml(goal.title)}</h3>
+              <span style="font-size:0.8rem;color:var(--g400)">${typeLabel}</span>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="confirmDeleteGoal(${goalId})" style="color:var(--g400);font-size:0.75rem;padding:4px 8px" title="Remove goal">&#128465;</button>
+          </div>
+
+          <div id="goal-progress-bar-${goalId}" style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-size:0.8rem;font-weight:600;color:var(--g500)" id="goal-count-${goalId}">Loading...</span>
+              <span style="font-size:0.75rem;color:var(--g400)">${totalStudents} students</span>
+            </div>
+            <div style="background:var(--g100);border-radius:999px;height:24px;overflow:hidden;position:relative">
+              <div id="goal-fill-${goalId}" style="background:linear-gradient(90deg,#2563EB,#60A5FA);height:100%;border-radius:999px;transition:width 0.6s ease;width:0%"></div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn btn-outline btn-sm" onclick="showGoalCompletions(${goalId}, '${escapeHtml(goal.title).replace(/'/g, "\\'")}')" style="font-size:0.78rem;padding:4px 12px">&#128065; Who Completed It</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Load progress for each goal
+  classGoalsData.forEach(goal => loadGoalProgressBar(goal.id));
+}
+
+async function loadGoalProgressBar(goalId) {
+  try {
+    const progress = await API.getGoalProgress(goalId);
+    const totalStudents = students.length;
+    const completed = (progress || []).length;
+    const pct = totalStudents > 0 ? Math.round((completed / totalStudents) * 100) : 0;
+
+    const countEl = document.getElementById(`goal-count-${goalId}`);
+    if (countEl) countEl.textContent = `${completed} of ${totalStudents} completed (${pct}%)`;
+
+    const fillEl = document.getElementById(`goal-fill-${goalId}`);
+    if (fillEl) {
+      fillEl.style.width = pct + '%';
+      if (pct >= 100) fillEl.style.background = 'linear-gradient(90deg,#10B981,#34D399)';
+      else if (pct >= 50) fillEl.style.background = 'linear-gradient(90deg,#2563EB,#60A5FA)';
+      else fillEl.style.background = 'linear-gradient(90deg,#F59E0B,#FBBF24)';
+    }
+  } catch (e) {
+    console.error('Error loading goal progress:', e);
+  }
+}
+
+async function showGoalCompletions(goalId, goalTitle) {
+  const titleEl = document.getElementById('goal-progress-title');
+  if (titleEl) titleEl.textContent = goalTitle;
+
+  const contentEl = document.getElementById('goal-progress-content');
+  if (contentEl) contentEl.innerHTML = '<p style="color:var(--g400);text-align:center">Loading...</p>';
+
+  document.getElementById('goal-progress-modal').style.display = 'flex';
+
+  try {
+    const progress = await API.getGoalProgress(goalId);
+    const completed = progress || [];
+    const totalStudents = students.length;
+    const pct = totalStudents > 0 ? Math.round((completed.length / totalStudents) * 100) : 0;
+
+    if (contentEl) {
+      if (completed.length === 0) {
+        contentEl.innerHTML = `
+          <div style="text-align:center;padding:20px">
+            <div style="font-size:2.5rem;margin-bottom:8px">&#128564;</div>
+            <p style="color:var(--g400);margin:0">No students have completed this goal yet.</p>
+          </div>
+        `;
+      } else {
+        contentEl.innerHTML = `
+          <div style="margin-bottom:16px;text-align:center">
+            <div style="font-size:2rem;font-weight:700;color:var(--blue)">${pct}%</div>
+            <div style="font-size:0.85rem;color:var(--g400)">${completed.length} of ${totalStudents} students</div>
+          </div>
+          <div style="max-height:300px;overflow-y:auto">
+            ${completed.map((p, i) => `
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--g100);${i === 0 ? 'border-top:1px solid var(--g100);' : ''}">
+                <div style="width:32px;height:32px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;flex-shrink:0">${(p.student_name || '?').split(' ').map(n => n[0]).join('').toUpperCase().substring(0,2)}</div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-weight:600;font-size:0.9rem">${escapeHtml(p.student_name)}</div>
+                  <div style="font-size:0.75rem;color:var(--g400)">${formatTimeAgo(p.completed_at)}</div>
+                </div>
+                <div style="color:#10B981;font-size:1.1rem">&#10003;</div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+    }
+  } catch (e) {
+    if (contentEl) contentEl.innerHTML = '<p style="color:red;text-align:center">Error loading progress</p>';
+  }
+}
+
+function closeGoalModal(id) {
+  const m = document.getElementById(id);
+  if (m) m.style.display = 'none';
+}
+
+async function confirmDeleteGoal(goalId) {
+  if (!confirm('Remove this goal? Progress data will be kept.')) return;
+  try {
+    await API.deleteClassGoal(goalId);
+    loadClassGoalsData();
+  } catch (e) {
+    alert('Error removing goal: ' + e.message);
+  }
 }
 
 function renderAITools() {

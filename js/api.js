@@ -88,6 +88,12 @@ const API = {
   createAssignment: (data) => API.post('/api/assignments', data),
   getAssignments: (classId) => API.get(`/api/assignments?classId=${classId}`),
 
+  // Class Goals
+  getClassGoals: (classId) => API.get(`/api/class/${classId}/goals`),
+  createClassGoal: (classId, data) => API.post(`/api/class/${classId}/goals`, data),
+  getGoalProgress: (goalId) => API.get(`/api/goals/${goalId}/progress`),
+  deleteClassGoal: (goalId) => fetch(`/api/goals/${goalId}`, { method: 'DELETE' }).then(r => r.json()),
+
   // Owner
   getOwnerStats: () => API.get('/api/owner/stats'),
   getOwnerGenres: () => API.get('/api/owner/genres'),

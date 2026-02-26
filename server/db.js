@@ -1831,6 +1831,103 @@ async function getRecentActivity(classId) {
 }
 
 // Export everything
+// ---- Class Goals ----
+async function createClassGoal(classId, title, goalType, targetCount, bookId) {
+  try {
+    const { data, error } = await supabase
+      .from('class_goals')
+      .insert({ class_id: classId, title, goal_type: goalType, target_count: targetCount, book_id: bookId || null })
+      .select()
+      .single();
+    if (error) { console.error('createClassGoal error:', error.message); return null; }
+    return data;
+  } catch (e) { console.error('createClassGoal error:', e.message); return null; }
+}
+
+async function getClassGoals(classId) {
+  try {
+    const { data, error } = await supabase
+      .from('class_goals')
+      .select('*')
+      .eq('class_id', classId)
+      .eq('active', true)
+      .order('created_at', { ascending: false });
+    if (error) { console.error('getClassGoals error:', error.message); return []; }
+    return data || [];
+  } catch (e) { console.error('getClassGoals error:', e.message); return []; }
+}
+
+async function getClassGoalProgress(goalId) {
+  try {
+    const { data, error } = await supabase
+      .from('class_goal_progress')
+      .select('*, students(name)')
+      .eq('goal_id', goalId)
+      .order('completed_at', { ascending: false });
+    if (error) { console.error('getClassGoalProgress error:', error.message); return []; }
+    return (data || []).map(d => ({
+      ...d,
+      student_name: d.students?.name || 'Unknown',
+      students: undefined
+    }));
+  } catch (e) { console.error('getClassGoalProgress error:', e.message); return []; }
+}
+
+async function checkAndUpdateGoalProgress(studentId, classId) {
+  // Get active goals for this class
+  const goals = await getClassGoals(classId);
+  if (!goals || goals.length === 0) return;
+
+  for (const goal of goals) {
+    // Check if already completed
+    const { data: existing } = await supabase
+      .from('class_goal_progress')
+      .select('id')
+      .eq('goal_id', goal.id)
+      .eq('student_id', studentId)
+      .single();
+    if (existing) continue; // Already completed
+
+    let completed = false;
+    if (goal.goal_type === 'quizzes') {
+      // Count quizzes completed by this student
+      const { count } = await supabase
+        .from('quiz_results')
+        .select('id', { count: 'exact', head: true })
+        .eq('student_id', studentId);
+      completed = (count || 0) >= goal.target_count;
+    } else if (goal.goal_type === 'book' && goal.book_id) {
+      // Check if student completed all chapters of the specified book
+      const { data: bookChapters } = await supabase.from('chapters').select('id').eq('book_id', goal.book_id);
+      if (bookChapters && bookChapters.length > 0) {
+        const chapterIds = bookChapters.map(c => c.id);
+        const { data: results } = await supabase
+          .from('quiz_results')
+          .select('chapter_id')
+          .eq('student_id', studentId)
+          .in('chapter_id', chapterIds);
+        const uniqueCompleted = new Set((results || []).map(r => r.chapter_id));
+        completed = uniqueCompleted.size >= bookChapters.length;
+      }
+    }
+
+    if (completed) {
+      await supabase.from('class_goal_progress').insert({ goal_id: goal.id, student_id: studentId });
+    }
+  }
+}
+
+async function deleteClassGoal(goalId) {
+  try {
+    const { error } = await supabase
+      .from('class_goals')
+      .update({ active: false })
+      .eq('id', goalId);
+    if (error) { console.error('deleteClassGoal error:', error.message); return false; }
+    return true;
+  } catch (e) { console.error('deleteClassGoal error:', e.message); return false; }
+}
+
 module.exports = {
   supabase,
   initDB,
@@ -1887,7 +1984,12 @@ module.exports = {
   deleteRewardGalleryItem,
   getPopularBooks,
   getRecentActivity,
-  getWeeklyGrowthData
+  getWeeklyGrowthData,
+  createClassGoal,
+  getClassGoals,
+  getClassGoalProgress,
+  checkAndUpdateGoalProgress,
+  deleteClassGoal
 };
 
 async function getFullBookQuiz(bookId) {
