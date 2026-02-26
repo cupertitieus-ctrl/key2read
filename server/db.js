@@ -1781,8 +1781,14 @@ async function getWeeklyGrowthData(classId, range) {
   const results = [];
 
   if (range === 'week') {
-    // Daily buckets: Mon–Fri
+    // Daily buckets: Mon–Fri — always show all days up to today
     const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    // Find the latest known score to carry forward for empty days
+    let lastKnownScore = null;
+    if (history.length > 0) {
+      const sorted = [...history].sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
+      lastKnownScore = sorted[sorted.length - 1].lexile || 500;
+    }
     for (let d = 0; d < 5; d++) {
       const dayStart = new Date(thisMonday);
       dayStart.setUTCDate(thisMonday.getUTCDate() + d);
@@ -1790,8 +1796,14 @@ async function getWeeklyGrowthData(classId, range) {
       dayEnd.setUTCDate(dayStart.getUTCDate() + 1);
       if (dayStart > now) break;
       const entries = history.filter(h => { const dt = new Date(h.recorded_at); return dt >= dayStart && dt < dayEnd; });
-      if (entries.length === 0) continue;
-      results.push({ label: dayNames[d], avgScore: avgFromEntries(entries), quizCount: entries.length });
+      if (entries.length > 0) {
+        const avg = avgFromEntries(entries);
+        lastKnownScore = avg;
+        results.push({ label: dayNames[d], avgScore: avg, quizCount: entries.length });
+      } else {
+        // Show the day with the last known score (or baseline) so all days appear
+        results.push({ label: dayNames[d], avgScore: lastKnownScore || 500, quizCount: 0 });
+      }
     }
   } else if (range === 'month') {
     // Weekly buckets: 4 weeks
