@@ -1169,7 +1169,7 @@ function loadTeacherDashboardData() {
               ${cover}
               <div style="display:${b.coverUrl ? 'none' : 'flex'};width:100%;height:120px;background:linear-gradient(135deg, var(--blue), var(--purple));align-items:center;justify-content:center;color:#fff;font-weight:700;padding:8px;font-size:0.65rem;text-align:center">${escapeHtml(b.title)}</div>
             </div>
-            <span style="position:absolute;top:-10px;left:-10px;font-size:1.5rem">${medals[i]}</span>
+            <span style="position:absolute;top:-18px;left:-18px;font-size:2.75rem">${medals[i]}</span>
           </div>
           <p style="font-size:0.75rem;font-weight:700;color:var(--g800);margin:0 0 2px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(b.title)}</p>
           <p style="font-size:0.65rem;color:var(--g400);margin:0">${b.studentCount} ${b.studentCount === 1 ? 'reader' : 'readers'} · ${b.quizCount} ${b.quizCount === 1 ? 'quiz' : 'quizzes'}</p>
