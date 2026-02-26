@@ -618,8 +618,8 @@ app.get('/api/books/:bookId/chapters/:num/quiz', async (req, res) => {
   const pages = getChapterPages(book.title, chapterNum);
   const generated = await claude.generateChapterQuiz(book.title, book.author, chapterNum, chapter.title, chapter.summary, book.grade_level, questionCount, pages?.start || null, pages?.end || null);
 
-  // Strip any HTML tags Claude may include in text fields
-  const stripHtml = (s) => typeof s === 'string' ? s.replace(/<[^>]*>/g, '') : s;
+  // Strip any HTML tags or markdown formatting Claude may include in text fields
+  const stripHtml = (s) => typeof s === 'string' ? s.replace(/<[^>]*>/g, '').replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1') : s;
 
   // Save generated questions to DB
   for (const q of generated.questions) {
@@ -669,7 +669,7 @@ app.post('/api/books/:bookId/chapters/:num/regenerate-quiz', async (req, res) =>
   const questionCount = allChapters.length <= 9 ? 7 : 5;
   const generated = await claude.generateChapterQuiz(book.title, book.author, chapterNum, chapter.title, chapter.summary, book.grade_level, questionCount, pages?.start || null, pages?.end || null);
 
-  const stripHtml2 = (s) => typeof s === 'string' ? s.replace(/<[^>]*>/g, '') : s;
+  const stripHtml2 = (s) => typeof s === 'string' ? s.replace(/<[^>]*>/g, '').replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1') : s;
   for (const q of generated.questions) {
     await db.insertQuizQuestion({
       chapter_id: chapter.id,

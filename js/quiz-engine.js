@@ -515,7 +515,7 @@ const QuizEngine = (function() {
     const stratName = STRATEGY_NAMES[q.strategy_type] || q.strategy_type;
     const qTypeLabel = QUESTION_TYPE_LABELS[q.question_type] || q.question_type;
 
-    const questionText = (q.personalized_text || q.question_text).replace(/<[^>]*>/g, '');
+    const questionText = (q.personalized_text || q.question_text).replace(/<[^>]*>/g, '').replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1');
 
     // Merge vocabulary words from question + chapter key_vocabulary + per-question _chapterVocab
     const questionVocab = q.vocabulary_words || [];
@@ -754,7 +754,7 @@ const QuizEngine = (function() {
                 const q = currentQuiz.questions[i];
                 return '<div class="quiz-result-item ' + (res.isCorrect ? 'correct' : 'incorrect') + '">' +
                   '<div class="quiz-result-icon">' + (res.isCorrect ? '✅' : '❌') + (res.hintUsed ? ' <span class="quiz-result-retry" title="Used a hint">🔄</span>' : '') + '</div>' +
-                  '<div class="quiz-result-info"><div class="quiz-result-text">' + escapeHtml((q.personalized_text || q.question_text).replace(/<[^>]*>/g, '').substring(0, 80)) + '...</div></div>' +
+                  '<div class="quiz-result-info"><div class="quiz-result-text">' + escapeHtml((q.personalized_text || q.question_text).replace(/<[^>]*>/g, '').replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1').substring(0, 80)) + '...</div></div>' +
                   '</div>';
               }).join('')}
             </div>` : ''}
