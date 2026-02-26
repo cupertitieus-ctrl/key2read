@@ -3763,25 +3763,34 @@ async function downloadCertificatePDF(params) {
     const dateStr = params ? (params.dateStr || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })) : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     const safe = (str) => str.replace(/[^\x00-\xFF]/g, '');
 
-    // Helper: load image as data URL
-    function loadImage(url) {
+    // Helper: load image as data URL (no crossOrigin for same-origin images)
+    function loadImage(url, useCors) {
       return new Promise((resolve, reject) => {
         const img = new Image();
-        img.crossOrigin = 'anonymous';
+        if (useCors) img.crossOrigin = 'anonymous';
         img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          canvas.getContext('2d').drawImage(img, 0, 0);
-          resolve(canvas.toDataURL('image/png'));
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            canvas.getContext('2d').drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+          } catch(e) {
+            // Canvas tainted — try without CORS
+            if (useCors) {
+              loadImage(url, false).then(resolve).catch(reject);
+            } else {
+              reject(e);
+            }
+          }
         };
-        img.onerror = () => reject(new Error('Image load failed'));
+        img.onerror = () => reject(new Error('Image load failed: ' + url));
         img.src = url;
       });
     }
 
-    // Load the certificate background image
-    const bgDataUrl = await loadImage('/public/Certificate.png');
+    // Load the certificate background image (same-origin, no CORS needed)
+    const bgDataUrl = await loadImage('/public/Certificate.png', false);
     doc.addImage(bgDataUrl, 'PNG', 0, 0, w, h);
 
     // Student name — centered, positioned below "This is to certify that"
@@ -3802,11 +3811,11 @@ async function downloadCertificatePDF(params) {
     doc.setTextColor(100, 100, 100);
     doc.text(safe(dateStr), w / 2, h * 0.92, { align: 'center' });
 
-    // Book cover — bottom right, over the logo
+    // Book cover — bottom right, positioned inside the certificate area
     if (coverUrl) {
       try {
-        const coverDataUrl = await loadImage(coverUrl);
-        doc.addImage(coverDataUrl, 'PNG', w - 50, h - 55, 35, 48);
+        const coverDataUrl = await loadImage(coverUrl, true);
+        doc.addImage(coverDataUrl, 'PNG', w - 58, h - 62, 38, 50);
       } catch(e) { console.log('Could not load book cover for PDF:', e); }
     }
 
@@ -3835,7 +3844,7 @@ function printCertificate(params) {
       .cert-content { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; }
       .student-name { position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%); font-size: 36px; font-weight: 800; color: #1a1a2e; text-align: center; width: 70%; }
       .book-name { position: absolute; top: 62%; left: 50%; transform: translate(-50%, -50%); font-size: 26px; font-weight: 700; color: #1a1a2e; font-style: italic; text-align: center; width: 70%; }
-      .book-cover { position: absolute; bottom: 6%; right: 5%; width: 90px; height: 120px; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+      .book-cover { position: absolute; bottom: 10%; right: 8%; width: 80px; height: 110px; object-fit: cover; border-radius: 6px; box-shadow: 0 3px 10px rgba(0,0,0,0.25); border: 2px solid #fff; }
       .cert-date { position: absolute; bottom: 5%; left: 50%; transform: translateX(-50%); font-size: 11px; color: #777; }
     </style>
   </head><body>
@@ -3856,11 +3865,22 @@ function printCertificate(params) {
   iframe.contentDocument.open();
   iframe.contentDocument.write(html);
   iframe.contentDocument.close();
-  // Wait longer for images to load before printing
-  setTimeout(() => {
-    iframe.contentWindow.print();
-    setTimeout(() => iframe.remove(), 2000);
-  }, 800);
+
+  // Wait for all images to load before printing
+  const images = iframe.contentDocument.querySelectorAll('img');
+  const imagePromises = Array.from(images).map(img => {
+    if (img.complete) return Promise.resolve();
+    return new Promise(resolve => {
+      img.onload = resolve;
+      img.onerror = resolve; // don't block print if an image fails
+    });
+  });
+  Promise.all(imagePromises).then(() => {
+    setTimeout(() => {
+      iframe.contentWindow.print();
+      setTimeout(() => iframe.remove(), 2000);
+    }, 200);
+  });
 }
 
 // ---- Page: Celebrate Students ----
