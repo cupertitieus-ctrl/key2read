@@ -1139,13 +1139,13 @@ function loadTeacherDashboardData() {
         const cover = b.coverUrl
           ? `<img src="${b.coverUrl}" alt="${escapeHtml(b.title)}" style="width:100%;height:auto;border-radius:8px;display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
           : '';
-        return `<div style="text-align:center;cursor:pointer;flex:1;min-width:0;max-width:130px" onclick="showPopularBookDetail(${i})">
-          <div style="position:relative;margin-bottom:8px">
-            <div style="border:3px solid ${borderColors[i]};border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.12);background:#fff">
+        return `<div style="text-align:center;cursor:pointer;flex:1;min-width:0;max-width:100px" onclick="showPopularBookDetail(${i})">
+          <div style="position:relative;margin-bottom:6px">
+            <div style="border:2px solid ${borderColors[i]};border-radius:8px;overflow:hidden;box-shadow:0 3px 10px rgba(0,0,0,0.10);background:#fff">
               ${cover}
-              <div style="display:${b.coverUrl ? 'none' : 'flex'};width:100%;height:160px;background:linear-gradient(135deg, var(--blue), var(--purple));align-items:center;justify-content:center;color:#fff;font-weight:700;padding:10px;font-size:0.75rem;text-align:center">${escapeHtml(b.title)}</div>
+              <div style="display:${b.coverUrl ? 'none' : 'flex'};width:100%;height:120px;background:linear-gradient(135deg, var(--blue), var(--purple));align-items:center;justify-content:center;color:#fff;font-weight:700;padding:8px;font-size:0.65rem;text-align:center">${escapeHtml(b.title)}</div>
             </div>
-            <span style="position:absolute;top:-12px;left:-12px;font-size:2rem">${medals[i]}</span>
+            <span style="position:absolute;top:-10px;left:-10px;font-size:1.5rem">${medals[i]}</span>
           </div>
           <p style="font-size:0.75rem;font-weight:700;color:var(--g800);margin:0 0 2px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(b.title)}</p>
           <p style="font-size:0.65rem;color:var(--g400);margin:0">${b.studentCount} ${b.studentCount === 1 ? 'reader' : 'readers'} · ${b.quizCount} ${b.quizCount === 1 ? 'quiz' : 'quizzes'}</p>
@@ -1162,7 +1162,6 @@ function loadTeacherDashboardData() {
         const extra = (b.studentNames || []).length > 3 ? ' +' + ((b.studentNames || []).length - 3) + ' more' : '';
         return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;' + (i < data.slice(0,10).length - 1 ? 'border-bottom:1px solid var(--g100);' : '') + '">' +
           '<div style="width:28px;height:28px;border-radius:50%;background:' + rankBg + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.75rem;flex-shrink:0">' + (i + 1) + '</div>' +
-          (b.coverUrl ? '<img src="' + b.coverUrl + '" alt="" style="width:36px;height:48px;object-fit:cover;border-radius:4px;flex-shrink:0">' : '<div style="width:36px;height:48px;background:var(--g200);border-radius:4px;flex-shrink:0"></div>') +
           '<div style="flex:1;min-width:0">' +
             '<div style="font-size:0.8rem;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(b.title) + '</div>' +
             '<div style="font-size:0.7rem;color:var(--g400)">' + b.studentCount + ' ' + (b.studentCount === 1 ? 'reader' : 'readers') + ' · ' + b.quizCount + ' ' + (b.quizCount === 1 ? 'quiz' : 'quizzes') + '</div>' +
