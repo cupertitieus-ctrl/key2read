@@ -1036,7 +1036,7 @@ function renderTeacherDashboard() {
     trendScores = months.slice(-4).map(() => avgScore);
     trendLabels = months.slice(-4);
   }
-  const trendChart = svgLineChart(trendScores, trendLabels, 620, 240);
+  const trendChart = svgLineChart(trendScores, trendLabels, 620, 500);
 
   // Build reading score pie chart
   const needsSupport = students.filter(s => (s.reading_score || s.score || 0) < 400).length;
@@ -1048,7 +1048,7 @@ function renderTeacherDashboard() {
     { label: 'Developing (400–599)', value: developing, color: '#F59E0B' },
     { label: 'On Track (600–799)', value: onTrack, color: '#10B981' },
     { label: 'Advanced (800+)', value: advanced, color: '#2563EB' }
-  ], 180);
+  ], 280);
 
   return `
     <div class="page-header">
@@ -1092,10 +1092,10 @@ function renderTeacherDashboard() {
         <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">How your students are performing across reading levels</p>
         ${pieChart}
       </div>
-      <div class="list-card" style="padding:24px;cursor:pointer" onclick="navigate('reports')">
+      <div class="list-card" style="padding:24px;cursor:pointer;display:flex;flex-direction:column" onclick="navigate('reports')">
         <h3 style="margin:0 0 4px 0">📈 Class Reading Score Trend</h3>
         <p style="font-size:0.8rem;color:var(--g400);margin:0 0 8px 0">Weekly average score · <span style="color:var(--blue);font-weight:600">View Full Report →</span></p>
-        ${trendChart}
+        <div style="flex:1;min-height:200px">${trendChart}</div>
       </div>
     </div>
 
