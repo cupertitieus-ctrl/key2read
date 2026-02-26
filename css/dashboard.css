@@ -103,6 +103,15 @@
   flex-shrink: 0;
 }
 
+.sidebar-home {
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+
+.sidebar-home .sidebar-home-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
 .sidebar-item .item-badge {
   margin-left: auto;
   padding: 1px 8px;

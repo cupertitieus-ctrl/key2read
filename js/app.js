@@ -43,6 +43,7 @@ const IC = {
   info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
   barChart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>',
   activity: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
   hash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>',
   clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
   layers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
@@ -701,8 +702,8 @@ function renderSidebar() {
     ];
   } else {
     items = [
-      { section: 'Dashboard' },
-      { id: 'teacher-dashboard', icon: IC.target, label: 'Dashboard' },
+      { id: 'teacher-dashboard', icon: IC.home, label: 'My Dashboard', isHome: true },
+      { section: 'Classroom' },
       { id: 'quizzes',    icon: IC.clip,  label: 'Quizzes & Assessments', badge: assignments.length > 0 ? String(assignments.length) : '', badgeCls: 'red' },
       { id: 'students',   icon: IC.users, label: 'Students',             badge: students.length > 0 ? String(students.length) : '', badgeCls: 'blue' },
       { id: 'reports',    icon: IC.chart, label: 'Growth Reports' },
@@ -735,7 +736,11 @@ function renderSidebar() {
     }
     const active = page === item.id ? 'active' : '';
     const badge = item.badge ? `<span class="item-badge ${item.badgeCls}">${item.badge}</span>` : '';
-    html += `<button class="sidebar-item ${active}" onclick="navigate('${item.id}')">${item.icon}<span>${item.label}</span>${badge}</button>`;
+    if (item.isHome) {
+      html += `<button class="sidebar-item sidebar-home ${active}" onclick="navigate('${item.id}')" style="font-size:1.05rem;font-weight:700;padding:12px 16px;margin-bottom:8px"><span class="sidebar-home-icon" style="width:28px;height:28px;display:inline-flex">${item.icon}</span><span>${item.label}</span></button>`;
+    } else {
+      html += `<button class="sidebar-item ${active}" onclick="navigate('${item.id}')">${item.icon}<span>${item.label}</span>${badge}</button>`;
+    }
   });
 
   html += `</nav>`;
@@ -3491,17 +3496,25 @@ function renderBookDetail() {
       `}
     </div>
 
-    ${completedChapters.length >= chapCount && chapCount > 0 && currentUser ? `
-    <div class="list-card" style="padding:28px;margin-top:24px;text-align:center;background:linear-gradient(135deg, #FEFCE8 0%, #FFF7ED 50%, #FEFCE8 100%);border:2px solid #FDE68A">
-      <div style="font-size:2.5rem;margin-bottom:8px">🏆</div>
-      <h3 style="margin:0 0 6px;font-size:1.25rem;color:var(--navy)">Book Completed!</h3>
-      <p style="margin:0 0 20px;color:var(--g500);font-size:0.9rem">Congratulations on finishing all ${chapCount} ${/diary|diaries/i.test(b.title) ? 'entries' : 'chapters'} of <strong>${escapeHtml(b.title)}</strong>!</p>
-      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="downloadCertificatePDF({bookTitle:'${escapeHtml(b.title).replace(/'/g,"\\'")}',bookAuthor:'${escapeHtml(b.author||'').replace(/'/g,"\\'")}',studentName:'${escapeHtml(currentUser?.name||'Student').replace(/'/g,"\\'")}',dateStr:'${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}'})">📥 Download Certificate PDF</button>
-        <button class="btn btn-outline" onclick="printCertificate({bookTitle:'${escapeHtml(b.title).replace(/'/g,"\\'")}',bookAuthor:'${escapeHtml(b.author||'').replace(/'/g,"\\'")}',studentName:'${escapeHtml(currentUser?.name||'Student').replace(/'/g,"\\'")}',dateStr:'${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}'})">🖨️ Print Certificate</button>
-      </div>
-    </div>
-    ` : ''}`;
+    ${(() => {
+      if (completedChapters.length < chapCount || chapCount === 0 || !currentUser) return '';
+      const certData = JSON.stringify({
+        bookTitle: b.title || 'Book',
+        bookAuthor: b.author || '',
+        studentName: currentUser?.name || 'Student',
+        dateStr: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+      }).replace(/"/g, '&quot;');
+      return `
+      <div class="list-card" style="padding:28px;margin-top:24px;text-align:center;background:linear-gradient(135deg, #FEFCE8 0%, #FFF7ED 50%, #FEFCE8 100%);border:2px solid #FDE68A">
+        <div style="font-size:2.5rem;margin-bottom:8px">🏆</div>
+        <h3 style="margin:0 0 6px;font-size:1.25rem;color:var(--navy)">Book Completed!</h3>
+        <p style="margin:0 0 20px;color:var(--g500);font-size:0.9rem">Congratulations on finishing all ${chapCount} ${/diary|diaries/i.test(b.title) ? 'entries' : 'chapters'} of <strong>${escapeHtml(b.title)}</strong>!</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-primary" data-cert="${certData}" onclick="downloadCertificatePDF(JSON.parse(this.dataset.cert))">📥 Download Certificate PDF</button>
+          <button class="btn btn-outline" data-cert="${certData}" onclick="printCertificate(JSON.parse(this.dataset.cert))">🖨️ Print Certificate</button>
+        </div>
+      </div>`;
+    })()}`;
 }
 
 async function launchFullBookQuiz(bookId, sid) {
@@ -3747,83 +3760,104 @@ function downloadCertificatePDF(params) {
   const score = params ? (params.score ? 'Score: ' + params.score + '%' : '') : (document.querySelector('.celebration-cert-meta span:last-child')?.textContent || '');
   const dateStr = params ? (params.dateStr || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })) : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-  // Background
-  doc.setFillColor(255, 255, 255);
+  // Soft cream background
+  doc.setFillColor(255, 252, 240);
   doc.rect(0, 0, w, h, 'F');
 
-  // Decorative border — outer
-  doc.setDrawColor(74, 58, 163); // purple brand
-  doc.setLineWidth(2);
-  doc.rect(10, 10, w - 20, h - 20);
-
-  // Decorative border — inner
-  doc.setDrawColor(139, 92, 246);
+  // Outer decorative border (navy/gold double border)
+  doc.setDrawColor(30, 58, 138);
+  doc.setLineWidth(3);
+  doc.rect(8, 8, w - 16, h - 16);
+  doc.setDrawColor(217, 167, 44);
+  doc.setLineWidth(1.5);
+  doc.rect(13, 13, w - 26, h - 26);
+  doc.setDrawColor(30, 58, 138);
   doc.setLineWidth(0.5);
-  doc.rect(14, 14, w - 28, h - 28);
+  doc.rect(17, 17, w - 34, h - 34);
 
-  // Trophy emoji as text
-  doc.setFontSize(32);
-  doc.text('🏆', w / 2, 40, { align: 'center' });
+  // Corner stars
+  const corners = [[24, 24], [w - 24, 24], [24, h - 24], [w - 24, h - 24]];
+  doc.setFillColor(217, 167, 44);
+  corners.forEach(([cx, cy]) => {
+    doc.circle(cx, cy, 3, 'F');
+  });
+
+  // Gold ribbon line
+  doc.setDrawColor(217, 167, 44);
+  doc.setLineWidth(0.8);
+  doc.line(w / 2 - 70, 42, w / 2 + 70, 42);
 
   // Title
-  doc.setFontSize(28);
+  doc.setFontSize(30);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(26, 26, 46);
-  doc.text('Certificate of Achievement', w / 2, 56, { align: 'center' });
+  doc.setTextColor(30, 58, 138);
+  doc.text('Certificate of Achievement', w / 2, 38, { align: 'center' });
 
-  // Divider line
-  doc.setDrawColor(139, 92, 246);
-  doc.setLineWidth(0.3);
-  doc.line(w / 2 - 50, 62, w / 2 + 50, 62);
+  // Gold ribbon line below title
+  doc.line(w / 2 - 70, 44, w / 2 + 70, 44);
+
+  // Star divider
+  doc.setFontSize(14);
+  doc.setTextColor(217, 167, 44);
+  doc.text('★  ★  ★', w / 2, 55, { align: 'center' });
 
   // "This certifies that"
   doc.setFontSize(13);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 100, 100);
-  doc.text('This certifies that', w / 2, 74, { align: 'center' });
+  doc.text('This certifies that', w / 2, 68, { align: 'center' });
 
-  // Student name
-  doc.setFontSize(24);
+  // Student name with underline
+  doc.setFontSize(28);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(26, 26, 46);
-  doc.text(studentName, w / 2, 88, { align: 'center' });
+  doc.setTextColor(30, 58, 138);
+  doc.text(studentName, w / 2, 84, { align: 'center' });
+  doc.setDrawColor(217, 167, 44);
+  doc.setLineWidth(0.5);
+  const nameWidth = doc.getTextWidth(studentName);
+  doc.line(w / 2 - nameWidth / 2 - 5, 87, w / 2 + nameWidth / 2 + 5, 87);
 
-  // "has successfully completed all quizzes for"
+  // "has successfully completed"
   doc.setFontSize(13);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 100, 100);
-  doc.text('has successfully completed all quizzes for', w / 2, 100, { align: 'center' });
+  doc.text('has successfully completed all chapters and quizzes for', w / 2, 100, { align: 'center' });
 
   // Book title
-  doc.setFontSize(20);
+  doc.setFontSize(22);
   doc.setFont('helvetica', 'bolditalic');
-  doc.setTextColor(74, 58, 163);
-  doc.text(book.title || 'Book', w / 2, 114, { align: 'center' });
+  doc.setTextColor(139, 92, 246);
+  doc.text('"' + (book.title || 'Book') + '"', w / 2, 116, { align: 'center' });
 
   // Author
   if (book.author) {
     doc.setFontSize(12);
     doc.setFont('helvetica', 'italic');
     doc.setTextColor(120, 120, 120);
-    doc.text('by ' + book.author, w / 2, 124, { align: 'center' });
+    doc.text('by ' + book.author, w / 2, 126, { align: 'center' });
   }
+
+  // Decorative line before date
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.3);
+  doc.line(w / 2 - 40, 140, w / 2 + 40, 140);
 
   // Date and score
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 100, 100);
-  doc.text(dateStr, w / 2 - 30, 145, { align: 'center' });
-  doc.text(score, w / 2 + 30, 145, { align: 'center' });
+  doc.text(dateStr, w / 2, 150, { align: 'center' });
+  if (score) doc.text(score, w / 2, 158, { align: 'center' });
 
-  // Branding
-  doc.setFontSize(10);
+  // Branding with key emoji
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(74, 58, 163);
-  doc.text('key2read', w / 2, 175, { align: 'center' });
-  doc.setFontSize(8);
+  doc.setTextColor(30, 58, 138);
+  doc.text('key2read', w / 2, 178, { align: 'center' });
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(150, 150, 150);
-  doc.text('Building Critical Thinking Skills Through Reading', w / 2, 181, { align: 'center' });
+  doc.text('Building Critical Thinking Skills Through Reading', w / 2, 184, { align: 'center' });
 
   // Save
   const safeTitle = (book.title || 'Book').replace(/[^a-zA-Z0-9]/g, '-');
@@ -3837,33 +3871,54 @@ function printCertificate(params) {
   const scoreEl = params ? null : document.querySelector('.celebration-cert-meta span:last-child');
   const score = params ? (params.score ? 'Score: ' + params.score + '%' : '') : (scoreEl ? scoreEl.textContent : '');
 
-  const html = `<!DOCTYPE html><html><head><title>Certificate</title>
+  const html = `<!DOCTYPE html><html><head><title>Certificate - ${book.title}</title>
     <style>
       @page { size: landscape; margin: 0; }
-      body { margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: Georgia, 'Times New Roman', serif; background: #fff; }
-      .cert { width: 267mm; height: 180mm; border: 3px solid #4A3AA3; padding: 30px; text-align: center; position: relative; box-sizing: border-box; }
-      .cert::after { content: ''; position: absolute; inset: 6px; border: 1px solid #8B5CF6; pointer-events: none; }
-      .trophy { font-size: 48px; margin-bottom: 8px; }
-      h1 { font-size: 32px; color: #1a1a2e; margin: 0 0 8px; font-weight: 700; }
-      .subtitle { color: #888; font-size: 14px; margin: 12px 0 4px; }
-      .name { font-size: 28px; color: #1a1a2e; font-weight: 700; margin: 4px 0; }
-      .book-title { font-size: 22px; color: #4A3AA3; font-style: italic; margin: 4px 0; }
-      .author { font-size: 14px; color: #888; margin: 4px 0; }
-      .meta { font-size: 12px; color: #888; margin-top: 20px; display: flex; justify-content: center; gap: 40px; }
-      .brand { margin-top: 20px; font-size: 12px; color: #4A3AA3; font-weight: 700; }
-      .brand-sub { font-size: 9px; color: #aaa; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: Georgia, 'Times New Roman', serif; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .cert { width: 270mm; height: 185mm; background: #FFFCF0; text-align: center; position: relative; padding: 20px 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      .border-outer { position: absolute; inset: 8px; border: 3px solid #1E3A8A; border-radius: 4px; }
+      .border-gold { position: absolute; inset: 14px; border: 1.5px solid #D9A72C; border-radius: 2px; }
+      .border-inner { position: absolute; inset: 18px; border: 0.5px solid #1E3A8A; }
+      .corner { position: absolute; width: 12px; height: 12px; background: #D9A72C; border-radius: 50%; }
+      .corner-tl { top: 20px; left: 20px; }
+      .corner-tr { top: 20px; right: 20px; }
+      .corner-bl { bottom: 20px; left: 20px; }
+      .corner-br { bottom: 20px; right: 20px; }
+      .gold-line { width: 200px; height: 2px; background: linear-gradient(90deg, transparent, #D9A72C, transparent); margin: 0 auto; }
+      h1 { font-size: 34px; color: #1E3A8A; font-weight: 700; letter-spacing: 1px; margin: 8px 0; }
+      .stars { font-size: 16px; color: #D9A72C; letter-spacing: 8px; margin: 8px 0; }
+      .subtitle { color: #777; font-size: 14px; margin: 10px 0 4px; }
+      .name { font-size: 32px; color: #1E3A8A; font-weight: 700; margin: 4px 0; padding-bottom: 4px; border-bottom: 2px solid #D9A72C; display: inline-block; }
+      .book-title { font-size: 24px; color: #7C3AED; font-style: italic; font-weight: 600; margin: 6px 0; }
+      .author { font-size: 13px; color: #999; font-style: italic; margin: 2px 0; }
+      .meta { font-size: 11px; color: #999; margin-top: 14px; }
+      .brand { margin-top: 12px; font-size: 13px; color: #1E3A8A; font-weight: 700; letter-spacing: 2px; }
+      .brand-sub { font-size: 9px; color: #bbb; letter-spacing: 0.5px; }
     </style>
   </head><body>
     <div class="cert">
-      <div class="trophy">🏆</div>
+      <div class="border-outer"></div>
+      <div class="border-gold"></div>
+      <div class="border-inner"></div>
+      <div class="corner corner-tl"></div>
+      <div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div>
+      <div class="corner corner-br"></div>
+
+      <div class="gold-line"></div>
       <h1>Certificate of Achievement</h1>
+      <div class="gold-line"></div>
+
+      <div class="stars">★ ★ ★</div>
+
       <p class="subtitle">This certifies that</p>
       <p class="name">${studentName}</p>
-      <p class="subtitle">has successfully completed all quizzes for</p>
-      <p class="book-title">${book.title || 'Book'}</p>
+      <p class="subtitle">has successfully completed all chapters and quizzes for</p>
+      <p class="book-title">"${book.title || 'Book'}"</p>
       ${book.author ? `<p class="author">by ${book.author}</p>` : ''}
-      <div class="meta"><span>${dateStr}</span><span>${score}</span></div>
-      <div class="brand">key2read</div>
+      <div class="meta">${dateStr}${score ? ' &nbsp;&bull;&nbsp; ' + score : ''}</div>
+      <div class="brand">KEY2READ</div>
       <div class="brand-sub">Building Critical Thinking Skills Through Reading</div>
     </div>
   </body></html>`;
