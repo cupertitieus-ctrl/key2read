@@ -610,6 +610,7 @@ const QuizEngine = (function() {
             <div class="quiz-reveal-answer">
               <p>"${escapeHtml(q.options[q.correct_answer] || '')}"</p>
             </div>
+            ${q.explanation ? `<div class="quiz-reveal-explanation"><strong>Why?</strong> ${escapeHtml(q.explanation)}</div>` : ''}
             <p class="quiz-retry-message">That's okay — every question helps you learn! Let's keep going.</p>
             <button class="btn btn-primary quiz-retry-btn" onclick="QuizEngine.dismissRevealModal()">Next Question →</button>
           </div>

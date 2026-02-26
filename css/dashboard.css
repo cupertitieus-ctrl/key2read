@@ -2817,6 +2817,20 @@
   margin: 0;
   font-style: italic;
 }
+.quiz-reveal-explanation {
+  background: var(--g50, #f9fafb);
+  border: 1px solid var(--g200, #e5e7eb);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  font-size: 0.875rem;
+  color: var(--g600, #4b5563);
+  line-height: 1.6;
+  text-align: left;
+}
+.quiz-reveal-explanation strong {
+  color: var(--navy);
+}
 
 /* Legacy stats — keep for backwards compat but no longer primary */
 .quiz-results-stats { display: flex; justify-content: center; gap: 40px; margin-bottom: 32px; padding: 24px; background: var(--g50); border-radius: var(--radius-xl); }
