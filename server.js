@@ -324,8 +324,14 @@ app.put('/api/auth/settings', async (req, res) => {
   try {
     // Update user name
     if (name && userId) {
-      await db.supabase.from('users').update({ name }).eq('id', userId);
-      req.session.user.name = name;
+      const { error: nameErr } = await db.supabase.from('users').update({ name }).eq('id', userId);
+      if (nameErr) console.error('[Settings] Name update error:', nameErr);
+      else {
+        req.session.user.name = name;
+        console.log('[Settings] Name updated to:', name, 'for userId:', userId);
+      }
+    } else {
+      console.log('[Settings] Skipped name update — name:', name, 'userId:', userId);
     }
 
     // Update grade on class (for teachers) or student record

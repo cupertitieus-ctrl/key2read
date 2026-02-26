@@ -1748,26 +1748,22 @@ function renderQuizzes() {
     </div>
 
     <div class="list-card" style="padding:24px;margin-bottom:20px">
-      <h3 style="margin:0 0 16px 0;font-size:1rem;font-weight:700;color:var(--navy)">How Does the Software Work?</h3>
-      <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:16px">
+      <h3 style="margin:0 0 4px 0;font-size:1.25rem;font-weight:700;color:var(--navy);display:flex;align-items:center"><img src="/public/Comprehension_Outline_Black_Icon_.png" alt="" style="width:36px;height:36px;margin-right:10px;object-fit:contain">How Does the Software Work?</h3>
+      <p style="margin:0 0 16px 0;font-size:0.8rem;color:var(--g400)">Students must read the physical book first · <a href="https://www.dianealber.com/pages/keychapterbooks" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:600">Purchase books here →</a></p>
+      <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:16px">
         <div style="text-align:center;padding:16px 12px;background:var(--blue-p, #EFF6FF);border-radius:var(--radius-md);cursor:pointer" onclick="navigate('library')">
           <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Stacked_Book_Outline.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
           <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">1. Pick a Book</div>
           <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">Students choose a chapter book from the library</div>
         </div>
-        <div style="text-align:center;padding:16px 12px;background:var(--green-l, #ECFDF5);border-radius:var(--radius-md)">
-          <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Book_Outline_Icon_Black.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
-          <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">2. Read a Chapter</div>
-          <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">Students read the physical book chapter by chapter</div>
-        </div>
         <div style="text-align:center;padding:16px 12px;background:var(--gold-l, #FFFBEB);border-radius:var(--radius-md)">
           <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Quiz_Outline_Icon_Blk.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
-          <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">3. Take the Quiz</div>
+          <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">2. Take the Quiz</div>
           <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">5 questions test comprehension, vocabulary, and reasoning</div>
         </div>
         <div style="text-align:center;padding:16px 12px;background:var(--purple-l, #F5F3FF);border-radius:var(--radius-md);cursor:pointer" onclick="navigate('reports')">
           <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Key_Outline_Icon_Blk.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
-          <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">4. Earn Keys & Grow</div>
+          <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">3. Earn Keys & Grow</div>
           <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">Score 80%+ to earn Keys and boost their Reading Score</div>
         </div>
       </div>
@@ -3303,6 +3299,28 @@ function renderLibrary() {
       <input type="text" id="library-search-input" placeholder="Search books by title, author, or genre..."
         style="width:100%;padding:10px 14px 10px 38px;border:1.5px solid var(--g200);border-radius:var(--radius-md);font-size:0.875rem;outline:none;transition:border-color .2s"
         onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--g200)'">
+    </div>
+
+    <div class="list-card" style="padding:24px;margin-bottom:20px">
+      <h3 style="margin:0 0 4px 0;font-size:1.25rem;font-weight:700;color:var(--navy);display:flex;align-items:center"><img src="/public/Comprehension_Outline_Black_Icon_.png" alt="" style="width:36px;height:36px;margin-right:10px;object-fit:contain">How Does the Software Work?</h3>
+      <p style="margin:0 0 16px 0;font-size:0.8rem;color:var(--g400)">Students must read the physical book first · <a href="https://www.dianealber.com/pages/keychapterbooks" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:600">Purchase books here →</a></p>
+      <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:16px">
+        <div style="text-align:center;padding:16px 12px;background:var(--blue-p, #EFF6FF);border-radius:var(--radius-md);cursor:pointer" onclick="navigate('library')">
+          <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Stacked_Book_Outline.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
+          <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">1. Pick a Book</div>
+          <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">Students choose a chapter book from the library</div>
+        </div>
+        <div style="text-align:center;padding:16px 12px;background:var(--gold-l, #FFFBEB);border-radius:var(--radius-md)">
+          <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Quiz_Outline_Icon_Blk.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
+          <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">2. Take the Quiz</div>
+          <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">5 questions test comprehension, vocabulary, and reasoning</div>
+        </div>
+        <div style="text-align:center;padding:16px 12px;background:var(--purple-l, #F5F3FF);border-radius:var(--radius-md);cursor:pointer" onclick="navigate('reports')">
+          <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Key_Outline_Icon_Blk.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
+          <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">3. Earn Keys & Grow</div>
+          <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">Score 80%+ to earn Keys and boost their Reading Score</div>
+        </div>
+      </div>
     </div>
 
     <div class="book-grid" id="library-book-grid">
