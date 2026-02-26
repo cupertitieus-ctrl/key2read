@@ -1408,7 +1408,7 @@ function showTop10BooksModal() {
               ? '<img src="' + b.coverUrl + '" alt="' + escapeHtml(b.title) + '" style="width:100%;height:auto;border-radius:6px;display:block" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
               : '';
             var border = i < 3 ? borderColors[i] : 'var(--g200)';
-            var medal = i < 3 ? '<span style="position:absolute;top:-8px;left:-8px;font-size:1.3rem">' + medals[i] + '</span>' : '<span style="position:absolute;top:-6px;left:-6px;width:22px;height:22px;border-radius:50%;background:var(--g300);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:800">' + (i+1) + '</span>';
+            var medal = i < 3 ? '<span style="position:absolute;top:-10px;left:-10px;font-size:1.75rem">' + medals[i] + '</span>' : '<span style="position:absolute;top:-8px;left:-8px;width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800">' + (i+1) + '</span>';
             return '<div style="text-align:center;cursor:pointer" onclick="closeModal();showPopularBookDetail(' + i + ')">' +
               '<div style="position:relative;margin-bottom:6px">' +
                 '<div style="border:2px solid ' + border + ';border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);background:#fff">' +
@@ -2302,7 +2302,11 @@ function renderStore() {
 function loadStorePurchaseNotifications() {
   const classId = currentUser?.classId;
   if (!classId) return;
-  API.getRecentPurchases(classId).then(data => {
+  // Reuse cached purchase data if available, otherwise fetch
+  var fetchPromise = window._purchaseData ? Promise.resolve(window._purchaseData) : API.getRecentPurchases(classId);
+  fetchPromise.then(data => {
+    window._purchaseData = data || [];
+    window._purchaseCount = (data || []).length;
     const el = document.getElementById('store-purchase-notifications');
     if (!el) return;
     if (!data || data.length === 0) {
