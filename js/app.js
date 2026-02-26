@@ -1994,7 +1994,7 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
   // Component config
   const compConfig = {
     comprehension: { name: 'Comprehension', icon: IC.bookOpen, color: 'var(--blue)', borderColor: 'var(--blue)' },
-    effort:        { name: 'Quiz Effort', icon: IC.clock, color: 'var(--green)', borderColor: 'var(--green)' },
+    effort:        { name: 'Quiz Effort', icon: '<img src="/public/Recent_Outline_Icon_.png" alt="" style="width:20px;height:20px;object-fit:contain">', color: 'var(--green)', borderColor: 'var(--green)' },
     independence:  { name: 'Independence', icon: IC.star, color: 'var(--orange)', borderColor: 'var(--orange)' },
     vocabulary:    { name: 'Vocabulary', icon: IC.hash, color: 'var(--purple)', borderColor: 'var(--purple)' },
     persistence:   { name: 'Persistence', icon: IC.fire, color: 'var(--gold)', borderColor: 'var(--gold)' }
@@ -3465,7 +3465,19 @@ function renderBookDetail() {
           }).join('')}
         </div>
       `}
-    </div>`;
+    </div>
+
+    ${completedChapters.length >= chapCount && chapCount > 0 && currentUser ? `
+    <div class="list-card" style="padding:28px;margin-top:24px;text-align:center;background:linear-gradient(135deg, #FEFCE8 0%, #FFF7ED 50%, #FEFCE8 100%);border:2px solid #FDE68A">
+      <div style="font-size:2.5rem;margin-bottom:8px">🏆</div>
+      <h3 style="margin:0 0 6px;font-size:1.25rem;color:var(--navy)">Book Completed!</h3>
+      <p style="margin:0 0 20px;color:var(--g500);font-size:0.9rem">Congratulations on finishing all ${chapCount} ${/diary|diaries/i.test(b.title) ? 'entries' : 'chapters'} of <strong>${escapeHtml(b.title)}</strong>!</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="downloadCertificatePDF({bookTitle:'${escapeHtml(b.title).replace(/'/g,"\\'")}',bookAuthor:'${escapeHtml(b.author||'').replace(/'/g,"\\'")}',studentName:'${escapeHtml(currentUser?.name||'Student').replace(/'/g,"\\'")}',dateStr:'${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}'})">📥 Download Certificate PDF</button>
+        <button class="btn btn-outline" onclick="printCertificate({bookTitle:'${escapeHtml(b.title).replace(/'/g,"\\'")}',bookAuthor:'${escapeHtml(b.author||'').replace(/'/g,"\\'")}',studentName:'${escapeHtml(currentUser?.name||'Student').replace(/'/g,"\\'")}',dateStr:'${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}'})">🖨️ Print Certificate</button>
+      </div>
+    </div>
+    ` : ''}`;
 }
 
 async function launchFullBookQuiz(bookId, sid) {
@@ -4424,12 +4436,12 @@ function renderAITools() {
 
   const badgeList = [
     { img: '/public/Learned_About_You.png',    name: 'Learned About You',    desc: 'Awarded when a student fills out their profile for the first time.' },
-    { img: '/public/Quiz_Streak_Badge_.png',   name: 'Quiz Streak',          desc: 'Awarded for completing their very first chapter quiz.' },
-    { img: '/public/Book_Boss_Badge.png',      name: 'Book Boss',            desc: 'Awarded for finishing all chapters in a book.' },
+    { img: '/public/Quiz_Streak_Badge_.png',   name: 'Quiz Streak',          desc: 'Awarded for completing 3 quizzes in a row.' },
+    { img: '/public/Book_Boss_Badge.png',      name: 'Book Boss',            desc: 'Awarded for completing 3 books.' },
     { img: '/public/Genre_Jumper_Badge.png',   name: 'Genre Jumper',         desc: 'Awarded for reading books from 3 different genres.' },
     { img: '/public/First_Book_Badge.png',     name: 'First Book Done',      desc: 'Awarded for finishing their very first book.' },
     { img: '/public/Quiz_Conqueror_Badge.png', name: 'Quiz Conqueror',       desc: 'Awarded for completing 10 quizzes.' },
-    { img: '/public/Grow_Hero_Badge.png',      name: 'Grow Hero',            desc: 'Awarded for achieving 90%+ quiz accuracy.' },
+    { img: '/public/Grow_Hero_Badge.png',      name: 'Grow Hero',            desc: 'Awarded for completing 2 books and growing their reading score.' },
     { img: '/public/Ultimate_Key_Badge.png',   name: 'Ultimate Key Reader',  desc: 'Awarded for earning 500 keys.' },
   ];
 
@@ -4907,7 +4919,7 @@ function renderReports() {
         <div class="stat-card-label">Total Keys Earned <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Total Keys Earned', 'Keys are rewards students earn by passing quizzes with 80% or higher. Students can spend keys in the Class Store.')">?</button></div>
         <div class="stat-card-value">${totalKeysAll.toLocaleString()}</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card clickable-card" onclick="navigate('students')">
         <div class="stat-card-icon"><img src="/public/Student_Outline_Icon.png" alt="Students"></div>
         <div class="stat-card-label">Students</div>
         <div class="stat-card-value">${students.length}</div>
@@ -5043,8 +5055,10 @@ function renderStudentReport() {
   if (!s) return '<p>Student not found.</p>';
   const gd = growthData[s.id];
 
-  // If no growth data exists for this student, show a simplified report
+  // Simplified report (works with or without growth data)
   if (!gd) {
+    const raw = s._raw || {};
+    const firstName = s.name.split(' ')[0];
     return `
       <button class="back-btn" onclick="reportStudentId=null; renderMain()">${IC.arrowLeft} Back to Class Report</button>
       <div class="report-header-card">
@@ -5062,19 +5076,147 @@ function renderStudentReport() {
                 </div>
               </div>
             </div>
+            <div class="page-header-actions">
+              <button class="btn btn-primary btn-sm" onclick="printReport()">${IC.download} Export PDF</button>
+            </div>
           </div>
         </div>
       </div>
+
       <div class="stat-cards">
-        <div class="stat-card"><div class="stat-card-label">Reading Score</div><div class="stat-card-value">${s.score}</div></div>
-        <div class="stat-card"><div class="stat-card-label">Accuracy</div><div class="stat-card-value">${s.accuracy}%</div></div>
-        <div class="stat-card"><div class="stat-card-label">Keys Earned</div><div class="stat-card-value">${(s.keys || 0).toLocaleString()}</div></div>
-        <div class="stat-card"><div class="stat-card-label">Quizzes Taken</div><div class="stat-card-value">${s.quizzes || 0}</div></div>
+        <div class="stat-card">
+          <div class="stat-card-icon"><img src="/public/Book_Outline_Icon.png" alt="Reading Score"></div>
+          <div class="stat-card-label">Reading Score</div>
+          <div class="stat-card-value">${s.score}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-icon"><img src="/public/Comprehension_Outline_Icon.png" alt="Accuracy"></div>
+          <div class="stat-card-label">Accuracy</div>
+          <div class="stat-card-value">${s.accuracy}%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-icon"><img src="/public/Key_Outline_Icon.png" alt="Keys"></div>
+          <div class="stat-card-label">Keys Earned</div>
+          <div class="stat-card-value">${(s.keys || 0).toLocaleString()}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-icon"><img src="/public/Quiz_Outline_Icon.png" alt="Quizzes"></div>
+          <div class="stat-card-label">Quizzes Taken</div>
+          <div class="stat-card-value">${s.quizzes || 0}</div>
+        </div>
       </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px">
+        <div class="list-card" style="padding:24px">
+          <h3 style="margin:0 0 12px 0;display:flex;align-items:center"><img src="/public/Book_Outline_Icon_Black.png" alt="" style="width:28px;height:28px;margin-right:8px">Reading Score <button class="stat-help-btn no-print" onclick="showStatHelp('Reading Score', 'A score from 0–1000 based on quiz accuracy, effort, independence, vocabulary, and persistence. Each quiz adjusts the score up or down.')">?</button></h3>
+          <div style="font-size:2rem;font-weight:800;color:var(--navy)">${s.score}</div>
+          <div style="font-size:0.8rem;color:var(--g500);margin-top:4px">${s.score < 400 ? 'Needs Support — below grade level' : s.score < 600 ? 'Developing — building skills' : s.score < 800 ? 'On Track — reading at grade level' : 'Advanced — above grade level'}</div>
+        </div>
+        <div class="list-card" style="padding:24px">
+          <h3 style="margin:0 0 12px 0;display:flex;align-items:center"><img src="/public/Comprehension_Outline_Black_Icon_.png" alt="" style="width:28px;height:28px;margin-right:8px">Comprehension <button class="stat-help-btn no-print" onclick="showStatHelp('Comprehension', 'The percentage of quiz questions answered correctly. Shows how well the student understands what they read.')">?</button></h3>
+          <div style="font-size:2rem;font-weight:800;color:var(--navy)">${s.accuracy}%</div>
+          <div style="font-size:0.8rem;color:var(--g500);margin-top:4px">${s.accuracy >= 80 ? 'Strong comprehension' : s.accuracy >= 60 ? 'Building comprehension' : 'Needs reading support'}</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px">
+        <div class="list-card" style="padding:24px">
+          <h3 style="margin:0 0 12px 0;display:flex;align-items:center"><img src="/public/Quiz_Outline_Icon_Blk.png" alt="" style="width:28px;height:28px;margin-right:8px">Quizzes Completed <button class="stat-help-btn no-print" onclick="showStatHelp('Quizzes Completed', 'Total chapter quizzes completed. Each book chapter has a 5-question quiz testing comprehension, vocabulary, and reasoning.')">?</button></h3>
+          <div style="font-size:2rem;font-weight:800;color:var(--navy)">${s.quizzes || 0}</div>
+          <div id="student-report-quizzes" style="margin-top:12px;font-size:0.8rem;color:var(--g400)">Loading quiz history...</div>
+        </div>
+        <div class="list-card" style="padding:24px">
+          <h3 style="margin:0 0 12px 0;display:flex;align-items:center"><img src="/public/Key_Outline_Icon_Blk.png" alt="" style="width:28px;height:28px;margin-right:8px">Keys Earned <button class="stat-help-btn no-print" onclick="showStatHelp('Keys Earned', 'Keys are rewards earned by scoring 80% or higher on quizzes. Students can spend keys in the Class Store for prizes you set up.')">?</button></h3>
+          <div style="font-size:2rem;font-weight:800;color:var(--navy)">${(s.keys || 0).toLocaleString()}</div>
+          <div style="font-size:0.8rem;color:var(--g500);margin-top:4px">${s.keys > 0 ? 'Keep it up!' : 'Score 80%+ on quizzes to start earning keys'}</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px">
+        <div class="list-card" style="padding:24px">
+          <h3 style="margin:0 0 12px 0;display:flex;align-items:center"><img src="/public/Stacked_Book_Outline.png" alt="" style="width:28px;height:28px;margin-right:8px">Books Progress <button class="stat-help-btn no-print" onclick="showStatHelp('Books Progress', 'Books the student is reading or has completed, based on quiz activity. Each book has multiple chapters with quizzes.')">?</button></h3>
+          <div id="student-report-books" style="font-size:0.8rem;color:var(--g400)">Loading book progress...</div>
+        </div>
+        <div class="list-card" style="padding:24px">
+          <h3 style="margin:0 0 12px 0;display:flex;align-items:center"><img src="/public/Recent_Outline_Icon_.png" alt="" style="width:28px;height:28px;margin-right:8px">Quiz Effort <button class="stat-help-btn no-print" onclick="showStatHelp('Quiz Effort', 'Measures whether the student takes their time and answers thoughtfully. This rewards effort, not speed.')">?</button></h3>
+          <div id="student-report-effort" style="font-size:0.8rem;color:var(--g400)">Loading effort data...</div>
+        </div>
+      </div>
+
       <div class="info-panel" style="margin-top:24px">
         <h4>${IC.info} Growth Data</h4>
-        <p>More detailed growth data will appear as ${s.name.split(' ')[0]} completes more quizzes over time.</p>
-      </div>`;
+        <p>More detailed growth charts will appear as ${firstName} completes more quizzes over time. Keep reading!</p>
+      </div>
+
+      <script>
+      (function() {
+        const sid = ${s.id};
+        // Load quiz results
+        API.getQuizResults(sid).then(function(results) {
+          const el = document.getElementById('student-report-quizzes');
+          if (!el) return;
+          if (!results || results.length === 0) {
+            el.innerHTML = 'No quizzes completed yet';
+            return;
+          }
+          // Calculate avg time
+          let totalTime = 0, timeCount = 0;
+          results.forEach(function(r) {
+            if (r.time_taken) { totalTime += r.time_taken; timeCount++; }
+          });
+          const avgTime = timeCount > 0 ? Math.round(totalTime / timeCount) : 0;
+          const avgMin = Math.floor(avgTime / 60);
+          const avgSec = avgTime % 60;
+
+          el.innerHTML = '<div style="display:flex;flex-direction:column;gap:6px">' +
+            results.slice(0, 5).map(function(r) {
+              const date = r.completed_at ? new Date(r.completed_at).toLocaleDateString() : '';
+              return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--g100)">' +
+                '<span style="font-weight:500;color:var(--g700)">' + (r.book_title || 'Quiz') + ' Ch.' + (r.chapter_number || '?') + '</span>' +
+                '<span style="font-weight:700;color:' + (r.score >= 80 ? 'var(--green)' : 'var(--gold)') + '">' + r.score + '%</span>' +
+              '</div>';
+            }).join('') +
+            (results.length > 5 ? '<div style="color:var(--g400);padding-top:6px">+ ' + (results.length - 5) + ' more</div>' : '') +
+          '</div>';
+
+          // Update effort section
+          const effortEl = document.getElementById('student-report-effort');
+          if (effortEl) {
+            if (timeCount > 0) {
+              effortEl.innerHTML = '<div style="font-size:2rem;font-weight:800;color:var(--navy)">' + avgMin + 'm ' + avgSec + 's</div>' +
+                '<div style="color:var(--g500);margin-top:4px">Average time per quiz (' + timeCount + ' quiz' + (timeCount > 1 ? 'es' : '') + ')</div>';
+            } else {
+              effortEl.innerHTML = 'No time data available yet';
+            }
+          }
+        }).catch(function() {
+          const el = document.getElementById('student-report-quizzes');
+          if (el) el.innerHTML = 'Could not load quiz data';
+        });
+
+        // Load book progress
+        API.getBookProgress(sid).then(function(booksData) {
+          const el = document.getElementById('student-report-books');
+          if (!el) return;
+          if (!booksData || booksData.length === 0) {
+            el.innerHTML = 'No books started yet';
+            return;
+          }
+          el.innerHTML = booksData.slice(0, 5).map(function(b) {
+            const pct = b.total_chapters > 0 ? Math.round((b.chapters_completed / b.total_chapters) * 100) : 0;
+            const done = pct === 100;
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--g100)">' +
+              '<span style="font-weight:500;color:var(--g700)">' + (b.title || 'Book') + '</span>' +
+              '<span style="font-weight:600;color:' + (done ? 'var(--green)' : 'var(--blue)') + '">' + (done ? '✓ Complete' : b.chapters_completed + '/' + b.total_chapters + ' chapters') + '</span>' +
+            '</div>';
+          }).join('') +
+          (booksData.length > 5 ? '<div style="color:var(--g400);padding-top:6px">+ ' + (booksData.length - 5) + ' more</div>' : '');
+        }).catch(function() {
+          const el = document.getElementById('student-report-books');
+          if (el) el.innerHTML = 'Could not load book data';
+        });
+      })();
+      </script>`;
   }
 
   return `
@@ -5936,12 +6078,12 @@ function getStudentBadges() {
   });
   return [
     { img: '/public/Learned_About_You.png',     name: 'Learned About You',     desc: 'Fill out your student profile',    earned: !!(currentUser?.onboarded) },
-    { img: '/public/Quiz_Streak_Badge_.png',    name: 'Quiz Streak',           desc: 'Complete your first chapter quiz', earned: s.quizzes >= 1 },
-    { img: '/public/Book_Boss_Badge.png',       name: 'Book Boss',             desc: 'Complete all chapters in a book',  earned: s.totalBooks >= 1 },
+    { img: '/public/Quiz_Streak_Badge_.png',    name: 'Quiz Streak',           desc: 'Complete 3 quizzes in a row',      earned: s.quizzes >= 3 },
+    { img: '/public/Book_Boss_Badge.png',       name: 'Book Boss',             desc: 'Complete 3 books',                 earned: s.totalBooks >= 3 },
     { img: '/public/Genre_Jumper_Badge.png',    name: 'Genre Jumper',          desc: 'Read books from 3 different genres', earned: genreSet.size >= 3 },
     { img: '/public/First_Book_Badge.png',      name: 'First Book Done',       desc: 'Finish your very first book',      earned: s.totalBooks >= 1 },
     { img: '/public/Quiz_Conqueror_Badge.png',  name: 'Quiz Conqueror',        desc: 'Complete 10 quizzes',              earned: s.quizzes >= 10 },
-    { img: '/public/Grow_Hero_Badge.png',       name: 'Grow Hero',             desc: '90%+ accuracy',                    earned: s.accuracy >= 90 },
+    { img: '/public/Grow_Hero_Badge.png',       name: 'Grow Hero',             desc: 'Complete 2 books and grow your reading score', earned: s.totalBooks >= 2 && s.quizzes >= 2 },
     { img: '/public/Ultimate_Key_Badge.png',    name: 'Ultimate Key Reader',   desc: 'Earn 500 keys',                    earned: s.keys >= 500 },
   ];
 }
@@ -6318,13 +6460,13 @@ function showBadgeDetail(idx) {
 // ---- Badge Earned Popup ----
 function showBadgeEarnedPopup(badge) {
   const modal = document.getElementById('modal-root');
-  modal.innerHTML = '<div class="modal-overlay" onclick="closeModal(event)">' +
-    '<div class="modal" onclick="event.stopPropagation()" style="max-width:380px;text-align:center;overflow:visible">' +
+  modal.innerHTML = '<div class="modal-overlay" onclick="closeModal(event)" style="display:flex;align-items:center;justify-content:center;padding:20px">' +
+    '<div class="modal" onclick="event.stopPropagation()" style="max-width:380px;width:100%;text-align:center;overflow:visible;margin:0 auto">' +
       '<div class="modal-body" style="padding:32px">' +
         '<div style="font-size:3rem;margin-bottom:8px">🎉</div>' +
         '<div style="font-size:1.4rem;font-weight:800;color:var(--navy);margin-bottom:4px;font-family:var(--font-display)">Congratulations!</div>' +
         '<div style="font-size:1rem;color:var(--g500);margin-bottom:16px">You earned a new badge!</div>' +
-        '<div style="position:relative;display:inline-block;margin-bottom:16px">' +
+        '<div style="position:relative;display:flex;justify-content:center;margin-bottom:16px">' +
           '<img src="' + badge.img + '" alt="' + badge.name + '" style="width:160px;height:160px;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.2))">' +
         '</div>' +
         '<div style="font-size:1.15rem;font-weight:800;color:var(--purple);margin-bottom:6px">' + badge.name + '</div>' +

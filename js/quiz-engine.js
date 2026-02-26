@@ -723,6 +723,9 @@ const QuizEngine = (function() {
             ${r.keysEarned === 0 && r.score < 80
               ? `<div style="font-size:0.75rem;color:#9CA3AF;margin-top:6px;max-width:240px;line-height:1.4">Score 80% or higher to earn keys!</div>`
               : ''}
+            ${r.keysEarned === 0 && r.score >= 80 && r.alreadyEarned
+              ? `<div style="font-size:0.75rem;color:#9CA3AF;margin-top:6px;max-width:240px;line-height:1.4">You already earned keys for this chapter! Great job reviewing. 🌟</div>`
+              : ''}
             ${!currentStudent
               ? `<button class="btn btn-sm btn-outline" style="margin-top:8px;font-size:0.75rem" onclick="showPersistenceGate('keys')">Keep Keys</button>`
               : ''}

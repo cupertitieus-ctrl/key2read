@@ -4908,4 +4908,41 @@
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
+
+  /* Stat card gradient backgrounds must print */
+  .stat-card {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
+  }
+  .stat-card-label, .stat-card-icon {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Report header bar gradient */
+  .report-header-bar {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
+  }
+
+  /* Info panel prints */
+  .info-panel {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+
+  /* Pie chart prints */
+  .chart-container svg {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Stat card icons visible in print */
+  .stat-card-icon img {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
 }

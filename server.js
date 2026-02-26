@@ -821,6 +821,7 @@ app.post('/api/quiz/submit', async (req, res) => {
   // 5 keys if pass (>=80%), 4 if used try-again at all, 0 if fail
   const hints = hintCount || 0;
   let keysEarned = score >= 80 ? (hints > 0 ? 4 : 5) : 0;
+  let alreadyEarned = false;
 
   // Prevent retake key duplication: if student already passed this chapter, no additional keys
   const { data: existingResults } = await db.supabase
@@ -831,7 +832,10 @@ app.post('/api/quiz/submit', async (req, res) => {
     .gte('score', 80);
   if (existingResults && existingResults.length > 0) {
     keysEarned = 0; // Already earned keys for this chapter
+    alreadyEarned = true;
   }
+
+  console.log(`[Quiz Submit] student=${studentId} chapter=${chapterId} score=${score.toFixed(1)}% correct=${correctCount}/${questions.length} hints=${hints} keys=${keysEarned} alreadyEarned=${alreadyEarned}`);
 
   const newScore = Math.max(200, student.reading_score + levelChange);
   await db.updateReadingLevel(studentId, newScore, 'quiz');
@@ -865,7 +869,7 @@ app.post('/api/quiz/submit', async (req, res) => {
     score, correctCount, totalQuestions: questions.length,
     readingLevelChange: levelChange, newReadingScore: syncedScore,
     newReadingLevel: (syncedScore / 160).toFixed(1),
-    keysEarned, results, strategiesUsed
+    keysEarned, alreadyEarned, results, strategiesUsed
   });
 });
 
