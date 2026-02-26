@@ -2194,7 +2194,7 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
             if (!b) return '';
             const bookQuizzes = history.filter(q => q.bookTitle === b.title);
             const avgScore = bookQuizzes.length > 0 ? Math.round(bookQuizzes.reduce((sum, q) => sum + q.score, 0) / bookQuizzes.length) : null;
-            const certParams = JSON.stringify({ studentName: s.name, bookTitle: b.title, bookAuthor: b.author || '', score: avgScore }).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+            const certParams = JSON.stringify({ studentName: s.name, bookTitle: b.title, bookAuthor: b.author || '', score: avgScore, coverUrl: b.cover_url || '' }).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
             return `
             <div class="completed-book-card">
               <div class="completed-book-cover">
@@ -3502,6 +3502,7 @@ function renderBookDetail() {
         bookTitle: b.title || 'Book',
         bookAuthor: b.author || '',
         studentName: currentUser?.name || 'Student',
+        coverUrl: b.cover_url || '',
         dateStr: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
       }).replace(/"/g, '&quot;');
       return `
@@ -3735,8 +3736,8 @@ function buildCertificateCelebration(book, results) {
       </div>
 
       <div class="celebration-actions">
-        <button class="btn btn-primary" onclick="downloadCertificatePDF()">Download PDF</button>
-        <button class="btn btn-outline" onclick="printCertificate()">Print Certificate</button>
+        <button class="btn btn-primary" onclick="downloadCertificatePDF({bookTitle:'${escapeHtml(title).replace(/'/g,"\\'")}',bookAuthor:'${escapeHtml(author).replace(/'/g,"\\'")}',studentName:'${escapeHtml(studentName).replace(/'/g,"\\'")}',coverUrl:'${(book.cover_url||'').replace(/'/g,"\\'")}',score:${score},dateStr:'${dateStr}'})">Download PDF</button>
+        <button class="btn btn-outline" onclick="printCertificate({bookTitle:'${escapeHtml(title).replace(/'/g,"\\'")}',bookAuthor:'${escapeHtml(author).replace(/'/g,"\\'")}',studentName:'${escapeHtml(studentName).replace(/'/g,"\\'")}',coverUrl:'${(book.cover_url||'').replace(/'/g,"\\'")}',score:${score},dateStr:'${dateStr}'})">Print Certificate</button>
       </div>
       <button class="celebration-dismiss" onclick="closeCelebration()">Close</button>
     </div>`;
@@ -3747,7 +3748,7 @@ function closeCelebration() {
   if (modal) modal.innerHTML = '';
 }
 
-function downloadCertificatePDF(params) {
+async function downloadCertificatePDF(params) {
   if (!window.jspdf || !window.jspdf.jsPDF) {
     alert('PDF library not loaded. Please refresh the page and try again.');
     return;
@@ -3758,112 +3759,56 @@ function downloadCertificatePDF(params) {
     const w = 297, h = 210;
     const book = params ? { title: params.bookTitle || 'Book', author: params.bookAuthor || '' } : (books.find(b => b.id === selectedBookId) || { title: 'Book', author: '' });
     const studentName = params ? params.studentName : (currentUser?.name || 'Student');
-    const score = params ? (params.score ? 'Score: ' + params.score + '%' : '') : (document.querySelector('.celebration-cert-meta span:last-child')?.textContent || '');
+    const coverUrl = params?.coverUrl || '';
     const dateStr = params ? (params.dateStr || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })) : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    // Strip non-Latin1 characters for jsPDF compatibility
     const safe = (str) => str.replace(/[^\x00-\xFF]/g, '');
 
-    // Soft cream background
-    doc.setFillColor(255, 252, 240);
-    doc.rect(0, 0, w, h, 'F');
-
-    // Outer decorative border (navy/gold double border)
-    doc.setDrawColor(30, 58, 138);
-    doc.setLineWidth(3);
-    doc.rect(8, 8, w - 16, h - 16);
-    doc.setDrawColor(217, 167, 44);
-    doc.setLineWidth(1.5);
-    doc.rect(13, 13, w - 26, h - 26);
-    doc.setDrawColor(30, 58, 138);
-    doc.setLineWidth(0.5);
-    doc.rect(17, 17, w - 34, h - 34);
-
-    // Corner gold circles
-    const corners = [[24, 24], [w - 24, 24], [24, h - 24], [w - 24, h - 24]];
-    doc.setFillColor(217, 167, 44);
-    corners.forEach(([cx, cy]) => {
-      doc.circle(cx, cy, 3, 'F');
-    });
-
-    // Gold ribbon line above title
-    doc.setDrawColor(217, 167, 44);
-    doc.setLineWidth(0.8);
-    doc.line(w / 2 - 70, 35, w / 2 + 70, 35);
-
-    // Title
-    doc.setFontSize(30);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(30, 58, 138);
-    doc.text('Certificate of Achievement', w / 2, 48, { align: 'center' });
-
-    // Gold ribbon line below title
-    doc.line(w / 2 - 70, 52, w / 2 + 70, 52);
-
-    // Star divider (using asterisks — safe for jsPDF)
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(217, 167, 44);
-    doc.text('*   *   *', w / 2, 62, { align: 'center' });
-
-    // "This certifies that"
-    doc.setFontSize(13);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
-    doc.text('This certifies that', w / 2, 75, { align: 'center' });
-
-    // Student name with underline
-    const safeName = safe(studentName);
-    doc.setFontSize(28);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(30, 58, 138);
-    doc.text(safeName, w / 2, 90, { align: 'center' });
-    doc.setDrawColor(217, 167, 44);
-    doc.setLineWidth(0.5);
-    const nameWidth = doc.getTextWidth(safeName);
-    doc.line(w / 2 - nameWidth / 2 - 5, 93, w / 2 + nameWidth / 2 + 5, 93);
-
-    // "has successfully completed"
-    doc.setFontSize(13);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
-    doc.text('has successfully completed all chapters and quizzes for', w / 2, 106, { align: 'center' });
-
-    // Book title
-    const safeBookTitle = safe(book.title || 'Book');
-    doc.setFontSize(22);
-    doc.setFont('helvetica', 'bolditalic');
-    doc.setTextColor(139, 92, 246);
-    doc.text('"' + safeBookTitle + '"', w / 2, 120, { align: 'center' });
-
-    // Author
-    if (book.author) {
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'italic');
-      doc.setTextColor(120, 120, 120);
-      doc.text('by ' + safe(book.author), w / 2, 130, { align: 'center' });
+    // Helper: load image as data URL
+    function loadImage(url) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          canvas.getContext('2d').drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => reject(new Error('Image load failed'));
+        img.src = url;
+      });
     }
 
-    // Decorative line before date
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.3);
-    doc.line(w / 2 - 40, 145, w / 2 + 40, 145);
+    // Load the certificate background image
+    const bgDataUrl = await loadImage('/public/Certificate.png');
+    doc.addImage(bgDataUrl, 'PNG', 0, 0, w, h);
 
-    // Date and score
-    doc.setFontSize(11);
+    // Student name — centered, positioned below "This is to certify that"
+    doc.setFontSize(28);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(26, 26, 46);
+    doc.text(safe(studentName), w / 2, h * 0.47, { align: 'center' });
+
+    // Book title — centered, positioned below "has successfully completed all the quizzes for"
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bolditalic');
+    doc.setTextColor(26, 26, 46);
+    doc.text(safe(book.title || 'Book'), w / 2, h * 0.63, { align: 'center' });
+
+    // Date — bottom center
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100, 100, 100);
-    doc.text(safe(dateStr), w / 2, 155, { align: 'center' });
-    if (score) doc.text(safe(score), w / 2, 163, { align: 'center' });
+    doc.text(safe(dateStr), w / 2, h * 0.92, { align: 'center' });
 
-    // Branding
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(30, 58, 138);
-    doc.text('key2read', w / 2, 180, { align: 'center' });
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(150, 150, 150);
-    doc.text('Building Critical Thinking Skills Through Reading', w / 2, 186, { align: 'center' });
+    // Book cover — bottom right, over the logo
+    if (coverUrl) {
+      try {
+        const coverDataUrl = await loadImage(coverUrl);
+        doc.addImage(coverDataUrl, 'PNG', w - 50, h - 55, 35, 48);
+      } catch(e) { console.log('Could not load book cover for PDF:', e); }
+    }
 
     // Save
     const safeTitle = (book.title || 'Book').replace(/[^a-zA-Z0-9]/g, '-');
@@ -3877,59 +3822,31 @@ function downloadCertificatePDF(params) {
 function printCertificate(params) {
   const book = params ? { title: params.bookTitle || 'Book', author: params.bookAuthor || '' } : (books.find(b => b.id === selectedBookId) || { title: 'Book', author: '' });
   const studentName = params ? params.studentName : (currentUser?.name || 'Student');
+  const coverUrl = params?.coverUrl || '';
   const dateStr = params ? (params.dateStr || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })) : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  const scoreEl = params ? null : document.querySelector('.celebration-cert-meta span:last-child');
-  const score = params ? (params.score ? 'Score: ' + params.score + '%' : '') : (scoreEl ? scoreEl.textContent : '');
 
   const html = `<!DOCTYPE html><html><head><title>Certificate - ${book.title}</title>
     <style>
       @page { size: landscape; margin: 0; }
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: Georgia, 'Times New Roman', serif; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .cert { width: 270mm; height: 185mm; background: #FFFCF0; text-align: center; position: relative; padding: 20px 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-      .border-outer { position: absolute; inset: 8px; border: 3px solid #1E3A8A; border-radius: 4px; }
-      .border-gold { position: absolute; inset: 14px; border: 1.5px solid #D9A72C; border-radius: 2px; }
-      .border-inner { position: absolute; inset: 18px; border: 0.5px solid #1E3A8A; }
-      .corner { position: absolute; width: 12px; height: 12px; background: #D9A72C; border-radius: 50%; }
-      .corner-tl { top: 20px; left: 20px; }
-      .corner-tr { top: 20px; right: 20px; }
-      .corner-bl { bottom: 20px; left: 20px; }
-      .corner-br { bottom: 20px; right: 20px; }
-      .gold-line { width: 200px; height: 2px; background: linear-gradient(90deg, transparent, #D9A72C, transparent); margin: 0 auto; }
-      h1 { font-size: 34px; color: #1E3A8A; font-weight: 700; letter-spacing: 1px; margin: 8px 0; }
-      .stars { font-size: 16px; color: #D9A72C; letter-spacing: 8px; margin: 8px 0; }
-      .subtitle { color: #777; font-size: 14px; margin: 10px 0 4px; }
-      .name { font-size: 32px; color: #1E3A8A; font-weight: 700; margin: 4px 0; padding-bottom: 4px; border-bottom: 2px solid #D9A72C; display: inline-block; }
-      .book-title { font-size: 24px; color: #7C3AED; font-style: italic; font-weight: 600; margin: 6px 0; }
-      .author { font-size: 13px; color: #999; font-style: italic; margin: 2px 0; }
-      .meta { font-size: 11px; color: #999; margin-top: 14px; }
-      .brand { margin-top: 12px; font-size: 13px; color: #1E3A8A; font-weight: 700; letter-spacing: 2px; }
-      .brand-sub { font-size: 9px; color: #bbb; letter-spacing: 0.5px; }
+      body { display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: 'Arial', 'Helvetica', sans-serif; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
+      .cert { width: 270mm; height: 190mm; position: relative; overflow: hidden; }
+      .cert-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      .cert-content { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; }
+      .student-name { position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%); font-size: 36px; font-weight: 800; color: #1a1a2e; text-align: center; width: 70%; }
+      .book-name { position: absolute; top: 62%; left: 50%; transform: translate(-50%, -50%); font-size: 26px; font-weight: 700; color: #1a1a2e; font-style: italic; text-align: center; width: 70%; }
+      .book-cover { position: absolute; bottom: 6%; right: 5%; width: 90px; height: 120px; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+      .cert-date { position: absolute; bottom: 5%; left: 50%; transform: translateX(-50%); font-size: 11px; color: #777; }
     </style>
   </head><body>
     <div class="cert">
-      <div class="border-outer"></div>
-      <div class="border-gold"></div>
-      <div class="border-inner"></div>
-      <div class="corner corner-tl"></div>
-      <div class="corner corner-tr"></div>
-      <div class="corner corner-bl"></div>
-      <div class="corner corner-br"></div>
-
-      <div class="gold-line"></div>
-      <h1>Certificate of Achievement</h1>
-      <div class="gold-line"></div>
-
-      <div class="stars">★ ★ ★</div>
-
-      <p class="subtitle">This certifies that</p>
-      <p class="name">${studentName}</p>
-      <p class="subtitle">has successfully completed all chapters and quizzes for</p>
-      <p class="book-title">"${book.title || 'Book'}"</p>
-      ${book.author ? `<p class="author">by ${book.author}</p>` : ''}
-      <div class="meta">${dateStr}${score ? ' &nbsp;&bull;&nbsp; ' + score : ''}</div>
-      <div class="brand">KEY2READ</div>
-      <div class="brand-sub">Building Critical Thinking Skills Through Reading</div>
+      <img class="cert-bg" src="/public/Certificate.png" alt="Certificate Background">
+      <div class="cert-content">
+        <div class="student-name">${studentName}</div>
+        <div class="book-name">${book.title || 'Book'}</div>
+        ${coverUrl ? '<img class="book-cover" src="' + coverUrl + '" alt="Book Cover">' : ''}
+        <div class="cert-date">${dateStr}</div>
+      </div>
     </div>
   </body></html>`;
 
@@ -3939,10 +3856,11 @@ function printCertificate(params) {
   iframe.contentDocument.open();
   iframe.contentDocument.write(html);
   iframe.contentDocument.close();
+  // Wait longer for images to load before printing
   setTimeout(() => {
     iframe.contentWindow.print();
-    setTimeout(() => iframe.remove(), 1000);
-  }, 300);
+    setTimeout(() => iframe.remove(), 2000);
+  }, 800);
 }
 
 // ---- Page: Celebrate Students ----
@@ -3994,10 +3912,14 @@ function renderCelebrate() {
     </div>
 
     <div class="list-card" style="padding:24px;margin-top:24px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
         <div>
           <h3 style="margin:0 0 2px 0">🏆 Book Certificates</h3>
           <p style="font-size:0.8rem;color:var(--g400);margin:0">Print or download certificates for students who completed a book</p>
+        </div>
+        <div style="position:relative;min-width:200px">
+          <input type="text" id="cert-search" placeholder="Search student or book..." oninput="filterCertificates(this.value)" style="width:100%;padding:8px 12px 8px 34px;border:1px solid var(--g200);border-radius:8px;font-size:0.85rem;outline:none">
+          <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--g400);pointer-events:none">${IC.search}</span>
         </div>
       </div>
       <div id="certificate-list">
@@ -4006,6 +3928,8 @@ function renderCelebrate() {
     </div>`;
 }
 
+let _allCerts = []; // stored globally for search filtering
+
 function loadCertificateData() {
   const el = document.getElementById('certificate-list');
   if (!el) return;
@@ -4013,44 +3937,65 @@ function loadCertificateData() {
   Promise.all(students.map(s =>
     API.getBookProgress(s.id).then(progress => ({ student: s, progress: progress || [] })).catch(() => ({ student: s, progress: [] }))
   )).then(results => {
-    const certs = [];
+    _allCerts = [];
     results.forEach(({ student, progress }) => {
       (progress || []).filter(p => p.isComplete).forEach(p => {
         const b = books.find(bk => bk.id === p.bookId);
-        if (b) certs.push({ student, book: b, progress: p });
+        if (b) _allCerts.push({ student, book: b, progress: p });
       });
     });
 
-    if (certs.length === 0) {
+    if (_allCerts.length === 0) {
       el.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">No books completed yet. Certificates will appear here as students finish all chapters of a book.</div>';
       return;
     }
 
-    // Sort by student name then book title
-    certs.sort((a, b) => a.student.name.localeCompare(b.student.name) || a.book.title.localeCompare(b.book.title));
-
-    el.innerHTML = certs.map(c => {
-      const certParams = JSON.stringify({
-        studentName: c.student.name,
-        bookTitle: c.book.title,
-        bookAuthor: c.book.author || '',
-        score: null
-      }).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
-      const initials = c.student.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-      const color = c.student.color || '#2563EB';
-      return `<div style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-bottom:1px solid var(--g100);border-radius:8px">
-        <div style="width:36px;height:36px;border-radius:50%;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;flex-shrink:0">${escapeHtml(initials)}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:0.9rem;color:var(--navy)">${escapeHtml(c.student.name)}</div>
-          <div style="font-size:0.8rem;color:var(--g500)">Completed <strong>${escapeHtml(c.book.title)}</strong></div>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
-          <button class="btn btn-sm btn-primary" onclick="printCertificate(JSON.parse(decodeHTMLEntities(this.dataset.params)))" data-params="${certParams}">🖨️ Print</button>
-          <button class="btn btn-sm btn-outline" onclick="downloadCertificatePDF(JSON.parse(decodeHTMLEntities(this.dataset.params)))" data-params="${certParams}">📥 PDF</button>
-        </div>
-      </div>`;
-    }).join('');
+    _allCerts.sort((a, b) => a.student.name.localeCompare(b.student.name) || a.book.title.localeCompare(b.book.title));
+    renderCertificateList(_allCerts);
   });
+}
+
+function renderCertificateList(certs) {
+  const el = document.getElementById('certificate-list');
+  if (!el) return;
+  if (certs.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--g400);font-size:0.85rem">No matching certificates found.</div>';
+    return;
+  }
+  el.innerHTML = certs.map(c => {
+    const certParams = JSON.stringify({
+      studentName: c.student.name,
+      bookTitle: c.book.title,
+      bookAuthor: c.book.author || '',
+      coverUrl: c.book.cover_url || '',
+      score: null
+    }).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+    const initials = c.student.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    const color = c.student.color || '#2563EB';
+    return `<div style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-bottom:1px solid var(--g100);border-radius:8px">
+      <div style="width:36px;height:36px;border-radius:50%;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;flex-shrink:0">${escapeHtml(initials)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:0.9rem;color:var(--navy)">${escapeHtml(c.student.name)}</div>
+        <div style="font-size:0.8rem;color:var(--g500)">Completed <strong>${escapeHtml(c.book.title)}</strong></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn btn-sm btn-primary" onclick="printCertificate(JSON.parse(decodeHTMLEntities(this.dataset.params)))" data-params="${certParams}">🖨️ Print</button>
+        <button class="btn btn-sm btn-outline" onclick="downloadCertificatePDF(JSON.parse(decodeHTMLEntities(this.dataset.params)))" data-params="${certParams}">📥 PDF</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterCertificates(query) {
+  if (!query || query.trim() === '') {
+    renderCertificateList(_allCerts);
+    return;
+  }
+  const q = query.toLowerCase().trim();
+  const filtered = _allCerts.filter(c =>
+    c.student.name.toLowerCase().includes(q) || c.book.title.toLowerCase().includes(q)
+  );
+  renderCertificateList(filtered);
 }
 
 // ---- Page: Teaching Tools ----
@@ -6387,6 +6332,7 @@ function renderStudentQuizzes() {
             bookTitle: b.title || 'Book',
             bookAuthor: b.author || '',
             studentName: currentUser?.name || 'Student',
+            coverUrl: b.cover_url || '',
             dateStr: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
           }).replace(/"/g, '&quot;');
           return `
