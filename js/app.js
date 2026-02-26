@@ -1109,7 +1109,7 @@ function renderTeacherDashboard() {
       </div>
       <div class="list-card" style="padding:24px">
         <div style="display:flex;align-items:center;justify-content:space-between">
-          <h3 style="margin:0 0 4px 0">📖 All Popular Books</h3>
+          <h3 style="margin:0 0 4px 0">📖 Books Ranked by Popularity</h3>
           <button class="btn btn-sm btn-outline" onclick="showTop10BooksModal()" style="font-size:0.7rem">View Top 10 with Covers</button>
         </div>
         <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">Books your class is reading ranked by popularity</p>
