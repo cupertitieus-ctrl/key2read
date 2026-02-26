@@ -1095,7 +1095,7 @@ function renderTeacherDashboard() {
       <div class="list-card" style="padding:24px;cursor:pointer;display:flex;flex-direction:column" onclick="navigate('reports')">
         <h3 style="margin:0 0 4px 0">📈 Class Reading Score Trend</h3>
         <p style="font-size:0.8rem;color:var(--g400);margin:0 0 8px 0">Weekly average score · <span style="color:var(--blue);font-weight:600">View Full Report →</span></p>
-        <div style="flex:1;display:flex;align-items:stretch">${trendChart}</div>
+        <div style="flex:1;min-height:250px">${trendChart}</div>
       </div>
     </div>
 
