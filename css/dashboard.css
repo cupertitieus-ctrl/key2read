@@ -727,6 +727,85 @@
   }
 }
 
+/* ─── DASHBOARD BADGES SECTION (student dashboard) ─── */
+.dashboard-badges-section {
+  margin-bottom: 24px;
+}
+.dashboard-badge-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.dashboard-badge-card {
+  background: #fff;
+  border: 2px solid var(--g200);
+  border-radius: var(--radius-lg, 16px);
+  padding: 16px 8px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.dashboard-badge-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.dashboard-badge-card.locked {
+  opacity: 0.5;
+}
+.dashboard-badge-card.locked .dashboard-badge-img {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+.dashboard-badge-img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
+.dashboard-badge-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--g700);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+.dashboard-badge-status {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.dashboard-badge-status.earned {
+  background: #ECFDF5;
+  color: #059669;
+}
+.dashboard-badge-status.locked-label {
+  background: var(--g100);
+  color: var(--g400);
+}
+
+@media (max-width: 768px) {
+  .dashboard-badge-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .dashboard-badge-img {
+    width: 56px;
+    height: 56px;
+  }
+  .dashboard-badge-name {
+    font-size: 0.65rem;
+  }
+}
+@media (max-width: 480px) {
+  .dashboard-badge-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 /* ─── WEEKLY WINS SECTION (My Reading Progress page) ─── */
 .weekly-wins-section {
   margin-bottom: 24px;
