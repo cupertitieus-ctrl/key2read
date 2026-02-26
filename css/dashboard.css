@@ -348,6 +348,47 @@
   border: 2px solid #fff;
 }
 
+/* --- Profile Dropdown Menu --- */
+.profile-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: #fff;
+  border: 1px solid var(--g200);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.profile-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--g700);
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.profile-dropdown-item:hover {
+  background: var(--g50);
+}
+
+.profile-dropdown-item-danger {
+  color: var(--red, #EF4444);
+}
+
+.profile-dropdown-item-danger:hover {
+  background: #FEF2F2;
+}
+
 /* --- Main Content --- */
 .dash-main {
   padding: 28px 32px;
@@ -378,6 +419,45 @@
   gap: 10px;
 }
 
+/* --- Dashboard Icon Buttons (bell, gear) --- */
+.dash-icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--g200);
+  background: #fff;
+  color: var(--g500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+
+.dash-icon-btn:hover {
+  background: var(--g50);
+  color: var(--blue);
+  border-color: var(--blue);
+}
+
+.dash-icon-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--red, #EF4444);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
 /* --- Stat Cards Row --- */
 .stat-cards {
   display: grid;
@@ -402,11 +482,11 @@
   color: #fff;
 }
 
-.stat-card:nth-child(1) { background: var(--blue); animation-delay: 0ms; }
-.stat-card:nth-child(2) { background: var(--green); animation-delay: 60ms; }
-.stat-card:nth-child(3) { background: var(--gold); animation-delay: 120ms; }
-.stat-card:nth-child(4) { background: var(--purple); animation-delay: 180ms; }
-.stat-card:nth-child(5) { background: var(--orange); animation-delay: 240ms; }
+.stat-card:nth-child(1) { background: linear-gradient(135deg, #60A5FA, #1D4ED8); animation-delay: 0ms; }
+.stat-card:nth-child(2) { background: linear-gradient(135deg, #34D399, #047857); animation-delay: 60ms; }
+.stat-card:nth-child(3) { background: linear-gradient(135deg, #FBBF24, #D97706); animation-delay: 120ms; }
+.stat-card:nth-child(4) { background: linear-gradient(135deg, #A78BFA, #6D28D9); animation-delay: 180ms; }
+.stat-card:nth-child(5) { background: linear-gradient(135deg, #FB923C, #C2410C); animation-delay: 240ms; }
 
 .stat-card:hover {
   box-shadow: var(--sh-md);
@@ -417,7 +497,7 @@
 .stat-card::before { display: none; }
 
 .stat-card-label {
-  font-size: 0.8125rem;
+  font-size: 1rem;
   color: rgba(255,255,255,0.85);
   font-weight: 500;
   margin-bottom: 6px;
@@ -3450,6 +3530,29 @@
   color: var(--g500);
   margin: 0;
   line-height: 1.4;
+}
+
+/* --- Dashboard Help Modal (Larger) --- */
+.gs-step-lg {
+  padding: 18px 22px;
+  gap: 18px;
+}
+
+.gs-step-lg strong {
+  font-size: 1.1rem;
+  margin-bottom: 4px;
+}
+
+.gs-step-lg p {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.gs-step-num-lg {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  font-size: 1rem;
 }
 
 /* --- Store Edit Card --- */

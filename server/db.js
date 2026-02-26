@@ -1721,8 +1721,8 @@ async function getPopularBooks(classId) {
 }
 
 // ─── Weekly Growth Data for a class (for Class Reading Score Trend chart) ───
-async function getWeeklyGrowthData(classId, weeks) {
-  weeks = weeks || 8;
+async function getWeeklyGrowthData(classId, range) {
+  range = range || 'week';
   // Get all students in this class
   const { data: classStudents, error: sErr } = await supabase
     .from('students')
@@ -1732,65 +1732,96 @@ async function getWeeklyGrowthData(classId, weeks) {
   if (sErr || !classStudents || classStudents.length === 0) return [];
 
   const studentIds = classStudents.map(s => s.id);
-
-  // Calculate week boundaries from N weeks ago to NOW (including current partial week)
   const now = new Date();
+
+  // Calculate start date based on range
+  let startDate;
   const dayOfWeek = now.getUTCDay();
   const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
   const thisMonday = new Date(now);
   thisMonday.setUTCDate(now.getUTCDate() - daysSinceMonday);
   thisMonday.setUTCHours(0, 0, 0, 0);
 
-  // Build week boundaries: N weeks ago → next Monday (to include current week)
-  const weekBoundaries = [];
-  for (let i = weeks; i >= -1; i--) {
-    const d = new Date(thisMonday);
-    d.setUTCDate(thisMonday.getUTCDate() - (i * 7));
-    weekBoundaries.push(d);
+  if (range === 'week') {
+    startDate = thisMonday;
+  } else if (range === 'month') {
+    startDate = new Date(now);
+    startDate.setUTCDate(now.getUTCDate() - 28);
+    startDate.setUTCHours(0, 0, 0, 0);
+  } else if (range === 'quarter') {
+    startDate = new Date(now);
+    startDate.setUTCMonth(now.getUTCMonth() - 3);
+    startDate.setUTCHours(0, 0, 0, 0);
+  } else { // year
+    startDate = new Date(now);
+    startDate.setUTCFullYear(now.getUTCFullYear() - 1);
+    startDate.setUTCHours(0, 0, 0, 0);
   }
 
-  const startDate = weekBoundaries[0].toISOString();
-
-  // Get ALL reading_level_history entries for these students in the window
+  // Get reading_level_history entries
   const { data: history, error: hErr } = await supabase
     .from('reading_level_history')
     .select('student_id, lexile, recorded_at')
     .in('student_id', studentIds)
-    .gte('recorded_at', startDate)
+    .gte('recorded_at', startDate.toISOString())
     .order('recorded_at');
 
-  console.log('[WeeklyGrowth] classId=' + classId + ' students=' + studentIds.length + ' history_rows=' + (history ? history.length : 0));
+  console.log('[Growth] range=' + range + ' classId=' + classId + ' students=' + studentIds.length + ' rows=' + (history ? history.length : 0));
 
   if (!history || history.length === 0) return [];
 
-  // Group history entries into weeks and compute average
-  const weeklyData = [];
-  for (let w = 0; w <= weeks; w++) {
-    const weekStart = weekBoundaries[w];
-    const weekEnd = weekBoundaries[w + 1];
-    const label = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-    // Find all reading_level_history entries in this week
-    const weekEntries = history.filter(h => {
-      const d = new Date(h.recorded_at);
-      return d >= weekStart && d < weekEnd;
-    });
-
-    if (weekEntries.length === 0) continue; // Skip weeks with no data
-
-    // For each student, use their LAST (most recent) entry in this week
+  // Helper: compute average from entries
+  function avgFromEntries(entries) {
     const studentScores = {};
-    weekEntries.forEach(h => {
-      studentScores[h.student_id] = h.lexile || 500;
-    });
-
+    entries.forEach(h => { studentScores[h.student_id] = h.lexile || 500; });
     const scores = Object.values(studentScores);
-    const avg = Math.round(scores.reduce((s, v) => s + v, 0) / scores.length);
-    weeklyData.push({ label, avgScore: avg, quizCount: weekEntries.length });
+    return scores.length > 0 ? Math.round(scores.reduce((s, v) => s + v, 0) / scores.length) : 0;
   }
 
-  console.log('[WeeklyGrowth] returning ' + weeklyData.length + ' data points:', JSON.stringify(weeklyData));
-  return weeklyData;
+  const results = [];
+
+  if (range === 'week') {
+    // Daily buckets: Mon–Fri
+    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    for (let d = 0; d < 5; d++) {
+      const dayStart = new Date(thisMonday);
+      dayStart.setUTCDate(thisMonday.getUTCDate() + d);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setUTCDate(dayStart.getUTCDate() + 1);
+      if (dayStart > now) break;
+      const entries = history.filter(h => { const dt = new Date(h.recorded_at); return dt >= dayStart && dt < dayEnd; });
+      if (entries.length === 0) continue;
+      results.push({ label: dayNames[d], avgScore: avgFromEntries(entries), quizCount: entries.length });
+    }
+  } else if (range === 'month') {
+    // Weekly buckets: 4 weeks
+    for (let w = 3; w >= 0; w--) {
+      const wStart = new Date(now);
+      wStart.setUTCDate(now.getUTCDate() - (w * 7) - 6);
+      wStart.setUTCHours(0, 0, 0, 0);
+      const wEnd = new Date(wStart);
+      wEnd.setUTCDate(wStart.getUTCDate() + 7);
+      const label = 'Week ' + (4 - w);
+      const entries = history.filter(h => { const dt = new Date(h.recorded_at); return dt >= wStart && dt < wEnd; });
+      if (entries.length === 0) continue;
+      results.push({ label, avgScore: avgFromEntries(entries), quizCount: entries.length });
+    }
+  } else {
+    // Monthly buckets for quarter (3 months) or year (12 months)
+    const monthCount = range === 'quarter' ? 3 : 12;
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    for (let m = monthCount - 1; m >= 0; m--) {
+      const mStart = new Date(now.getUTCFullYear(), now.getUTCMonth() - m, 1);
+      const mEnd = new Date(now.getUTCFullYear(), now.getUTCMonth() - m + 1, 1);
+      const label = monthNames[mStart.getMonth()];
+      const entries = history.filter(h => { const dt = new Date(h.recorded_at); return dt >= mStart && dt < mEnd; });
+      if (entries.length === 0) continue;
+      results.push({ label, avgScore: avgFromEntries(entries), quizCount: entries.length });
+    }
+  }
+
+  console.log('[Growth] returning ' + results.length + ' data points');
+  return results;
 }
 
 // ─── Recent Activity for a class ───
@@ -1984,12 +2015,7 @@ module.exports = {
   deleteRewardGalleryItem,
   getPopularBooks,
   getRecentActivity,
-  getWeeklyGrowthData,
-  createClassGoal,
-  getClassGoals,
-  getClassGoalProgress,
-  checkAndUpdateGoalProgress,
-  deleteClassGoal
+  getWeeklyGrowthData
 };
 
 async function getFullBookQuiz(bookId) {

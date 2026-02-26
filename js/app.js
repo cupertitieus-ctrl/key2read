@@ -519,40 +519,99 @@ function svgGradientAreaChart(data, labels, w, h) {
 
 function svgPieChart(slices, size) {
   size = size || 220;
-  const cx = size / 2, cy = size / 2, r = size / 2 - 10;
+  const cx = size / 2, cy = size / 2;
+  const outerR = size / 2 - 10;
+  const innerR = outerR * 0.6; // donut hole
   let total = slices.reduce((s, sl) => s + sl.value, 0);
   if (total === 0) return '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">No data yet</div>';
 
+  // Gradient color pairs: lighter → darker for each base color
+  const gradientMap = {
+    '#EF4444': ['#F87171', '#DC2626'], // red
+    '#F59E0B': ['#FBBF24', '#D97706'], // amber/orange
+    '#10B981': ['#34D399', '#059669'], // green
+    '#2563EB': ['#60A5FA', '#1D4ED8'], // blue
+  };
+
+  // Calculate "on/above level" percentage (On Track + Advanced)
+  let onAboveCount = 0;
+  slices.forEach(sl => {
+    if (sl.label && (sl.label.includes('On Track') || sl.label.includes('Advanced'))) {
+      onAboveCount += sl.value;
+    }
+  });
+  const onAbovePct = Math.round((onAboveCount / total) * 100);
+
+  // Build gradient defs
+  let defs = '<defs>';
+  slices.forEach((sl, i) => {
+    const pair = gradientMap[sl.color] || [sl.color, sl.color];
+    defs += `<linearGradient id="donut-grad-${i}" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="${pair[0]}"/>
+      <stop offset="100%" stop-color="${pair[1]}"/>
+    </linearGradient>`;
+  });
+  defs += '</defs>';
+
   let startAngle = -Math.PI / 2;
   let paths = '';
-  slices.forEach(sl => {
+  let sliceIdx = 0;
+  slices.forEach((sl, i) => {
     if (sl.value === 0) return;
     const pct = sl.value / total;
     const endAngle = startAngle + pct * 2 * Math.PI;
     const largeArc = pct > 0.5 ? 1 : 0;
-    const x1 = cx + r * Math.cos(startAngle);
-    const y1 = cy + r * Math.sin(startAngle);
-    const x2 = cx + r * Math.cos(endAngle);
-    const y2 = cy + r * Math.sin(endAngle);
+    const fillRef = `url(#donut-grad-${i})`;
+    // Outer arc points
+    const ox1 = cx + outerR * Math.cos(startAngle);
+    const oy1 = cy + outerR * Math.sin(startAngle);
+    const ox2 = cx + outerR * Math.cos(endAngle);
+    const oy2 = cy + outerR * Math.sin(endAngle);
+    // Inner arc points (reversed)
+    const ix1 = cx + innerR * Math.cos(endAngle);
+    const iy1 = cy + innerR * Math.sin(endAngle);
+    const ix2 = cx + innerR * Math.cos(startAngle);
+    const iy2 = cy + innerR * Math.sin(startAngle);
+
     if (pct >= 0.999) {
-      paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${sl.color}" stroke="#fff" stroke-width="2"/>`;
+      // Full circle donut
+      paths += `<circle cx="${cx}" cy="${cy}" r="${outerR}" fill="${fillRef}"/>`;
+      paths += `<circle cx="${cx}" cy="${cy}" r="${innerR}" fill="#fff"/>`;
     } else {
-      paths += `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc} 1 ${x2},${y2} Z" fill="${sl.color}" stroke="#fff" stroke-width="2"/>`;
+      paths += `<path d="M${ox1},${oy1} A${outerR},${outerR} 0 ${largeArc} 1 ${ox2},${oy2} L${ix1},${iy1} A${innerR},${innerR} 0 ${largeArc} 0 ${ix2},${iy2} Z" fill="${fillRef}" stroke="#fff" stroke-width="2"/>`;
     }
+
+    // Label with count on the arc
+    const midAngle = startAngle + (pct * Math.PI);
+    const labelR = (outerR + innerR) / 2;
+    const lx = cx + labelR * Math.cos(midAngle);
+    const ly = cy + labelR * Math.sin(midAngle);
+    if (pct >= 0.05) {
+      paths += `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="${Math.round(size * 0.055)}" font-weight="700">${sl.value}</text>`;
+    }
+
     startAngle = endAngle;
+    sliceIdx++;
   });
 
+  // Center text
+  const centerText = `
+    <text x="${cx}" y="${cy - size * 0.06}" text-anchor="middle" dominant-baseline="central" fill="#1B5E20" font-size="${Math.round(size * 0.12)}" font-weight="800">${onAbovePct}%</text>
+    <text x="${cx}" y="${cy + size * 0.06}" text-anchor="middle" dominant-baseline="central" fill="#6B7280" font-size="${Math.round(size * 0.042)}" font-weight="600">ON / ABOVE</text>
+    <text x="${cx}" y="${cy + size * 0.1}" text-anchor="middle" dominant-baseline="central" fill="#6B7280" font-size="${Math.round(size * 0.042)}" font-weight="600">LEVEL</text>`;
+
   const legend = slices.filter(sl => sl.value > 0).map(sl => {
+    const pair = gradientMap[sl.color] || [sl.color, sl.color];
     const pct = Math.round((sl.value / total) * 100);
     return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-      <div style="width:12px;height:12px;border-radius:3px;background:${sl.color};flex-shrink:0"></div>
+      <div style="width:12px;height:12px;border-radius:3px;background:linear-gradient(135deg, ${pair[0]}, ${pair[1]});flex-shrink:0"></div>
       <span style="font-size:0.8rem;color:var(--g600)">${sl.label}</span>
       <span style="margin-left:auto;font-size:0.8rem;font-weight:700;color:var(--navy)">${sl.value} (${pct}%)</span>
     </div>`;
   }).join('');
 
   return `<div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;justify-content:center">
-    <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="flex-shrink:0">${paths}</svg>
+    <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="flex-shrink:0">${defs}${paths}${centerText}</svg>
     <div style="flex:1;min-width:140px">${legend}</div>
   </div>`;
 }
@@ -671,8 +730,6 @@ function renderSidebar() {
       { id: 'class-goals', icon: IC.trend, label: 'Class Goals' },
       { id: 'celebrate',  icon: IC.star,  label: 'Celebrate Students' },
       { id: 'aitools',    icon: IC.bulb,  label: 'Teaching Tools' },
-      { section: 'Account' },
-      { id: 'teacher-settings', icon: IC.gear, label: 'Settings' },
     ];
   }
 
@@ -798,13 +855,29 @@ function renderHeader() {
       <input type="text" id="global-search-input" placeholder="${userRole === 'student' ? 'Search books, quizzes...' : 'Search students, books, quizzes...'}" oninput="handleGlobalSearch(this.value)">
     </div>
     <div class="header-actions">
-      <div class="header-profile">
-        <div class="header-avatar">${hInitials}</div>
-        <div class="header-user-info">
-          <div class="header-user-name">${escapeHtml(hUserName)}</div>
-          <div class="header-user-role">${hRole}</div>
+      ${userRole === 'teacher' ? `<button class="dash-icon-btn" onclick="navigate('purchases')" title="Recent Purchases">
+        <span style="width:20px;height:20px;display:inline-flex">${IC.bell}</span>
+        ${window._purchaseCount > 0 ? `<span class="dash-icon-badge">${window._purchaseCount}</span>` : ''}
+      </button>
+      <button class="dash-icon-btn" onclick="navigate('teacher-settings')" title="Settings">
+        <span style="width:20px;height:20px;display:inline-flex">${IC.gear}</span>
+      </button>` : ''}
+      <div class="header-profile-dropdown" style="position:relative">
+        <button class="header-profile-btn" onclick="toggleProfileDropdown()" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;padding:4px">
+          <div class="header-avatar">${hInitials}</div>
+        </button>
+        <div id="profile-dropdown-menu" class="profile-dropdown-menu" style="display:none">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--g100)">
+            <div style="font-weight:600;color:var(--navy);font-size:0.875rem">${escapeHtml(hUserName)}</div>
+            <div style="font-size:0.75rem;color:var(--g400)">${hRole}</div>
+          </div>
+          ${userRole === 'teacher' ? `<button class="profile-dropdown-item" onclick="navigate('teacher-settings'); closeProfileDropdown()">
+            <span style="width:16px;height:16px;display:inline-flex">${IC.gear}</span> Settings
+          </button>` : ''}
+          <button class="profile-dropdown-item profile-dropdown-item-danger" onclick="handleLogout()">
+            <span style="width:16px;height:16px;display:inline-flex">${IC.logout}</span> Sign Out
+          </button>
         </div>
-        <button class="header-logout-btn" onclick="handleLogout()" title="Log out">${IC.logout}</button>
       </div>
     </div>`;
 }
@@ -816,6 +889,35 @@ async function handleLogout() {
   localStorage.removeItem('k2r_student_name');
   localStorage.removeItem('k2r_student_classcode');
   window.location.href = 'signin.html';
+}
+
+// ---- Profile Dropdown ----
+function toggleProfileDropdown() {
+  const menu = document.getElementById('profile-dropdown-menu');
+  if (!menu) return;
+  const isOpen = menu.style.display !== 'none';
+  menu.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    // Close on outside click
+    setTimeout(() => {
+      document.addEventListener('click', closeProfileDropdownOutside, { once: true });
+    }, 0);
+  }
+}
+
+function closeProfileDropdown() {
+  const menu = document.getElementById('profile-dropdown-menu');
+  if (menu) menu.style.display = 'none';
+}
+
+function closeProfileDropdownOutside(e) {
+  const dropdown = document.querySelector('.header-profile-dropdown');
+  if (dropdown && !dropdown.contains(e.target)) {
+    closeProfileDropdown();
+  } else if (dropdown && dropdown.contains(e.target)) {
+    // Re-attach listener if click was inside
+    document.addEventListener('click', closeProfileDropdownOutside, { once: true });
+  }
 }
 
 // ---- Mobile Sidebar Toggle ----
@@ -1092,7 +1194,7 @@ function renderTeacherDashboard() {
   return `
     <div class="page-header">
       <h1><img src="/public/logo.png" alt="key2read" style="height:44px;width:auto;vertical-align:middle;margin-right:10px">Dashboard</h1>
-      <div class="page-header-actions" style="display:flex;align-items:center;gap:16px">
+      <div class="page-header-actions" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <button class="btn btn-outline btn-sm" onclick="openModal('dashboard-help')" style="font-size:0.8rem;padding:6px 14px;border-radius:20px">&#10067; How This Dashboard Works</button>
         <span style="font-size:0.875rem;color:var(--g500)">${currentUser?.name || 'Teacher'}'s Class</span>
         ${currentUser?.classCode ? `<div style="display:flex;align-items:center;gap:8px;background:var(--blue-p, #EFF6FF);padding:8px 16px;border-radius:10px;border:2px dashed var(--blue)">
@@ -1134,7 +1236,7 @@ function renderTeacherDashboard() {
       </div>
       <div class="list-card" style="padding:24px;cursor:pointer;display:flex;flex-direction:column" onclick="navigate('reports')">
         <h3 style="margin:0 0 4px 0">📈 Class Reading Score Trend</h3>
-        <p style="font-size:0.8rem;color:var(--g400);margin:0 0 8px 0">Weekly average score · <span style="color:var(--blue);font-weight:600">View Full Report →</span></p>
+        <p style="font-size:0.8rem;color:var(--g400);margin:0 0 8px 0">This week's daily average · <span style="color:var(--blue);font-weight:600">View Full Report →</span></p>
         <div style="flex:1;min-height:200px">${trendChart}</div>
       </div>
     </div>
@@ -1183,8 +1285,8 @@ function loadTeacherDashboardData() {
   const classId = currentUser?.classId;
   if (!classId) return;
 
-  // Weekly growth chart (real data from reading_level_history)
-  API.getWeeklyGrowth(classId, 12).then(function(data) {
+  // Weekly growth chart (real data from reading_level_history) — dashboard always shows this week
+  API.getWeeklyGrowth(classId, 'week').then(function(data) {
     var container = document.getElementById('trend-chart-container');
     if (!container) return;
     console.log('[Dashboard] Weekly growth data:', JSON.stringify(data));
@@ -1291,8 +1393,8 @@ function loadTeacherDashboardData() {
   window._purchaseData = null;
   API.getRecentPurchases(classId).then(data => {
     console.log('Purchase data loaded:', data?.length || 0, 'items');
-    window._purchaseCount = (data || []).length;
     window._purchaseData = data || [];
+    window._purchaseCount = (data || []).filter(p => !p.fulfilled).length;
     renderSidebar(); // refresh badge count
     const el = document.getElementById('purchase-notifications');
     if (!el) return;
@@ -1350,6 +1452,14 @@ function formatTimeAgo(dateStr) {
 async function togglePurchaseFulfilled(purchaseId, fulfilled) {
   try {
     await API.fulfillPurchase(purchaseId, fulfilled);
+    // Update cached data
+    if (window._purchaseData) {
+      const item = window._purchaseData.find(p => p.id === purchaseId);
+      if (item) item.fulfilled = fulfilled;
+    }
+    // Update unfulfilled count and sidebar badge
+    window._purchaseCount = (window._purchaseData || []).filter(p => !p.fulfilled).length;
+    renderSidebar();
     const row = document.getElementById('purchase-row-' + purchaseId);
     if (row) {
       row.style.opacity = fulfilled ? '0.6' : '1';
@@ -1362,9 +1472,20 @@ async function togglePurchaseFulfilled(purchaseId, fulfilled) {
     if (storeRow) {
       storeRow.style.opacity = fulfilled ? '0.6' : '1';
     }
+    // Also update the dedicated purchases page row if visible
+    const pageRow = document.getElementById('purchases-page-row-' + purchaseId);
+    if (pageRow) {
+      pageRow.style.opacity = fulfilled ? '0.6' : '1';
+    }
   } catch (e) {
     console.error('Failed to toggle fulfilled:', e);
-    // Revert the checkbox
+    // Revert the checkbox and cached data
+    if (window._purchaseData) {
+      const item = window._purchaseData.find(p => p.id === purchaseId);
+      if (item) item.fulfilled = !fulfilled;
+    }
+    window._purchaseCount = (window._purchaseData || []).filter(p => !p.fulfilled).length;
+    renderSidebar();
     const row = document.getElementById('purchase-row-' + purchaseId);
     if (row) {
       const cb = row.querySelector('input[type="checkbox"]');
@@ -1615,15 +1736,15 @@ function renderQuizzes() {
         <div class="stat-card-value">${students.length}</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('reports')">
-        <div class="stat-card-label">Average Reading Score</div>
+        <div class="stat-card-label">Average Reading Score <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Reading Score', 'A composite score (0–1000) based on quiz accuracy, reading effort, independence (fewer hints), vocabulary growth, and persistence. Each quiz adjusts the score up or down based on performance. Click to see Growth Reports.')">?</button></div>
         <div class="stat-card-value">${avgScore}</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('reports')">
-        <div class="stat-card-label">Average Comprehension</div>
+        <div class="stat-card-label">Average Comprehension <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Comprehension', 'The average percentage of quiz questions your students answer correctly. A higher number means students are understanding what they read.')">?</button></div>
         <div class="stat-card-value">${avgAcc}%</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('store')">
-        <div class="stat-card-label">Total Keys Earned</div>
+        <div class="stat-card-label">Total Keys Earned <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Total Keys Earned', 'Keys are rewards students earn by passing quizzes with 80% or higher. Students can spend keys in the Class Store to redeem prizes you set up.')">?</button></div>
         <div class="stat-card-value">${totalKeys.toLocaleString()}</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('library')">
@@ -2350,24 +2471,30 @@ function renderPurchasesPage() {
     ? '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">No purchases yet — when students spend Keys in the store, you\'ll see them here!</div>'
     : data.map(function(p) {
         var timeAgo = formatTimeAgo(p.purchasedAt);
+        var dateStr = p.purchasedAt ? new Date(p.purchasedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
         var st = students.find(function(s) { return s.name === p.studentName; });
         var initials = p.studentName.split(' ').map(function(n) { return n[0]; }).join('').substring(0, 2).toUpperCase();
         var color = st ? st.color : '#8B5CF6';
-        return '<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--g100)">' +
+        var checkedAttr = p.fulfilled ? 'checked' : '';
+        var fulfilledStyle = p.fulfilled ? 'opacity:0.6;' : '';
+        return '<div id="purchases-page-row-' + p.id + '" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--g100);' + fulfilledStyle + '">' +
+          '<label style="display:flex;align-items:center;cursor:pointer;flex-shrink:0" title="' + (p.fulfilled ? 'Prize given' : 'Mark as given') + '">' +
+            '<input type="checkbox" ' + checkedAttr + ' onchange="togglePurchaseFulfilled(' + p.id + ', this.checked)" style="width:20px;height:20px;accent-color:var(--green, #10B981);cursor:pointer">' +
+          '</label>' +
           '<div style="width:36px;height:36px;border-radius:50%;background:' + color + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.7rem;flex-shrink:0">' + escapeHtml(initials) + '</div>' +
           '<div style="flex:1;min-width:0">' +
             '<div><span style="font-weight:700;color:var(--navy)">' + escapeHtml(p.studentName) + '</span> <span style="color:var(--g500)">purchased</span> <span style="font-weight:700;color:var(--purple)">' + escapeHtml(p.itemName) + '</span></div>' +
-            '<div style="font-size:0.75rem;color:var(--g400);margin-top:2px">' + timeAgo + '</div>' +
+            '<div style="font-size:0.75rem;color:var(--g400);margin-top:2px">' + dateStr + ' · ' + timeAgo + (p.fulfilled ? ' · <span style="color:var(--green, #10B981);font-weight:600">✓ Prize given</span>' : '') + '</div>' +
           '</div>' +
           '<div style="font-weight:700;color:var(--gold);font-size:0.9rem;flex-shrink:0">🔑 ' + p.price + '</div>' +
         '</div>';
       }).join('');
 
-  return '<div class="page-header"><h1>' + IC.key + ' Recent Purchases</h1></div>' +
+  return '<div class="page-header"><h1>🔑 Recent Purchases</h1></div>' +
     '<div class="list-card" style="margin-top:8px">' +
       '<div style="padding:16px 20px;border-bottom:1px solid var(--g150);display:flex;align-items:center;justify-content:space-between">' +
-        '<span style="font-weight:700;color:var(--navy)">' + data.length + ' purchase' + (data.length !== 1 ? 's' : '') + '</span>' +
-        '<span style="font-size:0.8rem;color:var(--g400)">Students spending Keys in the Class Store</span>' +
+        '<span style="font-weight:700;color:var(--navy)">' + data.length + ' purchase' + (data.length !== 1 ? 's' : '') + (window._purchaseCount > 0 ? ' · <span style="color:var(--purple);font-size:0.85rem">' + window._purchaseCount + ' to give out</span>' : ' · <span style="color:var(--green, #10B981);font-size:0.85rem">All given out ✓</span>') + '</span>' +
+        '<span style="font-size:0.8rem;color:var(--g400)">Check off prizes as you give them to students</span>' +
       '</div>' +
       purchaseRows +
     '</div>';
@@ -2430,7 +2557,7 @@ function loadStorePurchaseNotifications() {
   var fetchPromise = window._purchaseData ? Promise.resolve(window._purchaseData) : API.getRecentPurchases(classId);
   fetchPromise.then(data => {
     window._purchaseData = data || [];
-    window._purchaseCount = (data || []).length;
+    window._purchaseCount = (data || []).filter(p => !p.fulfilled).length;
     const el = document.getElementById('store-purchase-notifications');
     if (!el) return;
     if (!data || data.length === 0) {
@@ -4003,12 +4130,48 @@ function renderParentSettings() {
   <\/script>`;
 }
 
-// ─── CLASS GOALS ───────────────────────────────────────────────
+// ─── CLASS GOALS (localStorage-based) ──────────────────────────
 let classGoalsData = [];
-let classGoalsLoaded = false;
+
+function getGoalsStorageKey() {
+  return 'k2r_goals_' + (currentUser?.classId || 'default');
+}
+
+function loadGoalsFromStorage() {
+  try {
+    const raw = localStorage.getItem(getGoalsStorageKey());
+    classGoalsData = raw ? JSON.parse(raw) : [];
+  } catch (e) { classGoalsData = []; }
+}
+
+function saveGoalsToStorage() {
+  try {
+    localStorage.setItem(getGoalsStorageKey(), JSON.stringify(classGoalsData));
+  } catch (e) { console.error('Error saving goals:', e); }
+}
+
+function getGoalCompletions(goal) {
+  // Calculate who completed the goal from the already-loaded students array
+  const completed = [];
+  for (const s of students) {
+    if (goal.goal_type === 'quizzes') {
+      if ((s.quizzes_completed || 0) >= goal.target_count) {
+        completed.push({ name: s.name, id: s.id });
+      }
+    }
+    // For book goals we also check quizzes_completed as a proxy
+    // (full book tracking would require chapter-level data)
+    if (goal.goal_type === 'book') {
+      if ((s.quizzes_completed || 0) >= 1) {
+        completed.push({ name: s.name, id: s.id });
+      }
+    }
+  }
+  return completed;
+}
 
 function renderClassGoals() {
-  const classId = currentUser?.classId;
+  loadGoalsFromStorage();
   return `
     <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
       <div>
@@ -4018,9 +4181,7 @@ function renderClassGoals() {
       <button class="btn btn-primary btn-sm" onclick="openCreateGoalModal()">&#10133; New Goal</button>
     </div>
 
-    <div id="class-goals-list" style="margin-top:24px">
-      <div style="text-align:center;padding:40px 0;color:var(--g400)">Loading goals...</div>
-    </div>
+    <div id="class-goals-list" style="margin-top:24px"></div>
 
     ${renderCreateGoalModal()}
     ${renderGoalProgressModal()}
@@ -4075,9 +4236,7 @@ function renderGoalProgressModal() {
           <h3 id="goal-progress-title" style="margin:0">Goal Progress</h3>
           <button class="modal-close" onclick="closeGoalModal('goal-progress-modal')">&times;</button>
         </div>
-        <div id="goal-progress-content" style="padding:20px">
-          <p style="color:var(--g400);text-align:center">Loading...</p>
-        </div>
+        <div id="goal-progress-content" style="padding:20px"></div>
       </div>
     </div>
   `;
@@ -4101,39 +4260,35 @@ function openCreateGoalModal() {
   if (m) m.style.display = 'flex';
 }
 
-async function submitClassGoal() {
-  const classId = currentUser?.classId;
-  if (!classId) return;
+function submitClassGoal() {
   const title = document.getElementById('goal-title')?.value?.trim();
   const goalType = document.getElementById('goal-type')?.value || 'quizzes';
   const targetCount = parseInt(document.getElementById('goal-target')?.value) || 1;
   const bookId = goalType === 'book' ? parseInt(document.getElementById('goal-book')?.value) : null;
+  const bookTitle = goalType === 'book' ? document.getElementById('goal-book')?.selectedOptions?.[0]?.text : null;
 
   if (!title) { alert('Please enter a goal title'); return; }
 
-  try {
-    await API.createClassGoal(classId, { title, goalType, targetCount, bookId });
-    closeGoalModal('create-goal-modal');
-    document.getElementById('goal-title').value = '';
-    loadClassGoalsData();
-  } catch (e) {
-    alert('Error creating goal: ' + e.message);
-  }
+  const goal = {
+    id: Date.now(),
+    title,
+    goal_type: goalType,
+    target_count: targetCount,
+    book_id: bookId,
+    book_title: bookTitle,
+    created_at: new Date().toISOString()
+  };
+
+  classGoalsData.push(goal);
+  saveGoalsToStorage();
+  closeGoalModal('create-goal-modal');
+  document.getElementById('goal-title').value = '';
+  renderGoalsList();
 }
 
-async function loadClassGoalsData() {
-  const classId = currentUser?.classId;
-  if (!classId) return;
-  try {
-    const goals = await API.getClassGoals(classId);
-    classGoalsData = goals || [];
-    classGoalsLoaded = true;
-    renderGoalsList();
-  } catch (e) {
-    console.error('Error loading goals:', e);
-    const el = document.getElementById('class-goals-list');
-    if (el) el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--g400)">Could not load goals</div>';
-  }
+function loadClassGoalsData() {
+  loadGoalsFromStorage();
+  renderGoalsList();
 }
 
 function renderGoalsList() {
@@ -4155,111 +4310,85 @@ function renderGoalsList() {
   const totalStudents = students.length;
 
   el.innerHTML = classGoalsData.map(goal => {
-    const typeLabel = goal.goal_type === 'book' ? '&#128218; Complete a Book' : `&#128221; Complete ${goal.target_count} Quiz${goal.target_count > 1 ? 'zes' : ''}`;
-    const goalId = goal.id;
+    const typeLabel = goal.goal_type === 'book'
+      ? '&#128218; Complete a Book' + (goal.book_title ? ' — ' + escapeHtml(goal.book_title) : '')
+      : `&#128221; Complete ${goal.target_count} Quiz${goal.target_count > 1 ? 'zes' : ''}`;
+    const completed = getGoalCompletions(goal);
+    const pct = totalStudents > 0 ? Math.round((completed.length / totalStudents) * 100) : 0;
+    const barColor = pct >= 100 ? 'linear-gradient(90deg,#10B981,#34D399)' : pct >= 50 ? 'linear-gradient(90deg,#2563EB,#60A5FA)' : 'linear-gradient(90deg,#F59E0B,#FBBF24)';
 
     return `
-      <div class="list-card" style="margin-bottom:16px;padding:0;overflow:hidden" id="goal-card-${goalId}">
+      <div class="list-card" style="margin-bottom:16px;padding:0;overflow:hidden">
         <div style="padding:20px">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px">
             <div>
               <h3 style="margin:0 0 4px;font-size:1.1rem">${escapeHtml(goal.title)}</h3>
               <span style="font-size:0.8rem;color:var(--g400)">${typeLabel}</span>
             </div>
-            <button class="btn btn-ghost btn-sm" onclick="confirmDeleteGoal(${goalId})" style="color:var(--g400);font-size:0.75rem;padding:4px 8px" title="Remove goal">&#128465;</button>
+            <button class="btn btn-ghost btn-sm" onclick="confirmDeleteGoal(${goal.id})" style="color:var(--g400);font-size:0.75rem;padding:4px 8px" title="Remove goal">&#128465;</button>
           </div>
 
-          <div id="goal-progress-bar-${goalId}" style="margin-bottom:12px">
+          <div style="margin-bottom:12px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-              <span style="font-size:0.8rem;font-weight:600;color:var(--g500)" id="goal-count-${goalId}">Loading...</span>
+              <span style="font-size:0.8rem;font-weight:600;color:var(--g500)">${completed.length} of ${totalStudents} completed (${pct}%)</span>
               <span style="font-size:0.75rem;color:var(--g400)">${totalStudents} students</span>
             </div>
             <div style="background:var(--g100);border-radius:999px;height:24px;overflow:hidden;position:relative">
-              <div id="goal-fill-${goalId}" style="background:linear-gradient(90deg,#2563EB,#60A5FA);height:100%;border-radius:999px;transition:width 0.6s ease;width:0%"></div>
+              <div style="background:${barColor};height:100%;border-radius:999px;transition:width 0.6s ease;width:${pct}%"></div>
             </div>
           </div>
 
           <div style="display:flex;gap:8px;justify-content:flex-end">
-            <button class="btn btn-outline btn-sm" onclick="showGoalCompletions(${goalId}, '${escapeHtml(goal.title).replace(/'/g, "\\'")}')" style="font-size:0.78rem;padding:4px 12px">&#128065; Who Completed It</button>
+            <button class="btn btn-outline btn-sm" onclick="showGoalCompletions(${goal.id})" style="font-size:0.78rem;padding:4px 12px">&#128065; Who Completed It</button>
           </div>
         </div>
       </div>
     `;
   }).join('');
-
-  // Load progress for each goal
-  classGoalsData.forEach(goal => loadGoalProgressBar(goal.id));
 }
 
-async function loadGoalProgressBar(goalId) {
-  try {
-    const progress = await API.getGoalProgress(goalId);
-    const totalStudents = students.length;
-    const completed = (progress || []).length;
-    const pct = totalStudents > 0 ? Math.round((completed / totalStudents) * 100) : 0;
+function showGoalCompletions(goalId) {
+  const goal = classGoalsData.find(g => g.id === goalId);
+  if (!goal) return;
 
-    const countEl = document.getElementById(`goal-count-${goalId}`);
-    if (countEl) countEl.textContent = `${completed} of ${totalStudents} completed (${pct}%)`;
-
-    const fillEl = document.getElementById(`goal-fill-${goalId}`);
-    if (fillEl) {
-      fillEl.style.width = pct + '%';
-      if (pct >= 100) fillEl.style.background = 'linear-gradient(90deg,#10B981,#34D399)';
-      else if (pct >= 50) fillEl.style.background = 'linear-gradient(90deg,#2563EB,#60A5FA)';
-      else fillEl.style.background = 'linear-gradient(90deg,#F59E0B,#FBBF24)';
-    }
-  } catch (e) {
-    console.error('Error loading goal progress:', e);
-  }
-}
-
-async function showGoalCompletions(goalId, goalTitle) {
   const titleEl = document.getElementById('goal-progress-title');
-  if (titleEl) titleEl.textContent = goalTitle;
+  if (titleEl) titleEl.textContent = goal.title;
+
+  const completed = getGoalCompletions(goal);
+  const totalStudents = students.length;
+  const pct = totalStudents > 0 ? Math.round((completed.length / totalStudents) * 100) : 0;
 
   const contentEl = document.getElementById('goal-progress-content');
-  if (contentEl) contentEl.innerHTML = '<p style="color:var(--g400);text-align:center">Loading...</p>';
+  if (contentEl) {
+    if (completed.length === 0) {
+      contentEl.innerHTML = `
+        <div style="text-align:center;padding:20px">
+          <div style="font-size:2.5rem;margin-bottom:8px">&#128564;</div>
+          <p style="color:var(--g400);margin:0">No students have completed this goal yet.</p>
+        </div>
+      `;
+    } else {
+      contentEl.innerHTML = `
+        <div style="margin-bottom:16px;text-align:center">
+          <div style="font-size:2rem;font-weight:700;color:var(--blue)">${pct}%</div>
+          <div style="font-size:0.85rem;color:var(--g400)">${completed.length} of ${totalStudents} students</div>
+        </div>
+        <div style="max-height:300px;overflow-y:auto">
+          ${completed.map((s, i) => `
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--g100);${i === 0 ? 'border-top:1px solid var(--g100);' : ''}">
+              <div style="width:32px;height:32px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;flex-shrink:0">${(s.name || '?').split(' ').map(n => n[0]).join('').toUpperCase().substring(0,2)}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:600;font-size:0.9rem">${escapeHtml(s.name)}</div>
+              </div>
+              <div style="color:#10B981;font-size:1.1rem">&#10003;</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+  }
 
   document.getElementById('goal-progress-modal').style.display = 'flex';
-
-  try {
-    const progress = await API.getGoalProgress(goalId);
-    const completed = progress || [];
-    const totalStudents = students.length;
-    const pct = totalStudents > 0 ? Math.round((completed.length / totalStudents) * 100) : 0;
-
-    if (contentEl) {
-      if (completed.length === 0) {
-        contentEl.innerHTML = `
-          <div style="text-align:center;padding:20px">
-            <div style="font-size:2.5rem;margin-bottom:8px">&#128564;</div>
-            <p style="color:var(--g400);margin:0">No students have completed this goal yet.</p>
-          </div>
-        `;
-      } else {
-        contentEl.innerHTML = `
-          <div style="margin-bottom:16px;text-align:center">
-            <div style="font-size:2rem;font-weight:700;color:var(--blue)">${pct}%</div>
-            <div style="font-size:0.85rem;color:var(--g400)">${completed.length} of ${totalStudents} students</div>
-          </div>
-          <div style="max-height:300px;overflow-y:auto">
-            ${completed.map((p, i) => `
-              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--g100);${i === 0 ? 'border-top:1px solid var(--g100);' : ''}">
-                <div style="width:32px;height:32px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;flex-shrink:0">${(p.student_name || '?').split(' ').map(n => n[0]).join('').toUpperCase().substring(0,2)}</div>
-                <div style="flex:1;min-width:0">
-                  <div style="font-weight:600;font-size:0.9rem">${escapeHtml(p.student_name)}</div>
-                  <div style="font-size:0.75rem;color:var(--g400)">${formatTimeAgo(p.completed_at)}</div>
-                </div>
-                <div style="color:#10B981;font-size:1.1rem">&#10003;</div>
-              </div>
-            `).join('')}
-          </div>
-        `;
-      }
-    }
-  } catch (e) {
-    if (contentEl) contentEl.innerHTML = '<p style="color:red;text-align:center">Error loading progress</p>';
-  }
 }
 
 function closeGoalModal(id) {
@@ -4267,14 +4396,11 @@ function closeGoalModal(id) {
   if (m) m.style.display = 'none';
 }
 
-async function confirmDeleteGoal(goalId) {
-  if (!confirm('Remove this goal? Progress data will be kept.')) return;
-  try {
-    await API.deleteClassGoal(goalId);
-    loadClassGoalsData();
-  } catch (e) {
-    alert('Error removing goal: ' + e.message);
-  }
+function confirmDeleteGoal(goalId) {
+  if (!confirm('Remove this goal?')) return;
+  classGoalsData = classGoalsData.filter(g => g.id !== goalId);
+  saveGoalsToStorage();
+  renderGoalsList();
 }
 
 function renderAITools() {
@@ -4754,16 +4880,16 @@ function renderReports() {
     </div>
 
     <div class="stat-cards">
-      <div class="stat-card">
-        <div class="stat-card-label">Average Reading Score</div>
+      <div class="stat-card" style="cursor:pointer" onclick="showStatHelp('Average Reading Score', 'A composite score (0–1000) based on quiz accuracy, reading effort, independence (fewer hints), vocabulary growth, and persistence. Each quiz adjusts the score up or down based on performance.')">
+        <div class="stat-card-label">Average Reading Score <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Reading Score', 'A composite score (0–1000) based on quiz accuracy, reading effort, independence (fewer hints), vocabulary growth, and persistence. Each quiz adjusts the score up or down based on performance.')">?</button></div>
         <div class="stat-card-value">${avgScore}</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-card-label">Average Accuracy</div>
+      <div class="stat-card" style="cursor:pointer" onclick="showStatHelp('Average Accuracy', 'The average percentage of quiz questions your students answer correctly across all quizzes taken.')">
+        <div class="stat-card-label">Average Accuracy <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Accuracy', 'The average percentage of quiz questions your students answer correctly across all quizzes taken.')">?</button></div>
         <div class="stat-card-value">${avgAcc}%</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-card-label">Total Keys Earned</div>
+      <div class="stat-card" style="cursor:pointer" onclick="showStatHelp('Total Keys Earned', 'Keys are rewards students earn by passing quizzes with 80% or higher. Students can spend keys in the Class Store.')">
+        <div class="stat-card-label">Total Keys Earned <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Total Keys Earned', 'Keys are rewards students earn by passing quizzes with 80% or higher. Students can spend keys in the Class Store.')">?</button></div>
         <div class="stat-card-value">${totalKeysAll.toLocaleString()}</div>
       </div>
       <div class="stat-card">
@@ -4774,8 +4900,18 @@ function renderReports() {
 
     <div class="report-charts-grid">
       <div class="chart-container">
-        <h3>📈 Class Reading Score Trend</h3>
-        <p class="chart-subtitle">Average reading score across all students</p>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+          <div>
+            <h3 style="margin:0">📈 Class Reading Score Trend</h3>
+            <p class="chart-subtitle" style="margin:2px 0 0">Average reading score across all students</p>
+          </div>
+          <div style="display:flex;gap:4px" id="reports-range-btns">
+            <button class="btn btn-sm btn-primary" onclick="loadReportsChart('week')" style="font-size:0.72rem;padding:4px 10px;border-radius:16px" data-range="week">Week</button>
+            <button class="btn btn-sm btn-ghost" onclick="loadReportsChart('month')" style="font-size:0.72rem;padding:4px 10px;border-radius:16px" data-range="month">Month</button>
+            <button class="btn btn-sm btn-ghost" onclick="loadReportsChart('quarter')" style="font-size:0.72rem;padding:4px 10px;border-radius:16px" data-range="quarter">Quarter</button>
+            <button class="btn btn-sm btn-ghost" onclick="loadReportsChart('year')" style="font-size:0.72rem;padding:4px 10px;border-radius:16px" data-range="year">Year</button>
+          </div>
+        </div>
         <div id="reports-trend-chart" style="display:flex;align-items:center;justify-content:center;min-height:200px;color:var(--g400);font-size:0.875rem">Loading chart...</div>
       </div>
       <div class="chart-container">
@@ -4840,13 +4976,31 @@ function renderReports() {
 
 // ---- Load async chart data for reports page ----
 function loadReportsChartData() {
+  loadReportsChart('week');
+}
+
+function loadReportsChart(range) {
   const classId = currentUser?.classId;
   if (!classId) return;
-  API.getWeeklyGrowth(classId, 12).then(function(data) {
+
+  // Update active button style
+  var btns = document.querySelectorAll('#reports-range-btns button');
+  btns.forEach(function(b) {
+    if (b.getAttribute('data-range') === range) {
+      b.className = 'btn btn-sm btn-primary';
+    } else {
+      b.className = 'btn btn-sm btn-ghost';
+    }
+  });
+
+  var container = document.getElementById('reports-trend-chart');
+  if (container) container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Loading chart...</div>';
+
+  API.getWeeklyGrowth(classId, range).then(function(data) {
     var container = document.getElementById('reports-trend-chart');
     if (!container) return;
     if (!data || data.length === 0) {
-      container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">No quiz data yet \u2014 chart will appear once students start taking quizzes!</div>';
+      container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">No data for this time range yet</div>';
       return;
     }
     var scores = data.map(function(w) { return w.avgScore; });
@@ -5264,18 +5418,18 @@ function openModal(type, prefill) {
     const classCode = currentUser?.classCode || '';
     html = `
       <div class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal modal-lg" onclick="event.stopPropagation()" style="max-width:520px">
+        <div class="modal modal-lg dashboard-help-modal" onclick="event.stopPropagation()" style="max-width:680px">
           <div class="modal-header">
-            <h3>&#128218; How This Dashboard Works</h3>
+            <h3 style="font-size:1.35rem">&#128218; How This Dashboard Works</h3>
             <button class="modal-close" onclick="closeModal()">${IC.x}</button>
           </div>
-          <div class="modal-body" style="padding:20px 24px">
-            <div class="getting-started-steps" style="margin:0">
-              <div class="gs-step"><div class="gs-step-num">1</div><div><strong>Share Your Class Code</strong><p>Give students the code <strong>${classCode}</strong> so they can join your class.</p></div></div>
-              <div class="gs-step"><div class="gs-step-num">2</div><div><strong>Students Sign Up</strong><p>They go to the signup page, choose "Student", and enter the class code.</p></div></div>
-              <div class="gs-step"><div class="gs-step-num">3</div><div><strong>Students Read &amp; Take Quizzes</strong><p>Students pick books from the library, read chapters, and take quizzes after each one.</p></div></div>
-              <div class="gs-step"><div class="gs-step-num">4</div><div><strong>Track Growth</strong><p>Watch your students' reading scores, comprehension, vocabulary, and independence grow on this dashboard.</p></div></div>
-              <div class="gs-step"><div class="gs-step-num">5</div><div><strong>Celebrate Success</strong><p>Print certificates when students complete books! You can find these on each student's profile page.</p></div></div>
+          <div class="modal-body" style="padding:28px 32px">
+            <div class="getting-started-steps getting-started-steps-lg" style="margin:0;max-width:100%;gap:20px">
+              <div class="gs-step gs-step-lg"><div class="gs-step-num gs-step-num-lg">1</div><div><strong>Share Your Class Code</strong><p>Give students the code <strong>${classCode}</strong> so they can join your class.</p></div></div>
+              <div class="gs-step gs-step-lg"><div class="gs-step-num gs-step-num-lg">2</div><div><strong>Students Sign Up</strong><p>They go to the signup page, choose "Student", and enter the class code.</p></div></div>
+              <div class="gs-step gs-step-lg"><div class="gs-step-num gs-step-num-lg">3</div><div><strong>Students Read &amp; Take Quizzes</strong><p>Students pick books from the library, read chapters, and take quizzes after each one.</p></div></div>
+              <div class="gs-step gs-step-lg"><div class="gs-step-num gs-step-num-lg">4</div><div><strong>Track Growth</strong><p>Watch your students' reading scores, comprehension, vocabulary, and independence grow on this dashboard.</p></div></div>
+              <div class="gs-step gs-step-lg"><div class="gs-step-num gs-step-num-lg">5</div><div><strong>Celebrate Success</strong><p>Print certificates when students complete books! You can find these on each student's profile page.</p></div></div>
             </div>
           </div>
         </div>
