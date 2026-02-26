@@ -4512,7 +4512,7 @@ function loadReportsChartData() {
       container.innerHTML = '<div style="text-align:center;padding:40px 0"><div style="font-size:2.5rem;font-weight:800;color:var(--blue)">' + scores[0] + '</div><div style="font-size:0.85rem;color:var(--g400);margin-top:4px">Class avg reading score \u00b7 ' + labels[0] + '</div></div>';
       return;
     }
-    container.innerHTML = svgGradientAreaChart(scores, labels, 620, 220);
+    container.innerHTML = svgLineChart(scores, labels, 620, 280);
   }).catch(function() {
     var container = document.getElementById('reports-trend-chart');
     if (container) container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Could not load chart data</div>';
@@ -4613,7 +4613,7 @@ function renderStudentReport() {
     <div class="chart-container">
       <h3>Reading Score Growth</h3>
       <p class="chart-subtitle">${s.name.split(' ')[0]}'s reading score over time</p>
-      ${svgAreaChart(gd.scores, months, 'var(--blue)', 620, 220)}
+      ${svgLineChart(gd.scores, months, 620, 280)}
     </div>
 
     <div class="data-table-wrap" style="margin-top:24px">
