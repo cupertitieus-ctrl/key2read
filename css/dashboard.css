@@ -496,12 +496,24 @@
 
 .stat-card::before { display: none; }
 
+.stat-card-icon {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 4px;
+}
+
+.stat-card-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .stat-card-label {
   font-size: 1rem;
   color: rgba(255,255,255,0.85);
   font-weight: 500;
-  margin-bottom: 6px;
-  min-height: 52px;
+  margin-bottom: 2px;
+  min-height: auto;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -537,18 +549,6 @@
   display: inline-flex;
   align-items: center;
   gap: 2px;
-}
-
-.stat-card-icon {
-  font-size: 1.75rem;
-  margin-bottom: 4px;
-  line-height: 1;
-  color: #fff;
-}
-.stat-card-icon svg {
-  width: 28px;
-  height: 28px;
-  stroke: #fff;
 }
 
 .stat-card-trend.up { color: var(--green); }

@@ -412,45 +412,7 @@ function svgLineChart(data, labels, w, h) {
   '</svg>';
 }
 
-// Vertical bar chart (single color) for reading score trends
-function svgBarChart(data, labels, w, h) {
-  w = w || 620; h = h || 300;
-  const pad = { top: 30, right: 20, bottom: 40, left: 50 };
-  const cw = w - pad.left - pad.right;
-  const ch = h - pad.top - pad.bottom;
-  const max = Math.max(...data) + 40;
-  const barGap = 8;
-  const barWidth = Math.min(60, (cw / data.length) - barGap);
-  const color = '#2563EB';
-
-  // Gridlines
-  const gridCount = 4;
-  let gridLines = '';
-  for (let i = 0; i <= gridCount; i++) {
-    const y = pad.top + (i / gridCount) * ch;
-    const val = Math.round(max - (i / gridCount) * max);
-    gridLines += '<line x1="' + pad.left + '" y1="' + y + '" x2="' + (w - pad.right) + '" y2="' + y + '" stroke="#E5E7EB" stroke-width="1" stroke-dasharray="4,4"/>';
-    gridLines += '<text x="' + (pad.left - 8) + '" y="' + (y + 4) + '" text-anchor="end" fill="#9CA3AF" font-size="11">' + val + '</text>';
-  }
-
-  var bars = data.map(function(v, i) {
-    var x = pad.left + (i + 0.5) * (cw / data.length) - barWidth / 2;
-    var barH = (v / max) * ch;
-    var y = pad.top + ch - barH;
-    var radius = Math.min(6, barWidth / 3);
-    return '<rect x="' + x + '" y="' + y + '" width="' + barWidth + '" height="' + barH + '" rx="' + radius + '" fill="' + color + '" opacity="0.85"/>' +
-           '<text x="' + (x + barWidth / 2) + '" y="' + (y - 8) + '" text-anchor="middle" fill="' + color + '" font-size="12" font-weight="700">' + v + '</text>';
-  }).join('');
-
-  var xLabels = labels.map(function(l, i) {
-    var x = pad.left + (i + 0.5) * (cw / data.length);
-    return '<text x="' + x + '" y="' + (h - 8) + '" text-anchor="middle" fill="#6B7280" font-size="11" font-weight="500">' + l + '</text>';
-  }).join('');
-
-  return '<svg class="svg-chart svg-chart-stretch" viewBox="0 0 ' + w + ' ' + h + '" width="100%" preserveAspectRatio="xMidYMid meet">' +
-    gridLines + bars + xLabels +
-  '</svg>';
-}
+// (svgAreaChart defined below at line ~644 — single definition to avoid duplicates)
 
 // Colorful gradient area chart for teacher dashboard
 function svgGradientAreaChart(data, labels, w, h) {
@@ -616,48 +578,70 @@ function svgPieChart(slices, size) {
   </div>`;
 }
 
-function svgAreaChart(data, labels, color, w, h) {
-  w = w || 600; h = h || 200;
-  const pad = { top: 20, right: 20, bottom: 30, left: 50 };
+function svgAreaChart(data, labels, colorOrW, wArg, hArg) {
+  // Support both (data, labels, w, h) and (data, labels, color, w, h) signatures
+  let color, w, h;
+  if (typeof colorOrW === 'string' && colorOrW.startsWith('#')) {
+    color = colorOrW; w = wArg || 620; h = hArg || 300;
+  } else {
+    color = '#60A5FA'; w = colorOrW || 620; h = wArg || 300;
+  }
+  const pad = { top: 30, right: 20, bottom: 40, left: 50 };
   const cw = w - pad.left - pad.right;
   const ch = h - pad.top - pad.bottom;
-  const min = Math.min(...data) - 20;
-  const max = Math.max(...data) + 20;
+  const dataMin = Math.min(...data);
+  const dataMax = Math.max(...data);
+  const min = Math.max(0, dataMin - 40);
+  const max = dataMax + 40;
   const range = max - min || 1;
 
   const pts = data.map((v, i) => {
-    const x = pad.left + (i / (data.length - 1)) * cw;
+    const x = data.length === 1 ? pad.left + cw / 2 : pad.left + (i / (data.length - 1)) * cw;
     const y = pad.top + ch - ((v - min) / range) * ch;
     return { x, y, v };
   });
 
-  const linePoints = pts.map(p => `${p.x},${p.y}`).join(' ');
-  const areaPoints = `${pts[0].x},${pad.top + ch} ${linePoints} ${pts[pts.length-1].x},${pad.top + ch}`;
-
-  // Gridlines
+  // Gridlines — light horizontal lines
   const gridCount = 4;
   let gridLines = '';
   for (let i = 0; i <= gridCount; i++) {
     const y = pad.top + (i / gridCount) * ch;
     const val = Math.round(max - (i / gridCount) * range);
-    gridLines += `<line x1="${pad.left}" y1="${y}" x2="${w - pad.right}" y2="${y}" stroke="var(--g200)" stroke-width="1"/>`;
-    gridLines += `<text x="${pad.left - 8}" y="${y + 4}" text-anchor="end" fill="var(--g400)" font-size="11">${val}</text>`;
+    gridLines += `<line x1="${pad.left}" y1="${y}" x2="${w - pad.right}" y2="${y}" stroke="#F0F0F0" stroke-width="1"/>`;
+    gridLines += `<text x="${pad.left - 8}" y="${y + 4}" text-anchor="end" fill="#B0B0B0" font-size="11">${val}</text>`;
   }
 
   // X labels
-  let xLabels = labels.map((l, i) => {
-    const x = pad.left + (i / (labels.length - 1)) * cw;
-    return `<text x="${x}" y="${h - 6}" text-anchor="middle" fill="var(--g400)" font-size="11">${l}</text>`;
+  const xLabels = labels.map((l, i) => {
+    const x = data.length === 1 ? pad.left + cw / 2 : pad.left + (i / (labels.length - 1)) * cw;
+    return `<text x="${x}" y="${h - 8}" text-anchor="middle" fill="#9CA3AF" font-size="11" font-weight="500">${l}</text>`;
   }).join('');
 
-  // Dots
-  let dots = pts.map(p => `<circle cx="${p.x}" cy="${p.y}" r="4" fill="${color}" stroke="#fff" stroke-width="2"/>`).join('');
-  let dotLabels = pts.map(p => `<text x="${p.x}" y="${p.y - 10}" text-anchor="middle" fill="var(--g700)" font-size="11" font-weight="600">${p.v}</text>`).join('');
+  // Dots and value labels
+  const dots = pts.map(p => `<circle cx="${p.x}" cy="${p.y}" r="5" fill="#3B82F6" stroke="#fff" stroke-width="2.5"/>`).join('');
+  const dotLabels = pts.map(p => `<text x="${p.x}" y="${p.y - 12}" text-anchor="middle" fill="#3B82F6" font-size="12" font-weight="700">${p.v}</text>`).join('');
 
-  return `<svg class="svg-chart" viewBox="0 0 ${w} ${h}" width="100%" preserveAspectRatio="xMidYMid meet">
+  // Line and gradient-filled area
+  let lineEl = '';
+  let areaEl = '';
+  if (pts.length > 1) {
+    const linePoints = pts.map(p => `${p.x},${p.y}`).join(' ');
+    const areaPoints = `${pts[0].x},${pad.top + ch} ${linePoints} ${pts[pts.length-1].x},${pad.top + ch}`;
+    lineEl = `<polyline points="${linePoints}" fill="none" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+    areaEl = `<polygon points="${areaPoints}" fill="url(#trendAreaGrad)"/>`;
+  }
+
+  return `<svg class="svg-chart svg-chart-stretch" viewBox="0 0 ${w} ${h}" width="100%" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <linearGradient id="trendAreaGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#93C5FD" stop-opacity="0.6"/>
+        <stop offset="50%" stop-color="#BFDBFE" stop-opacity="0.3"/>
+        <stop offset="100%" stop-color="#EFF6FF" stop-opacity="0.05"/>
+      </linearGradient>
+    </defs>
     ${gridLines}
-    <polygon points="${areaPoints}" fill="${color}" opacity="0.08"/>
-    <polyline points="${linePoints}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${areaEl}
+    ${lineEl}
     ${dots}
     ${dotLabels}
     ${xLabels}
@@ -1207,22 +1191,27 @@ function renderTeacherDashboard() {
 
     <div class="stat-cards stat-cards-5">
       <div class="stat-card clickable-card" onclick="document.getElementById('dashboard-roster')?.scrollIntoView({behavior:'smooth'})">
+        <div class="stat-card-icon"><img src="/public/Student_Outline_Icon.png" alt="Students"></div>
         <div class="stat-card-label">Students <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Students', 'The total number of students in your class. Click to scroll to your student roster.')">?</button></div>
         <div class="stat-card-value">${students.length}</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('reports')">
+        <div class="stat-card-icon"><img src="/public/Book_Outline_Icon.png" alt="Reading Score"></div>
         <div class="stat-card-label">Average Reading Score <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Reading Score', 'A score from 0 to 1000 that measures how well your class is reading overall. It\\'s based on quiz scores, reading effort, independence (using fewer hints), vocabulary growth, and persistence. Click to see Growth Reports.')">?</button></div>
         <div class="stat-card-value">${avgScore}</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('reports')">
+        <div class="stat-card-icon"><img src="/public/Comprehension_Outline_Icon.png" alt="Comprehension"></div>
         <div class="stat-card-label">Average Comprehension <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Comprehension', 'The average percentage of quiz questions your students answer correctly. A higher number means students are understanding what they read. Click to see Growth Reports.')">?</button></div>
         <div class="stat-card-value">${avgAcc}%</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('store')">
+        <div class="stat-card-icon"><img src="/public/Key_Outline_Icon.png" alt="Keys Earned"></div>
         <div class="stat-card-label">Total Keys Earned <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Total Keys Earned', 'Keys are rewards students earn by passing quizzes with 80% or higher. Students can spend keys in the Class Store to redeem prizes you set up. Click to manage the store.')">?</button></div>
         <div class="stat-card-value">${totalKeys.toLocaleString()}</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('quizzes')">
+        <div class="stat-card-icon"><img src="/public/Quiz_Outline_Icon.png" alt="Quizzes"></div>
         <div class="stat-card-label">Quizzes Completed <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Quizzes Completed', 'The total number of chapter quizzes all your students have completed. Each book chapter has its own quiz. Click to view assignments.')">?</button></div>
         <div class="stat-card-value">${totalQuizzes}</div>
       </div>
@@ -1230,12 +1219,12 @@ function renderTeacherDashboard() {
 
     <div class="teacher-dashboard-charts">
       <div class="list-card" style="padding:24px">
-        <h3 style="margin:0 0 4px 0">🥧 Reading Score Distribution</h3>
+        <h3 style="margin:0 0 4px 0;display:flex;align-items:center"><img src="/public/Book_Outline_Icon_Black.png" alt="" style="width:32px;height:32px;margin-right:8px">Reading Score Distribution</h3>
         <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">How your students are performing across reading levels</p>
         ${pieChart}
       </div>
       <div class="list-card" style="padding:24px;cursor:pointer;display:flex;flex-direction:column" onclick="navigate('reports')">
-        <h3 style="margin:0 0 4px 0">📈 Class Reading Score Trend</h3>
+        <h3 style="margin:0 0 4px 0;display:flex;align-items:center"><img src="/public/Growth_Outline_.png" alt="" style="width:32px;height:32px;margin-right:8px">Class Reading Score Trend</h3>
         <p style="font-size:0.8rem;color:var(--g400);margin:0 0 8px 0">This week's daily average · <span style="color:var(--blue);font-weight:600">View Full Report →</span></p>
         <div style="flex:1;min-height:200px">${trendChart}</div>
       </div>
@@ -1302,7 +1291,7 @@ function loadTeacherDashboardData() {
       scores.unshift(500);
       labels.unshift('Start');
     }
-    container.innerHTML = svgBarChart(scores, labels, 620, 340);
+    container.innerHTML = svgAreaChart(scores, labels, 620, 340);
   }).catch(function(err) {
     console.error('[Dashboard] Weekly growth error:', err);
     var container = document.getElementById('trend-chart-container');
@@ -4902,7 +4891,7 @@ function renderReports() {
       <div class="chart-container">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
           <div>
-            <h3 style="margin:0">📈 Class Reading Score Trend</h3>
+            <h3 style="margin:0;display:flex;align-items:center"><img src="/public/Growth_Outline_.png" alt="" style="width:32px;height:32px;margin-right:8px">Class Reading Score Trend</h3>
             <p class="chart-subtitle" style="margin:2px 0 0">Average reading score across all students</p>
           </div>
           <div style="display:flex;gap:4px" id="reports-range-btns">
@@ -4915,7 +4904,7 @@ function renderReports() {
         <div id="reports-trend-chart" style="display:flex;align-items:center;justify-content:center;min-height:200px;color:var(--g400);font-size:0.875rem">Loading chart...</div>
       </div>
       <div class="chart-container">
-        <h3>🥧 Reading Score Distribution</h3>
+        <h3 style="display:flex;align-items:center"><img src="/public/Book_Outline_Icon_Black.png" alt="" style="width:32px;height:32px;margin-right:8px">Reading Score Distribution</h3>
         <p class="chart-subtitle">How your students are performing across reading levels</p>
         ${(() => {
           const ns = students.filter(s => (s.reading_score || s.score || 0) < 400).length;
@@ -5009,7 +4998,7 @@ function loadReportsChart(range) {
       scores.unshift(500);
       labels.unshift('Start');
     }
-    container.innerHTML = svgBarChart(scores, labels, 620, 280);
+    container.innerHTML = svgAreaChart(scores, labels, 620, 280);
   }).catch(function() {
     var container = document.getElementById('reports-trend-chart');
     if (container) container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Could not load chart data</div>';
@@ -5110,7 +5099,7 @@ function renderStudentReport() {
     <div class="chart-container">
       <h3>Reading Score Growth</h3>
       <p class="chart-subtitle">${s.name.split(' ')[0]}'s reading score over time</p>
-      ${svgBarChart(gd.scores, months, 620, 280)}
+      ${svgAreaChart(gd.scores, months, 620, 280)}
     </div>
 
     <div class="data-table-wrap" style="margin-top:24px">

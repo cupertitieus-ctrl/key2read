@@ -100,7 +100,7 @@ async function buildSessionUser(user) {
 
 // ─── AUTH ROUTES ───
 app.post('/api/auth/login', async (req, res) => {
-  const { email, name, classCode, role, password } = req.body;
+  const { email, name, classCode, role, password, rememberMe } = req.body;
 
   try {
     if (role === 'student') {
@@ -206,6 +206,10 @@ app.post('/api/auth/login', async (req, res) => {
       const sessionUser = await buildSessionUser(user);
       req.session.userId = user.id;
       req.session.user = sessionUser;
+      // Extend session to 30 days if "Remember me" is checked
+      if (rememberMe) {
+        req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
+      }
       return res.json({ success: true, user: sessionUser });
     }
   } catch (e) {
@@ -523,8 +527,8 @@ app.get('/api/class/:classId/popular-books', async (req, res) => {
 // ─── WEEKLY GROWTH DATA (for teacher dashboard trend chart) ───
 app.get('/api/class/:classId/weekly-growth', async (req, res) => {
   try {
-    const weeks = parseInt(req.query.weeks) || 4;
-    const data = await db.getWeeklyGrowthData(parseInt(req.params.classId), weeks);
+    const range = req.query.range || 'week'; // week, month, quarter, year
+    const data = await db.getWeeklyGrowthData(parseInt(req.params.classId), range);
     res.json(data);
   } catch (e) {
     console.error('Weekly growth error:', e);
@@ -847,15 +851,6 @@ app.post('/api/quiz/submit', async (req, res) => {
     console.error('Analytics update error:', e);
   }
 
-  // Check class goal progress after quiz completion
-  try {
-    if (student.class_id) {
-      await db.checkAndUpdateGoalProgress(studentId, student.class_id);
-    }
-  } catch(e) {
-    console.error('Goal progress check error:', e);
-  }
-
   // Read back the synced composite score
   const updatedStudent = await db.getStudent(studentId);
   const syncedScore = updatedStudent?.reading_score || newScore;
@@ -1084,37 +1079,6 @@ app.get('/api/class/validate/:code', async (req, res) => {
   const cls = await db.getClassByCode(req.params.code);
   if (!cls) return res.json({ valid: false });
   res.json({ valid: true, className: cls.name, teacherName: cls.teacher_name, grade: cls.grade });
-});
-
-// ─── CLASS GOALS ROUTES ───
-app.get('/api/class/:classId/goals', async (req, res) => {
-  try {
-    const goals = await db.getClassGoals(parseInt(req.params.classId));
-    res.json(goals);
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.post('/api/class/:classId/goals', async (req, res) => {
-  try {
-    const { title, goalType, targetCount, bookId } = req.body;
-    const goal = await db.createClassGoal(parseInt(req.params.classId), title, goalType, targetCount, bookId);
-    if (!goal) return res.status(500).json({ error: 'Failed to create goal' });
-    res.json(goal);
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.get('/api/goals/:goalId/progress', async (req, res) => {
-  try {
-    const progress = await db.getClassGoalProgress(parseInt(req.params.goalId));
-    res.json(progress);
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.delete('/api/goals/:goalId', async (req, res) => {
-  try {
-    const ok = await db.deleteClassGoal(parseInt(req.params.goalId));
-    res.json({ success: ok });
-  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ─── OWNER ROUTES ───

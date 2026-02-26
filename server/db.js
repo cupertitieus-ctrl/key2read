@@ -1721,12 +1721,13 @@ async function getPopularBooks(classId) {
 }
 
 // ─── Weekly Growth Data for a class (for Class Reading Score Trend chart) ───
+// Uses quiz_results table (always populated) instead of reading_level_history
 async function getWeeklyGrowthData(classId, range) {
   range = range || 'week';
-  // Get all students in this class
+  // Get all students in this class with their current reading_score
   const { data: classStudents, error: sErr } = await supabase
     .from('students')
-    .select('id')
+    .select('id, reading_score')
     .eq('class_id', classId)
     .or('is_teacher_demo.is.null,is_teacher_demo.eq.false');
   if (sErr || !classStudents || classStudents.length === 0) return [];
@@ -1758,55 +1759,83 @@ async function getWeeklyGrowthData(classId, range) {
     startDate.setUTCHours(0, 0, 0, 0);
   }
 
-  // Get reading_level_history entries
-  const { data: history, error: hErr } = await supabase
-    .from('reading_level_history')
-    .select('student_id, lexile, recorded_at')
+  // Get quiz_results for these students in the date range
+  const { data: quizResults, error: qErr } = await supabase
+    .from('quiz_results')
+    .select('student_id, score, reading_level_change, completed_at')
     .in('student_id', studentIds)
-    .gte('recorded_at', startDate.toISOString())
-    .order('recorded_at');
+    .gte('completed_at', startDate.toISOString())
+    .order('completed_at');
 
-  console.log('[Growth] range=' + range + ' classId=' + classId + ' students=' + studentIds.length + ' rows=' + (history ? history.length : 0));
+  console.log('[Growth] range=' + range + ' classId=' + classId + ' students=' + studentIds.length + ' quizRows=' + (quizResults ? quizResults.length : 0));
 
-  if (!history || history.length === 0) return [];
+  // Compute current class average reading score as baseline
+  const classAvg = Math.round(classStudents.reduce((s, st) => s + (st.reading_score || 500), 0) / classStudents.length);
 
-  // Helper: compute average from entries
-  function avgFromEntries(entries) {
-    const studentScores = {};
-    entries.forEach(h => { studentScores[h.student_id] = h.lexile || 500; });
-    const scores = Object.values(studentScores);
+  // If no quiz results at all, show baseline
+  if (!quizResults || quizResults.length === 0) {
+    if (range === 'week') {
+      const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+      const results = [];
+      for (let d = 0; d < 5; d++) {
+        const dayStart = new Date(thisMonday);
+        dayStart.setUTCDate(thisMonday.getUTCDate() + d);
+        if (dayStart > now) break;
+        results.push({ label: dayNames[d], avgScore: classAvg, quizCount: 0 });
+      }
+      return results;
+    }
+    return [];
+  }
+
+  // Helper: compute average quiz score for a set of quiz results
+  function avgQuizScore(entries) {
+    const studentBest = {};
+    entries.forEach(q => {
+      if (!studentBest[q.student_id] || q.score > studentBest[q.student_id]) {
+        studentBest[q.student_id] = q.score;
+      }
+    });
+    const scores = Object.values(studentBest);
     return scores.length > 0 ? Math.round(scores.reduce((s, v) => s + v, 0) / scores.length) : 0;
+  }
+
+  // Helper: compute average reading score change
+  function avgReadingScore(entries) {
+    // Use the class average + cumulative reading level changes up to this point
+    const studentChanges = {};
+    entries.forEach(q => {
+      if (!studentChanges[q.student_id]) studentChanges[q.student_id] = 0;
+      studentChanges[q.student_id] += (q.reading_level_change || 0);
+    });
+    const changes = Object.values(studentChanges);
+    const avgChange = changes.length > 0 ? Math.round(changes.reduce((s, v) => s + v, 0) / changes.length) : 0;
+    return classAvg + avgChange;
   }
 
   const results = [];
 
   if (range === 'week') {
-    // Daily buckets: Mon–Fri — always show all days up to today
     const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-    // Find the latest known score to carry forward for empty days
-    let lastKnownScore = null;
-    if (history.length > 0) {
-      const sorted = [...history].sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
-      lastKnownScore = sorted[sorted.length - 1].lexile || 500;
-    }
+    let lastKnownScore = classAvg;
+    // Accumulate all quiz results up to each day for running average
+    const cumulativeResults = [];
     for (let d = 0; d < 5; d++) {
       const dayStart = new Date(thisMonday);
       dayStart.setUTCDate(thisMonday.getUTCDate() + d);
       const dayEnd = new Date(dayStart);
       dayEnd.setUTCDate(dayStart.getUTCDate() + 1);
       if (dayStart > now) break;
-      const entries = history.filter(h => { const dt = new Date(h.recorded_at); return dt >= dayStart && dt < dayEnd; });
-      if (entries.length > 0) {
-        const avg = avgFromEntries(entries);
-        lastKnownScore = avg;
-        results.push({ label: dayNames[d], avgScore: avg, quizCount: entries.length });
+      const dayEntries = quizResults.filter(q => { const dt = new Date(q.completed_at); return dt >= dayStart && dt < dayEnd; });
+      cumulativeResults.push(...dayEntries);
+      if (dayEntries.length > 0) {
+        lastKnownScore = avgReadingScore(cumulativeResults);
+        results.push({ label: dayNames[d], avgScore: lastKnownScore, quizCount: dayEntries.length });
       } else {
-        // Show the day with the last known score (or baseline) so all days appear
-        results.push({ label: dayNames[d], avgScore: lastKnownScore || 500, quizCount: 0 });
+        results.push({ label: dayNames[d], avgScore: lastKnownScore, quizCount: 0 });
       }
     }
   } else if (range === 'month') {
-    // Weekly buckets: 4 weeks
     for (let w = 3; w >= 0; w--) {
       const wStart = new Date(now);
       wStart.setUTCDate(now.getUTCDate() - (w * 7) - 6);
@@ -1814,21 +1843,20 @@ async function getWeeklyGrowthData(classId, range) {
       const wEnd = new Date(wStart);
       wEnd.setUTCDate(wStart.getUTCDate() + 7);
       const label = 'Week ' + (4 - w);
-      const entries = history.filter(h => { const dt = new Date(h.recorded_at); return dt >= wStart && dt < wEnd; });
+      const entries = quizResults.filter(q => { const dt = new Date(q.completed_at); return dt >= wStart && dt < wEnd; });
       if (entries.length === 0) continue;
-      results.push({ label, avgScore: avgFromEntries(entries), quizCount: entries.length });
+      results.push({ label, avgScore: avgQuizScore(entries), quizCount: entries.length });
     }
   } else {
-    // Monthly buckets for quarter (3 months) or year (12 months)
     const monthCount = range === 'quarter' ? 3 : 12;
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     for (let m = monthCount - 1; m >= 0; m--) {
       const mStart = new Date(now.getUTCFullYear(), now.getUTCMonth() - m, 1);
       const mEnd = new Date(now.getUTCFullYear(), now.getUTCMonth() - m + 1, 1);
       const label = monthNames[mStart.getMonth()];
-      const entries = history.filter(h => { const dt = new Date(h.recorded_at); return dt >= mStart && dt < mEnd; });
+      const entries = quizResults.filter(q => { const dt = new Date(q.completed_at); return dt >= mStart && dt < mEnd; });
       if (entries.length === 0) continue;
-      results.push({ label, avgScore: avgFromEntries(entries), quizCount: entries.length });
+      results.push({ label, avgScore: avgQuizScore(entries), quizCount: entries.length });
     }
   }
 
