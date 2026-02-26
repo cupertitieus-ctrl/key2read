@@ -6317,24 +6317,31 @@ function renderStudentQuizzes() {
   // Books the student has started (at least one quiz)
   const startedBooks = books.filter(b => progressMap[b.id]);
 
-  // Separate incomplete and favorite books
+  // Separate completed, incomplete, and favorite books
+  const completedBooks = startedBooks.filter(b => progressMap[b.id]?.isComplete);
   const incompleteBooks = startedBooks.filter(b => !progressMap[b.id]?.isComplete);
   const favBooks = books.filter(b => studentFavorites.some(fid => Number(fid) === Number(b.id)));
 
   return `
     <div class="page-header"><h1>My Quizzes</h1></div>
-    <div class="stat-cards" style="grid-template-columns: repeat(2, 1fr)">
+    <div class="stat-cards" style="grid-template-columns: repeat(3, 1fr)">
       <div class="stat-card clickable-card" onclick="showCompletedQuizzes()" style="display:flex;align-items:center;gap:14px;cursor:pointer">
         <div style="width:44px;height:44px;border-radius:var(--radius-md);background:linear-gradient(135deg,#dbeafe,#bfdbfe);display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
         </div>
-        <div><div class="stat-card-label">Quizzes Completed</div><div class="stat-card-value">${s.quizzes}</div><div style="font-size:0.7rem;color:var(--blue);font-weight:600;margin-top:2px">Tap to view details</div></div>
+        <div><div class="stat-card-label">Quizzes</div><div class="stat-card-value">${s.quizzes}</div><div style="font-size:0.7rem;color:var(--blue);font-weight:600;margin-top:2px">Tap to view</div></div>
+      </div>
+      <div class="stat-card clickable-card" style="display:flex;align-items:center;gap:14px;cursor:pointer" onclick="document.getElementById('completed-books-section')?.scrollIntoView({behavior:'smooth'})">
+        <div style="width:44px;height:44px;border-radius:var(--radius-md);background:linear-gradient(135deg,#d1fae5,#a7f3d0);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        </div>
+        <div><div class="stat-card-label">Books</div><div class="stat-card-value">${completedBooks.length}</div><div style="font-size:0.7rem;color:#059669;font-weight:600;margin-top:2px">${completedBooks.length > 0 ? 'Completed' : 'None yet'}</div></div>
       </div>
       <div class="stat-card clickable-card" onclick="showKeysBreakdown()" style="display:flex;align-items:center;gap:14px;cursor:pointer">
         <div style="width:44px;height:44px;border-radius:var(--radius-md);background:linear-gradient(135deg,#fef3c7,#fde68a);display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><circle cx="8" cy="8" r="4"/><path d="M10.5 10.5L21 21"/><path d="M16 16l5 0"/><path d="M19 13l0 6"/></svg>
         </div>
-        <div><div class="stat-card-label">Keys Earned</div><div class="stat-card-value">${s.keys}</div><div style="font-size:0.7rem;color:var(--gold, #d97706);font-weight:600;margin-top:2px">Tap to view history</div></div>
+        <div><div class="stat-card-label">Keys</div><div class="stat-card-value">${s.keys}</div><div style="font-size:0.7rem;color:var(--gold, #d97706);font-weight:600;margin-top:2px">Tap to view</div></div>
       </div>
     </div>
 
@@ -6355,6 +6362,43 @@ function renderStudentQuizzes() {
             <div class="book-progress-info">
               <div class="book-progress-title">${b.title}</div>
               <div class="book-progress-status">${prog.completedChapters}/${prog.totalChapters} chapters</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : ''}
+
+    ${completedBooks.length > 0 ? `
+    <div id="completed-books-section" style="margin-top:28px">
+      <h3 style="margin:0 0 16px;font-size:1rem;font-weight:700">🏆 Completed Books</h3>
+      <div class="book-progress-grid">
+        ${completedBooks.map(b => {
+          const certData = JSON.stringify({
+            bookTitle: b.title || 'Book',
+            bookAuthor: b.author || '',
+            studentName: currentUser?.name || 'Student',
+            dateStr: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+          }).replace(/"/g, '&quot;');
+          return `
+          <div class="book-progress-card" style="cursor:pointer;position:relative">
+            <div class="book-progress-cover" onclick="openBook(${b.id})">
+              ${b.cover_url ? `<img src="${b.cover_url}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+              <div class="book-progress-cover-fallback" ${b.cover_url ? 'style="display:none"' : ''}>
+                <span>${b.title}</span>
+              </div>
+              <div class="book-completed-overlay">
+                <div class="book-completed-badge">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>COMPLETED</span>
+                </div>
+              </div>
+            </div>
+            <div class="book-progress-info">
+              <div class="book-progress-title">${escapeHtml(b.title)}</div>
+              <div style="display:flex;gap:6px;margin-top:4px">
+                <button class="btn btn-sm btn-primary" style="font-size:0.7rem;padding:3px 8px" data-cert="${certData}" onclick="event.stopPropagation();downloadCertificatePDF(JSON.parse(this.dataset.cert))">📥 PDF</button>
+                <button class="btn btn-sm btn-outline" style="font-size:0.7rem;padding:3px 8px" data-cert="${certData}" onclick="event.stopPropagation();printCertificate(JSON.parse(this.dataset.cert))">🖨️ Print</button>
+              </div>
             </div>
           </div>`;
         }).join('')}
