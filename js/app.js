@@ -1032,16 +1032,11 @@ function renderTeacherDashboard() {
     trendScores = classScores.slice(-4);
     trendLabels = months.slice(-4);
   } else {
-    // No weekly data — just show current week with actual average
-    trendScores = [avgScore];
-    trendLabels = [months[months.length - 1]];
+    // No weekly growth data — show current average across last 4 weeks
+    trendScores = months.slice(-4).map(() => avgScore);
+    trendLabels = months.slice(-4);
   }
-  const trendChart = trendScores.length > 1 ? svgLineChart(trendScores, trendLabels, 620, 500) :
-    '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:24px;text-align:center">' +
-      '<div style="font-size:3rem;font-weight:800;color:var(--blue)">' + avgScore + '</div>' +
-      '<div style="font-size:0.9rem;color:var(--g500);margin-top:4px">Current Class Average</div>' +
-      '<div style="font-size:0.75rem;color:var(--g400);margin-top:8px">Weekly trends will appear as students complete more quizzes</div>' +
-    '</div>';
+  const trendChart = svgLineChart(trendScores, trendLabels, 620, 500);
 
   // Build reading score pie chart
   const needsSupport = students.filter(s => (s.reading_score || s.score || 0) < 400).length;
