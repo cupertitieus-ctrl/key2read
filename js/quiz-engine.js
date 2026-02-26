@@ -571,7 +571,17 @@ const QuizEngine = (function() {
               const opts = (q.options || []).map(o => o.replace(/<[^>]*>/g, ''));
               const qVocabLower = (q.vocabulary_words || []).map(w => w.toLowerCase());
               const optionVocabWords = vocabWords.filter(w => !qVocabLower.includes(w.toLowerCase()));
-              const markedOpts = opts.map(opt => markContextualVocab(markExplicitVocab(escapeHtml(opt), optionVocabWords), testedWords));
+
+              // ANTI-BIAS: Only underline a vocab word in options if it appears in 2+ options
+              // If a word only appears in one option, underlining it gives away the answer
+              const safeOptionVocab = optionVocabWords.filter(function(word) {
+                const wLower = word.toLowerCase();
+                const re = new RegExp('\\b' + wLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+                const matchCount = opts.filter(function(o) { return re.test(o); }).length;
+                return matchCount >= 2;
+              });
+
+              const markedOpts = opts.map(opt => markContextualVocab(markExplicitVocab(escapeHtml(opt), safeOptionVocab), testedWords));
               const hasVocab = markedOpts.map(m => m.includes('vocab-word'));
               const vocabCount = hasVocab.filter(Boolean).length;
 
