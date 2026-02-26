@@ -185,8 +185,8 @@ async function generateChapterQuiz(bookTitle, bookAuthor, chapterNumber, chapter
     ? `\nThis chapter spans pages ${pageStart} to ${pageEnd} in the physical book.`
     : '';
   const pageTip = hasPages
-    ? `• strategy_tip: Keep it SHORT and simple — just tell the student which page to look at. Format: "Go back to page [number] and reread." or "Check page [number]." Use a REAL page number between ${pageStart} and ${pageEnd} — early events near page ${pageStart}, later events near page ${pageEnd}. Do NOT give away the answer or describe what happens on that page. Do NOT make up page numbers outside ${pageStart}-${pageEnd}.`
-    : `• strategy_tip: Keep it SHORT — just tell the student to reread the chapter. Format: "Go back and reread this chapter." Do NOT give away the answer or describe specific story details.`;
+    ? `• strategy_tip: ONLY output the page number where the answer can be found. Format: "Page [number]" — nothing else. Use a REAL page number between ${pageStart} and ${pageEnd}. Do NOT add any extra text, sentences, or instructions.`
+    : `• strategy_tip: Keep it SHORT — just tell the student to reread the chapter. Format: "Reread this chapter." Do NOT give away the answer or describe specific story details.`;
 
   const prompt = `You are creating a reading comprehension quiz for children ages 6-8 (${gradeLevel || '2nd-3rd'} grade) about "${bookTitle}" by ${bookAuthor}.
 Chapter ${chapterNumber}: "${chapterTitle}"

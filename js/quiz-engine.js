@@ -486,7 +486,7 @@ const QuizEngine = (function() {
     const stratName = STRATEGY_NAMES[q.strategy_type] || q.strategy_type;
     const qTypeLabel = QUESTION_TYPE_LABELS[q.question_type] || q.question_type;
 
-    const questionText = q.personalized_text || q.question_text;
+    const questionText = (q.personalized_text || q.question_text).replace(/<[^>]*>/g, '');
 
     // Merge vocabulary words from question + chapter key_vocabulary + per-question _chapterVocab
     const questionVocab = q.vocabulary_words || [];
@@ -536,7 +536,7 @@ const QuizEngine = (function() {
             ${(() => {
               // Mark vocab in options, but EXCLUDE the question's own vocabulary_words
               // to prevent them from giving away the correct answer via blue highlights
-              const opts = q.options || [];
+              const opts = (q.options || []).map(o => o.replace(/<[^>]*>/g, ''));
               const qVocabLower = (q.vocabulary_words || []).map(w => w.toLowerCase());
               const optionVocabWords = vocabWords.filter(w => !qVocabLower.includes(w.toLowerCase()));
               const markedOpts = opts.map(opt => markContextualVocab(markExplicitVocab(escapeHtml(opt), optionVocabWords), testedWords));
@@ -594,8 +594,8 @@ const QuizEngine = (function() {
             <h3 class="quiz-retry-title">Not quite — but you're close!</h3>
             <p class="quiz-retry-message">Read this hint and give it another try.</p>
             <div class="quiz-retry-hint">
-              <span class="quiz-retry-hint-label">💡 Hint</span>
-              <p>${escapeHtml(q.strategy_tip || 'Think carefully about the story!')}</p>
+              <span class="quiz-retry-hint-label">📖 Hint</span>
+              <p>${escapeHtml((q.strategy_tip || 'Reread this chapter.').replace(/<[^>]*>/g, ''))}</p>
             </div>
             <button class="btn btn-primary quiz-retry-btn" onclick="QuizEngine.dismissRetryModal()">Try Again</button>
           </div>
