@@ -540,6 +540,7 @@
   justify-content: center;
   gap: 8px;
   letter-spacing: -0.03em;
+  margin-top: auto;
 }
 
 .stat-card-trend {

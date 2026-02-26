@@ -1232,7 +1232,7 @@ function renderTeacherDashboard() {
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px">
       <div class="list-card" style="padding:24px">
-        <h3 style="margin:0 0 4px 0">📚 Top 3 Books</h3>
+        <h3 style="margin:0 0 4px 0;display:flex;align-items:center"><img src="/public/Stacked_Book_Outline.png" alt="" style="width:32px;height:32px;margin-right:8px">Top 3 Books</h3>
         <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">The most popular books your students are reading of all time</p>
         <div id="popular-books-chart">
           <div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Loading...</div>
@@ -1240,7 +1240,7 @@ function renderTeacherDashboard() {
       </div>
       <div class="list-card" style="padding:24px">
         <div style="display:flex;align-items:center;justify-content:space-between">
-          <h3 style="margin:0 0 4px 0">📖 Books Ranked by Popularity</h3>
+          <h3 style="margin:0 0 4px 0;display:flex;align-items:center"><img src="/public/Single_Book_Outline_.png" alt="" style="width:32px;height:32px;margin-right:8px">Books Ranked by Popularity</h3>
           <button class="btn btn-sm btn-outline" onclick="showTop10BooksModal()" style="font-size:0.7rem">View Top 10 of All Time</button>
         </div>
         <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">All-time books ranked by popularity</p>
@@ -1253,7 +1253,7 @@ function renderTeacherDashboard() {
     ${renderDashboardRoster()}
 
     <div class="list-card" style="padding:24px;margin-top:20px">
-      <h3 style="margin:0 0 4px 0">🔔 Store Purchases</h3>
+      <h3 style="margin:0 0 4px 0;display:flex;align-items:center"><img src="/public/Key_Outline_Icon_Blk.png" alt="" style="width:32px;height:32px;margin-right:8px">Store Purchases</h3>
       <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">Students who spent their Keys in the Class Store</p>
       <div id="purchase-notifications">
         <div style="text-align:center;padding:24px 0;color:var(--g400);font-size:0.875rem">Loading...</div>
@@ -1261,7 +1261,7 @@ function renderTeacherDashboard() {
     </div>
 
     <div class="list-card teacher-dashboard-activity" style="padding:24px;margin-top:20px">
-      <h3 style="margin:0 0 16px 0">🕐 Recent Activity</h3>
+      <h3 style="margin:0 0 16px 0;display:flex;align-items:center"><img src="/public/Recent_Outline_Icon_.png" alt="" style="width:32px;height:32px;margin-right:8px">Recent Activity</h3>
       <div id="recent-activity-feed">
         <div style="text-align:center;padding:24px 0;color:var(--g400);font-size:0.875rem">Loading...</div>
       </div>
@@ -1511,7 +1511,7 @@ function renderDashboardRoster() {
     <div id="dashboard-roster" class="list-card" style="padding:24px;margin-top:20px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <div>
-          <h3 style="margin:0 0 2px 0">👥 Student Roster</h3>
+          <h3 style="margin:0 0 2px 0;display:flex;align-items:center"><img src="/public/Student_Outline_Icon_Blk.png" alt="" style="width:32px;height:32px;margin-right:8px">Student Roster</h3>
           <p style="font-size:0.8rem;color:var(--g400);margin:0">Sorted by who needs the most help</p>
         </div>
         <button class="btn btn-sm btn-outline" onclick="navigate('students')">View all ${students.length} students →</button>
