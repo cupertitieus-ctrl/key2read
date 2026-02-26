@@ -788,10 +788,13 @@ app.post('/api/quiz/personalize-all', async (req, res) => {
 });
 
 app.post('/api/quiz/submit', async (req, res) => {
-  const { studentId, chapterId, assignmentId, answers, timeTaken, hintCount, attemptData, vocabLookups } = req.body;
+  const { studentId, chapterId, assignmentId, answers, timeTaken, hintCount, attemptData, vocabLookups, revealedIndices } = req.body;
   const student = await db.getStudent(studentId);
   const questions = await db.getChapterQuiz(chapterId);
   if (!student || questions.length === 0) return res.status(400).json({ error: 'Invalid submission' });
+
+  // Track which question indices had answers revealed (student got wrong twice)
+  const revealed = new Set(revealedIndices || []);
 
   let correctCount = 0;
   const strategiesUsed = [];
@@ -802,12 +805,14 @@ app.post('/api/quiz/submit', async (req, res) => {
     const opts = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []);
     const studentAnswer = answers[i]; // answer text (from shuffled client options)
     const correctText = opts[q.correct_answer] || '';
-    const isCorrect = studentAnswer === correctText;
+    // Don't count revealed answers as correct — the student got it wrong and was shown the answer
+    const wasRevealed = revealed.has(i);
+    const isCorrect = !wasRevealed && studentAnswer === correctText;
     if (isCorrect) correctCount++;
     if (q.strategy_type && !strategiesUsed.includes(q.strategy_type)) strategiesUsed.push(q.strategy_type);
 
     const feedback = await claude.getAnswerFeedback(q.question_text, studentAnswer || 'No answer', correctText, isCorrect, q.strategy_type, student.grade);
-    results.push({ questionId: q.id, isCorrect, feedback: feedback.feedback, strategyReminder: feedback.strategy_reminder });
+    results.push({ questionId: q.id, isCorrect, feedback: feedback.feedback, strategyReminder: feedback.strategy_reminder, wasRevealed });
   }
 
   const { data: chapter } = await db.supabase
@@ -835,7 +840,7 @@ app.post('/api/quiz/submit', async (req, res) => {
     alreadyEarned = true;
   }
 
-  console.log(`[Quiz Submit] student=${studentId} chapter=${chapterId} score=${score.toFixed(1)}% correct=${correctCount}/${questions.length} hints=${hints} keys=${keysEarned} alreadyEarned=${alreadyEarned}`);
+  console.log(`[Quiz Submit] student=${studentId} chapter=${chapterId} score=${score.toFixed(1)}% correct=${correctCount}/${questions.length} revealed=${revealed.size} hints=${hints} keys=${keysEarned} alreadyEarned=${alreadyEarned}`);
 
   const newScore = Math.max(200, student.reading_score + levelChange);
   await db.updateReadingLevel(studentId, newScore, 'quiz');

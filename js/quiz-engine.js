@@ -647,8 +647,9 @@ const QuizEngine = (function() {
       ${showRevealModal ? `
         <div class="quiz-retry-overlay" id="quiz-reveal-overlay">
           <div class="quiz-retry-modal quiz-reveal-modal">
-            <div class="quiz-retry-icon">📖</div>
-            <h3 class="quiz-retry-title">The correct answer was:</h3>
+            <div style="font-size:2rem;margin-bottom:4px">❌</div>
+            <h3 style="color:#EF4444;font-size:1.25rem;font-weight:800;margin:0 0 12px">Incorrect</h3>
+            <p style="color:var(--g500);font-size:0.9rem;margin:0 0 8px">The correct answer is:</p>
             <div class="quiz-reveal-answer">
               <p>"${escapeHtml(q.options[q.correct_answer] || '')}"</p>
             </div>
@@ -893,6 +894,9 @@ const QuizEngine = (function() {
           const idx = answers[i];
           return idx !== undefined && q?.options ? (q.options[idx] || '') : '';
         });
+        // Track which questions had answers revealed (student got wrong twice)
+        const revealedIndices = [];
+        feedback.forEach((fb, i) => { if (fb && fb.revealed) revealedIndices.push(i); });
         quizResults = await API.submitQuiz({
           studentId: currentStudent.id,
           chapterId: currentQuiz.chapter.id,
@@ -900,7 +904,8 @@ const QuizEngine = (function() {
           timeTaken,
           hintCount,
           attemptData: attempts.slice(0, currentQuiz.questions.length),
-          vocabLookups: Object.keys(definitionCache)
+          vocabLookups: Object.keys(definitionCache),
+          revealedIndices
         });
       } catch(e) {
         // Fallback local scoring
