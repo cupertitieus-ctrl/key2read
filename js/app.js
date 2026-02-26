@@ -412,6 +412,46 @@ function svgLineChart(data, labels, w, h) {
   '</svg>';
 }
 
+// Vertical bar chart (single color) for reading score trends
+function svgBarChart(data, labels, w, h) {
+  w = w || 620; h = h || 300;
+  const pad = { top: 30, right: 20, bottom: 40, left: 50 };
+  const cw = w - pad.left - pad.right;
+  const ch = h - pad.top - pad.bottom;
+  const max = Math.max(...data) + 40;
+  const barGap = 8;
+  const barWidth = Math.min(60, (cw / data.length) - barGap);
+  const color = '#2563EB';
+
+  // Gridlines
+  const gridCount = 4;
+  let gridLines = '';
+  for (let i = 0; i <= gridCount; i++) {
+    const y = pad.top + (i / gridCount) * ch;
+    const val = Math.round(max - (i / gridCount) * max);
+    gridLines += '<line x1="' + pad.left + '" y1="' + y + '" x2="' + (w - pad.right) + '" y2="' + y + '" stroke="#E5E7EB" stroke-width="1" stroke-dasharray="4,4"/>';
+    gridLines += '<text x="' + (pad.left - 8) + '" y="' + (y + 4) + '" text-anchor="end" fill="#9CA3AF" font-size="11">' + val + '</text>';
+  }
+
+  var bars = data.map(function(v, i) {
+    var x = pad.left + (i + 0.5) * (cw / data.length) - barWidth / 2;
+    var barH = (v / max) * ch;
+    var y = pad.top + ch - barH;
+    var radius = Math.min(6, barWidth / 3);
+    return '<rect x="' + x + '" y="' + y + '" width="' + barWidth + '" height="' + barH + '" rx="' + radius + '" fill="' + color + '" opacity="0.85"/>' +
+           '<text x="' + (x + barWidth / 2) + '" y="' + (y - 8) + '" text-anchor="middle" fill="' + color + '" font-size="12" font-weight="700">' + v + '</text>';
+  }).join('');
+
+  var xLabels = labels.map(function(l, i) {
+    var x = pad.left + (i + 0.5) * (cw / data.length);
+    return '<text x="' + x + '" y="' + (h - 8) + '" text-anchor="middle" fill="#6B7280" font-size="11" font-weight="500">' + l + '</text>';
+  }).join('');
+
+  return '<svg class="svg-chart svg-chart-stretch" viewBox="0 0 ' + w + ' ' + h + '" width="100%" preserveAspectRatio="xMidYMid meet">' +
+    gridLines + bars + xLabels +
+  '</svg>';
+}
+
 // Colorful gradient area chart for teacher dashboard
 function svgGradientAreaChart(data, labels, w, h) {
   w = w || 600; h = h || 220;
@@ -1051,6 +1091,7 @@ function renderTeacherDashboard() {
     <div class="page-header">
       <h1><img src="/public/logo.png" alt="key2read" style="height:44px;width:auto;vertical-align:middle;margin-right:10px">Dashboard</h1>
       <div class="page-header-actions" style="display:flex;align-items:center;gap:16px">
+        <button class="btn btn-outline btn-sm" onclick="openModal('dashboard-help')" style="font-size:0.8rem;padding:6px 14px;border-radius:20px">&#10067; How This Dashboard Works</button>
         <span style="font-size:0.875rem;color:var(--g500)">${currentUser?.name || 'Teacher'}'s Class</span>
         ${currentUser?.classCode ? `<div style="display:flex;align-items:center;gap:8px;background:var(--blue-p, #EFF6FF);padding:8px 16px;border-radius:10px;border:2px dashed var(--blue)">
           <span style="font-size:0.75rem;color:var(--g500)">Class Code:</span>
@@ -1157,7 +1198,7 @@ function loadTeacherDashboardData() {
       scores.unshift(500);
       labels.unshift('Start');
     }
-    container.innerHTML = svgLineChart(scores, labels, 620, 500);
+    container.innerHTML = svgBarChart(scores, labels, 620, 340);
   }).catch(function(err) {
     console.error('[Dashboard] Weekly growth error:', err);
     var container = document.getElementById('trend-chart-container');
@@ -1567,25 +1608,51 @@ function renderQuizzes() {
     </div>
 
     <div class="stat-cards stat-cards-5">
-      <div class="stat-card">
+      <div class="stat-card clickable-card" onclick="navigate('teacher-dashboard')">
         <div class="stat-card-label">Students</div>
         <div class="stat-card-value">${students.length}</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card clickable-card" onclick="navigate('reports')">
         <div class="stat-card-label">Average Reading Score</div>
         <div class="stat-card-value">${avgScore}</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card clickable-card" onclick="navigate('reports')">
         <div class="stat-card-label">Average Comprehension</div>
         <div class="stat-card-value">${avgAcc}%</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card clickable-card" onclick="navigate('store')">
         <div class="stat-card-label">Total Keys Earned</div>
         <div class="stat-card-value">${totalKeys.toLocaleString()}</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card clickable-card" onclick="navigate('library')">
         <div class="stat-card-label">Books Available</div>
         <div class="stat-card-value">${books.length}</div>
+      </div>
+    </div>
+
+    <div class="list-card" style="padding:24px;margin-bottom:20px">
+      <h3 style="margin:0 0 16px 0;font-size:1rem;font-weight:700;color:var(--navy)">How Quizzes Work</h3>
+      <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:16px">
+        <div style="text-align:center;padding:16px 12px;background:var(--blue-p, #EFF6FF);border-radius:var(--radius-md);cursor:pointer" onclick="navigate('library')">
+          <div style="font-size:1.75rem;margin-bottom:8px">📚</div>
+          <div style="font-size:0.8125rem;font-weight:700;color:var(--navy);margin-bottom:4px">1. Pick a Book</div>
+          <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">Students choose a chapter book from the library</div>
+        </div>
+        <div style="text-align:center;padding:16px 12px;background:var(--green-l, #ECFDF5);border-radius:var(--radius-md)">
+          <div style="font-size:1.75rem;margin-bottom:8px">📖</div>
+          <div style="font-size:0.8125rem;font-weight:700;color:var(--navy);margin-bottom:4px">2. Read a Chapter</div>
+          <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">Students read the physical book chapter by chapter</div>
+        </div>
+        <div style="text-align:center;padding:16px 12px;background:var(--gold-l, #FFFBEB);border-radius:var(--radius-md)">
+          <div style="font-size:1.75rem;margin-bottom:8px">📝</div>
+          <div style="font-size:0.8125rem;font-weight:700;color:var(--navy);margin-bottom:4px">3. Take the Quiz</div>
+          <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">5 questions test comprehension, vocabulary, and reasoning</div>
+        </div>
+        <div style="text-align:center;padding:16px 12px;background:var(--purple-l, #F5F3FF);border-radius:var(--radius-md);cursor:pointer" onclick="navigate('reports')">
+          <div style="font-size:1.75rem;margin-bottom:8px">🔑</div>
+          <div style="font-size:0.8125rem;font-weight:700;color:var(--navy);margin-bottom:4px">4. Earn Keys & Grow</div>
+          <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">Score 80%+ to earn Keys and boost their Reading Score</div>
+        </div>
       </div>
     </div>
 
@@ -4512,7 +4579,7 @@ function loadReportsChartData() {
       scores.unshift(500);
       labels.unshift('Start');
     }
-    container.innerHTML = svgLineChart(scores, labels, 620, 280);
+    container.innerHTML = svgBarChart(scores, labels, 620, 280);
   }).catch(function() {
     var container = document.getElementById('reports-trend-chart');
     if (container) container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Could not load chart data</div>';
@@ -4613,7 +4680,7 @@ function renderStudentReport() {
     <div class="chart-container">
       <h3>Reading Score Growth</h3>
       <p class="chart-subtitle">${s.name.split(' ')[0]}'s reading score over time</p>
-      ${svgLineChart(gd.scores, months, 620, 280)}
+      ${svgBarChart(gd.scores, months, 620, 280)}
     </div>
 
     <div class="data-table-wrap" style="margin-top:24px">
