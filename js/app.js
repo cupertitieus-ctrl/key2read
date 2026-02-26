@@ -2672,6 +2672,9 @@ async function storeBuyItem(idx) {
     if (result.success) {
       currentUser.keys_earned = result.newBalance;
       invalidateQuizResultsCache(); // Balance changed — clear cached results
+      // Clear purchase cache so teacher dashboard and sidebar badge refresh
+      window._purchaseData = null;
+      window._purchaseCount = 0;
       const newStock = Math.max(0, storeItems[idx].stock - 1);
       storeItems[idx].stock = newStock;
       // Update stock in DB

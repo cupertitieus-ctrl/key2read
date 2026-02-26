@@ -1006,8 +1006,11 @@ app.post('/api/store/purchase', async (req, res) => {
   try {
     const result = await db.deductStudentKeys(studentId, price);
     if (!result.success) return res.status(400).json({ error: result.reason });
-    // Record purchase history (non-blocking, graceful if table doesn't exist)
-    if (classId) db.recordPurchase(studentId, classId, itemName || 'Item', price);
+    // Record purchase history
+    if (classId) {
+      await db.recordPurchase(studentId, classId, itemName || 'Item', price);
+    }
+    // Clear cached purchase data so dashboard refreshes
     res.json({ success: true, newBalance: result.newBalance, itemName });
   } catch (e) {
     console.error('Store purchase error:', e);

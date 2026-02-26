@@ -479,14 +479,38 @@ async function deductStudentKeys(studentId, amount) {
 
 async function recordPurchase(studentId, classId, itemName, price) {
   try {
-    await supabase.from('store_purchases').insert({
+    const { data, error } = await supabase.from('store_purchases').insert({
       student_id: studentId,
       class_id: classId,
       item_name: itemName,
       price: price
-    });
+    }).select();
+    if (error) {
+      console.error('recordPurchase error:', error.message, error.code);
+      // If table doesn't exist, try to create it
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        console.warn('store_purchases table does not exist — creating it now');
+        await supabase.rpc('exec_sql', { sql: `
+          CREATE TABLE IF NOT EXISTS store_purchases (
+            id SERIAL PRIMARY KEY,
+            student_id INTEGER REFERENCES students(id),
+            class_id INTEGER REFERENCES classes(id),
+            item_name TEXT NOT NULL,
+            price INTEGER NOT NULL DEFAULT 0,
+            purchased_at TIMESTAMPTZ DEFAULT NOW()
+          );
+        `}).catch(() => {});
+        // Retry the insert
+        const { error: retryErr } = await supabase.from('store_purchases').insert({
+          student_id: studentId, class_id: classId, item_name: itemName, price: price
+        });
+        if (retryErr) console.error('recordPurchase retry failed:', retryErr.message);
+      }
+    } else {
+      console.log('Purchase recorded:', data);
+    }
   } catch (e) {
-    console.warn('Could not record purchase (table may not exist):', e.message);
+    console.error('Could not record purchase:', e.message);
   }
 }
 
@@ -498,7 +522,10 @@ async function getRecentPurchases(classId) {
       .eq('class_id', classId)
       .order('purchased_at', { ascending: false })
       .limit(20);
-    if (error) return [];
+    if (error) {
+      console.error('getRecentPurchases query error:', error.message, error.code);
+      return [];
+    }
     // Join student names
     const studentIds = [...new Set((data || []).map(p => p.student_id))];
     if (studentIds.length === 0) return [];
