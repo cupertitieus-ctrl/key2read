@@ -1006,16 +1006,28 @@ function renderTeacherDashboard() {
   }
 
   // Build reading score trend chart using growthData
+  // Only show the current week score when no real weekly data exists
   const hasGrowthData = students.some(s => growthData[s.id]);
-  const classScores = hasGrowthData
-    ? months.map((_, mi) => {
-        const valid = students.filter(s => growthData[s.id]);
-        if (valid.length === 0) return 0;
-        return Math.round(valid.reduce((sum, s) => sum + growthData[s.id].scores[mi], 0) / valid.length);
-      })
-    : months.map(() => avgScore);
-
-  const trendChart = svgLineChart(classScores.slice(-4), months.slice(-4), 620, 500);
+  let trendScores, trendLabels;
+  if (hasGrowthData) {
+    const classScores = months.map((_, mi) => {
+      const valid = students.filter(s => growthData[s.id]);
+      if (valid.length === 0) return 0;
+      return Math.round(valid.reduce((sum, s) => sum + growthData[s.id].scores[mi], 0) / valid.length);
+    });
+    trendScores = classScores.slice(-4);
+    trendLabels = months.slice(-4);
+  } else {
+    // No weekly data — just show current week with actual average
+    trendScores = [avgScore];
+    trendLabels = [months[months.length - 1]];
+  }
+  const trendChart = trendScores.length > 1 ? svgLineChart(trendScores, trendLabels, 620, 500) :
+    '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:24px;text-align:center">' +
+      '<div style="font-size:3rem;font-weight:800;color:var(--blue)">' + avgScore + '</div>' +
+      '<div style="font-size:0.9rem;color:var(--g500);margin-top:4px">Current Class Average</div>' +
+      '<div style="font-size:0.75rem;color:var(--g400);margin-top:8px">Weekly trends will appear as students complete more quizzes</div>' +
+    '</div>';
 
   // Build reading score pie chart
   const needsSupport = students.filter(s => (s.reading_score || s.score || 0) < 400).length;
@@ -1087,7 +1099,10 @@ function renderTeacherDashboard() {
         </div>
       </div>
       <div class="list-card" style="padding:24px">
-        <h3 style="margin:0 0 4px 0">📖 All Popular Books</h3>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <h3 style="margin:0 0 4px 0">📖 All Popular Books</h3>
+          <button class="btn btn-sm btn-outline" onclick="showTop10BooksModal()" style="font-size:0.7rem">View Top 10 with Covers</button>
+        </div>
         <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">Books your class is reading ranked by popularity</p>
         <div id="popular-books-list">
           <div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Loading...</div>
@@ -1362,6 +1377,41 @@ function showPopularBookDetail(idx) {
         </div>
       </div>
     </div>`;
+}
+
+function showTop10BooksModal() {
+  const data = window._popularBooksData;
+  if (!data || data.length === 0) { showToast('No book data yet'); return; }
+  const top10 = data.slice(0, 10);
+  const medals = ['🥇', '🥈', '🥉'];
+  const borderColors = ['#F59E0B', '#94A3B8', '#CD7F32'];
+  const modal = document.getElementById('modal-root');
+  modal.innerHTML = '<div class="modal-overlay" onclick="closeModal(event)">' +
+    '<div class="modal" onclick="event.stopPropagation()" style="max-width:700px">' +
+      '<div class="modal-header"><h3>📚 Top 10 Books This Week</h3><button class="modal-close" onclick="closeModal()">' + IC.x + '</button></div>' +
+      '<div class="modal-body" style="padding:24px">' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(110px, 1fr));gap:16px">' +
+          top10.map(function(b, i) {
+            var coverHtml = b.coverUrl
+              ? '<img src="' + b.coverUrl + '" alt="' + escapeHtml(b.title) + '" style="width:100%;height:auto;border-radius:6px;display:block" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
+              : '';
+            var border = i < 3 ? borderColors[i] : 'var(--g200)';
+            var medal = i < 3 ? '<span style="position:absolute;top:-8px;left:-8px;font-size:1.3rem">' + medals[i] + '</span>' : '<span style="position:absolute;top:-6px;left:-6px;width:22px;height:22px;border-radius:50%;background:var(--g300);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:800">' + (i+1) + '</span>';
+            return '<div style="text-align:center;cursor:pointer" onclick="closeModal();showPopularBookDetail(' + i + ')">' +
+              '<div style="position:relative;margin-bottom:6px">' +
+                '<div style="border:2px solid ' + border + ';border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);background:#fff">' +
+                  coverHtml +
+                  '<div style="display:' + (b.coverUrl ? 'none' : 'flex') + ';width:100%;height:140px;background:linear-gradient(135deg,var(--blue),var(--purple));align-items:center;justify-content:center;color:#fff;font-weight:700;padding:8px;font-size:0.65rem;text-align:center">' + escapeHtml(b.title) + '</div>' +
+                '</div>' +
+                medal +
+              '</div>' +
+              '<p style="font-size:0.7rem;font-weight:700;color:var(--g800);margin:0 0 2px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(b.title) + '</p>' +
+              '<p style="font-size:0.6rem;color:var(--g400);margin:0">' + b.studentCount + ' ' + (b.studentCount === 1 ? 'reader' : 'readers') + '</p>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+    '</div></div>';
 }
 
 function renderQuizzes() {
