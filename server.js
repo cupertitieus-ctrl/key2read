@@ -508,6 +508,28 @@ app.get('/api/class/:classId/analytics', async (req, res) => {
   }
 });
 
+// ─── POPULAR BOOKS (for teacher dashboard) ───
+app.get('/api/class/:classId/popular-books', async (req, res) => {
+  try {
+    const data = await db.getPopularBooks(parseInt(req.params.classId));
+    res.json(data);
+  } catch (e) {
+    console.error('Popular books error:', e);
+    res.status(500).json({ error: 'Failed to load popular books' });
+  }
+});
+
+// ─── RECENT ACTIVITY (for teacher dashboard) ───
+app.get('/api/class/:classId/recent-activity', async (req, res) => {
+  try {
+    const data = await db.getRecentActivity(parseInt(req.params.classId));
+    res.json(data);
+  } catch (e) {
+    console.error('Recent activity error:', e);
+    res.status(500).json({ error: 'Failed to load recent activity' });
+  }
+});
+
 // ─── TEACHER QUIZ MODE ───
 app.post('/api/teacher/start-quiz-mode', async (req, res) => {
   try {
@@ -966,15 +988,26 @@ app.delete('/api/store/gallery/:id', async (req, res) => {
 
 // ─── CLASS STORE PURCHASE ───
 app.post('/api/store/purchase', async (req, res) => {
-  const { studentId, itemName, price } = req.body;
+  const { studentId, itemName, price, classId } = req.body;
   if (!studentId || !price || price <= 0) return res.status(400).json({ error: 'Invalid purchase data' });
   try {
     const result = await db.deductStudentKeys(studentId, price);
     if (!result.success) return res.status(400).json({ error: result.reason });
+    // Record purchase history (non-blocking, graceful if table doesn't exist)
+    if (classId) db.recordPurchase(studentId, classId, itemName || 'Item', price);
     res.json({ success: true, newBalance: result.newBalance, itemName });
   } catch (e) {
     console.error('Store purchase error:', e);
     res.status(500).json({ error: 'Purchase failed' });
+  }
+});
+
+app.get('/api/class/:classId/recent-purchases', async (req, res) => {
+  try {
+    const purchases = await db.getRecentPurchases(parseInt(req.params.classId));
+    res.json(purchases);
+  } catch (e) {
+    res.json([]);
   }
 });
 

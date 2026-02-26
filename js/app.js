@@ -139,12 +139,22 @@ function invalidateQuizResultsCache() {
   _apiCache.quizResultsAt = 0;
 }
 
-// ---- Growth Data (6 months: Sep-Feb) ----
-const months = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb'];
+// ---- Growth Data (weekly: last 8 weeks) ----
+const weeks = (() => {
+  const labels = [];
+  const now = new Date();
+  for (let i = 7; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i * 7);
+    labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+  }
+  return labels;
+})();
+const months = weeks; // alias for backward compat
 let growthData = {};
 
 // ---- State ----
-let page = 'quizzes';
+let page = 'teacher-dashboard';
 let detailId = null;
 let studentId = null;
 let onboardingStep = 0;
@@ -309,6 +319,109 @@ function miniChart(data, color, w, h) {
   </svg>`;
 }
 
+// Colorful gradient area chart for teacher dashboard
+function svgGradientAreaChart(data, labels, w, h) {
+  w = w || 600; h = h || 220;
+  const pad = { top: 24, right: 20, bottom: 30, left: 50 };
+  const cw = w - pad.left - pad.right;
+  const ch = h - pad.top - pad.bottom;
+  const min = Math.min(...data) - 20;
+  const max = Math.max(...data) + 20;
+  const range = max - min || 1;
+
+  const pts = data.map((v, i) => {
+    const x = pad.left + (i / (data.length - 1)) * cw;
+    const y = pad.top + ch - ((v - min) / range) * ch;
+    return { x, y, v };
+  });
+
+  const linePoints = pts.map(p => `${p.x},${p.y}`).join(' ');
+  const areaPoints = `${pts[0].x},${pad.top + ch} ${linePoints} ${pts[pts.length-1].x},${pad.top + ch}`;
+
+  // Gridlines
+  const gridCount = 4;
+  let gridLines = '';
+  for (let i = 0; i <= gridCount; i++) {
+    const y = pad.top + (i / gridCount) * ch;
+    const val = Math.round(max - (i / gridCount) * range);
+    gridLines += `<line x1="${pad.left}" y1="${y}" x2="${w - pad.right}" y2="${y}" stroke="#E5E7EB" stroke-width="1" stroke-dasharray="4,4"/>`;
+    gridLines += `<text x="${pad.left - 8}" y="${y + 4}" text-anchor="end" fill="#9CA3AF" font-size="11">${val}</text>`;
+  }
+
+  let xLabels = labels.map((l, i) => {
+    const x = pad.left + (i / (labels.length - 1)) * cw;
+    return `<text x="${x}" y="${h - 6}" text-anchor="middle" fill="#6B7280" font-size="11" font-weight="500">${l}</text>`;
+  }).join('');
+
+  // Colorful dots with varying colors
+  const dotColors = ['#2563EB', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+  let dots = pts.map((p, i) => `<circle cx="${p.x}" cy="${p.y}" r="6" fill="${dotColors[i % dotColors.length]}" stroke="#fff" stroke-width="3"/>`).join('');
+  let dotLabels = pts.map((p, i) => `<text x="${p.x}" y="${p.y - 14}" text-anchor="middle" fill="${dotColors[i % dotColors.length]}" font-size="12" font-weight="700">${p.v}</text>`).join('');
+
+  return `<svg class="svg-chart" viewBox="0 0 ${w} ${h}" width="100%" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <linearGradient id="areaGrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#2563EB"/>
+        <stop offset="25%" stop-color="#10B981"/>
+        <stop offset="50%" stop-color="#F59E0B"/>
+        <stop offset="75%" stop-color="#EF4444"/>
+        <stop offset="100%" stop-color="#8B5CF6"/>
+      </linearGradient>
+      <linearGradient id="areaFill" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#2563EB" stop-opacity="0.12"/>
+        <stop offset="50%" stop-color="#10B981" stop-opacity="0.08"/>
+        <stop offset="100%" stop-color="#8B5CF6" stop-opacity="0.12"/>
+      </linearGradient>
+    </defs>
+    ${gridLines}
+    <polygon points="${areaPoints}" fill="url(#areaFill)"/>
+    <polyline points="${linePoints}" fill="none" stroke="url(#areaGrad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    ${dots}
+    ${dotLabels}
+    ${xLabels}
+  </svg>`;
+}
+
+function svgPieChart(slices, size) {
+  size = size || 220;
+  const cx = size / 2, cy = size / 2, r = size / 2 - 10;
+  let total = slices.reduce((s, sl) => s + sl.value, 0);
+  if (total === 0) return '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">No data yet</div>';
+
+  let startAngle = -Math.PI / 2;
+  let paths = '';
+  slices.forEach(sl => {
+    if (sl.value === 0) return;
+    const pct = sl.value / total;
+    const endAngle = startAngle + pct * 2 * Math.PI;
+    const largeArc = pct > 0.5 ? 1 : 0;
+    const x1 = cx + r * Math.cos(startAngle);
+    const y1 = cy + r * Math.sin(startAngle);
+    const x2 = cx + r * Math.cos(endAngle);
+    const y2 = cy + r * Math.sin(endAngle);
+    if (pct >= 0.999) {
+      paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${sl.color}" stroke="#fff" stroke-width="2"/>`;
+    } else {
+      paths += `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc} 1 ${x2},${y2} Z" fill="${sl.color}" stroke="#fff" stroke-width="2"/>`;
+    }
+    startAngle = endAngle;
+  });
+
+  const legend = slices.filter(sl => sl.value > 0).map(sl => {
+    const pct = Math.round((sl.value / total) * 100);
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <div style="width:12px;height:12px;border-radius:3px;background:${sl.color};flex-shrink:0"></div>
+      <span style="font-size:0.8rem;color:var(--g600)">${sl.label}</span>
+      <span style="margin-left:auto;font-size:0.8rem;font-weight:700;color:var(--navy)">${sl.value} (${pct}%)</span>
+    </div>`;
+  }).join('');
+
+  return `<div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;justify-content:center">
+    <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="flex-shrink:0">${paths}</svg>
+    <div style="flex:1;min-width:140px">${legend}</div>
+  </div>`;
+}
+
 function svgAreaChart(data, labels, color, w, h) {
   w = w || 600; h = h || 200;
   const pad = { top: 20, right: 20, bottom: 30, left: 50 };
@@ -411,9 +524,9 @@ function renderSidebar() {
   } else {
     items = [
       { section: 'Dashboard' },
+      { id: 'teacher-dashboard', icon: IC.target, label: 'Dashboard' },
       { id: 'quizzes',    icon: IC.clip,  label: 'Quizzes & Assessments', badge: assignments.length > 0 ? String(assignments.length) : '', badgeCls: 'red' },
       { id: 'students',   icon: IC.users, label: 'Students',             badge: students.length > 0 ? String(students.length) : '', badgeCls: 'blue' },
-      { id: 'goals',      icon: IC.trend, label: 'Class Goals' },
       { id: 'reports',    icon: IC.chart, label: 'Growth Reports' },
       { section: 'Management' },
       { id: 'store',      icon: IC.bag,   label: 'Class Store',          badge: String(storeItems.length), badgeCls: 'gold' },
@@ -545,7 +658,7 @@ function renderHeader() {
     </div>
     <div class="header-search">
       ${IC.search}
-      <input type="text" placeholder="${userRole === 'student' ? 'Search books, quizzes...' : 'Search students, books, quizzes...'}">
+      <input type="text" id="global-search-input" placeholder="${userRole === 'student' ? 'Search books, quizzes...' : 'Search students, books, quizzes...'}" oninput="handleGlobalSearch(this.value)">
     </div>
     <div class="header-actions">
       <div class="header-profile">
@@ -629,6 +742,7 @@ function renderMain() {
   const el = document.getElementById('dash-main');
   switch (page) {
     // Teacher pages
+    case 'teacher-dashboard': el.innerHTML = renderTeacherDashboard(); loadTeacherDashboardData(); break;
     case 'quizzes':
       if (detailId) { el.innerHTML = renderAssignmentDetail(); break; }
       el.innerHTML = renderQuizzes();
@@ -637,11 +751,10 @@ function renderMain() {
       if (studentId !== null) { el.innerHTML = renderStudentProfile(); break; }
       el.innerHTML = renderStudents();
       break;
-    case 'goals':      el.innerHTML = renderGoals(); break;
-    case 'store':      el.innerHTML = userRole === 'student' ? renderStudentStore() : renderStore(); break;
+    case 'store':      el.innerHTML = userRole === 'student' ? renderStudentStore() : renderStore(); if (userRole !== 'student') loadStorePurchaseNotifications(); break;
     case 'library':    el.innerHTML = renderLibrary(); initLibrarySearch(); break;
     case 'book-detail': el.innerHTML = renderBookDetail(); break;
-    case 'celebrate':  el.innerHTML = renderCelebrate(); break;
+    case 'celebrate':  el.innerHTML = renderCelebrate(); loadCertificateData(); break;
     case 'aitools':    el.innerHTML = renderAITools(); break;
     case 'teacher-settings': el.innerHTML = renderTeacherSettings(); break;
     case 'parent-settings': el.innerHTML = renderParentSettings(); break;
@@ -678,7 +791,7 @@ function renderMain() {
       else if (userRole === 'student') el.innerHTML = renderStudentDashboard();
       else if (userRole === 'owner') el.innerHTML = renderOwnerDashboard();
       else if (userRole === 'principal') el.innerHTML = renderPrincipalDashboard();
-      else el.innerHTML = renderQuizzes();
+      else { el.innerHTML = renderTeacherDashboard(); loadTeacherDashboardData(); }
   }
 }
 
@@ -779,6 +892,360 @@ async function launchQuiz(bookId, chapterNum, sid) {
 }
 
 // ---- Page: Quizzes & Assessments ----
+// ---- Teacher Dashboard (Overview) ----
+function renderTeacherDashboard() {
+  const avgAcc = students.length > 0 ? Math.round(students.reduce((s, st) => s + (st.accuracy || 0), 0) / students.length) : 0;
+  const totalKeys = students.reduce((s, st) => s + (st.keys_earned || st.keys || 0), 0);
+  const avgScore = students.length > 0 ? Math.round(students.reduce((s, st) => s + (st.reading_score || st.score || 0), 0) / students.length) : 0;
+  const totalQuizzes = students.reduce((s, st) => s + (st.quizzes_completed || 0), 0);
+
+  if (students.length === 0) {
+    return `
+      <div class="page-header"><h1><img src="/public/logo.png" alt="key2read" style="height:44px;width:auto;vertical-align:middle;margin-right:10px">Dashboard</h1></div>
+      <div class="empty-state">
+        <div class="empty-state-icon">${IC.users}</div>
+        <h2>Welcome to key2read!</h2>
+        <p>Your dashboard will come alive once students join your class and start taking quizzes.</p>
+        <button class="btn btn-primary" onclick="navigate('quizzes')">${IC.clip} Go to Quizzes</button>
+      </div>`;
+  }
+
+  // Build reading score trend chart using growthData
+  const hasGrowthData = students.some(s => growthData[s.id]);
+  const classScores = hasGrowthData
+    ? months.map((_, mi) => {
+        const valid = students.filter(s => growthData[s.id]);
+        if (valid.length === 0) return 0;
+        return Math.round(valid.reduce((sum, s) => sum + growthData[s.id].scores[mi], 0) / valid.length);
+      })
+    : months.map(() => avgScore);
+
+  const trendChart = svgGradientAreaChart(classScores, months, 620, 220);
+
+  // Build reading score pie chart
+  const needsSupport = students.filter(s => (s.reading_score || s.score || 0) < 400).length;
+  const developing = students.filter(s => { const sc = s.reading_score || s.score || 0; return sc >= 400 && sc < 600; }).length;
+  const onTrack = students.filter(s => { const sc = s.reading_score || s.score || 0; return sc >= 600 && sc < 800; }).length;
+  const advanced = students.filter(s => (s.reading_score || s.score || 0) >= 800).length;
+  const pieChart = svgPieChart([
+    { label: 'Needs Support (0–399)', value: needsSupport, color: '#EF4444' },
+    { label: 'Developing (400–599)', value: developing, color: '#F59E0B' },
+    { label: 'On Track (600–799)', value: onTrack, color: '#10B981' },
+    { label: 'Advanced (800+)', value: advanced, color: '#2563EB' }
+  ], 180);
+
+  return `
+    <div class="page-header">
+      <h1><img src="/public/logo.png" alt="key2read" style="height:44px;width:auto;vertical-align:middle;margin-right:10px">Dashboard</h1>
+      <div class="page-header-actions" style="display:flex;align-items:center;gap:16px">
+        <span style="font-size:0.875rem;color:var(--g500)">${currentUser?.name || 'Teacher'}'s Class</span>
+        ${currentUser?.classCode ? `<div style="display:flex;align-items:center;gap:8px;background:var(--blue-p, #EFF6FF);padding:8px 16px;border-radius:10px;border:2px dashed var(--blue)">
+          <span style="font-size:0.75rem;color:var(--g500)">Class Code:</span>
+          <span style="font-size:1.1rem;font-weight:800;color:var(--blue);letter-spacing:0.08em;user-select:all;cursor:text" oncontextmenu="navigator.clipboard.writeText('${currentUser.classCode}')">${currentUser.classCode}</span>
+          <button class="btn btn-sm btn-ghost" style="padding:2px 8px;font-size:0.7rem" onclick="navigator.clipboard.writeText('${currentUser.classCode}'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
+        </div>` : ''}
+      </div>
+    </div>
+
+    <div class="stat-cards stat-cards-5">
+      <div class="stat-card clickable-card" onclick="document.getElementById('dashboard-roster')?.scrollIntoView({behavior:'smooth'})">
+        <div class="stat-card-label">Students <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Students', 'The total number of students in your class. Click to scroll to your student roster.')">?</button></div>
+        <div class="stat-card-value" style="color:var(--blue)">${students.length}</div>
+      </div>
+      <div class="stat-card clickable-card" onclick="navigate('reports')">
+        <div class="stat-card-label">Average Reading Score <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Reading Score', 'A score from 0 to 1000 that measures how well your class is reading overall. It\\'s based on quiz scores, reading effort, independence (using fewer hints), vocabulary growth, and persistence. Click to see Growth Reports.')">?</button></div>
+        <div class="stat-card-value" style="color:var(--green)">${avgScore}</div>
+      </div>
+      <div class="stat-card clickable-card" onclick="navigate('reports')">
+        <div class="stat-card-label">Average Comprehension <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Comprehension', 'The average percentage of quiz questions your students answer correctly. A higher number means students are understanding what they read. Click to see Growth Reports.')">?</button></div>
+        <div class="stat-card-value" style="color:var(--gold)">${avgAcc}%</div>
+      </div>
+      <div class="stat-card clickable-card" onclick="navigate('store')">
+        <div class="stat-card-label">Total Keys Earned <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Total Keys Earned', 'Keys are rewards students earn by passing quizzes with 80% or higher. Students can spend keys in the Class Store to redeem prizes you set up. Click to manage the store.')">?</button></div>
+        <div class="stat-card-value" style="color:var(--purple)">${totalKeys.toLocaleString()}</div>
+      </div>
+      <div class="stat-card clickable-card" onclick="navigate('quizzes')">
+        <div class="stat-card-label">Quizzes Completed <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Quizzes Completed', 'The total number of chapter quizzes all your students have completed. Each book chapter has its own quiz. Click to view assignments.')">?</button></div>
+        <div class="stat-card-value" style="color:var(--orange)">${totalQuizzes}</div>
+      </div>
+    </div>
+
+    <div class="teacher-dashboard-charts">
+      <div class="list-card" style="padding:24px">
+        <h3 style="margin:0 0 4px 0">🥧 Reading Score Distribution</h3>
+        <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">How your students are performing across reading levels</p>
+        ${pieChart}
+      </div>
+      <div class="list-card" style="padding:24px;cursor:pointer" onclick="navigate('reports')">
+        <h3 style="margin:0 0 4px 0">📈 Class Reading Score Trend</h3>
+        <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">Weekly average score · <span style="color:var(--blue);font-weight:600">View Full Report →</span></p>
+        ${trendChart}
+      </div>
+    </div>
+
+    <div class="list-card" style="padding:24px;margin-top:20px">
+      <h3 style="margin:0 0 4px 0">📚 Most Popular Book This Week</h3>
+      <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">Books your students are reading the most</p>
+      <div style="display:flex;gap:24px;align-items:flex-start">
+        <div id="popular-books-chart" style="flex:1;min-width:0">
+          <div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Loading...</div>
+        </div>
+        <div id="popular-book-cover" style="flex-shrink:0"></div>
+      </div>
+    </div>
+
+    ${renderDashboardRoster()}
+
+    <div class="list-card" style="padding:24px;margin-top:20px">
+      <h3 style="margin:0 0 4px 0">🔔 Store Purchases</h3>
+      <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">Students who spent their Keys in the Class Store</p>
+      <div id="purchase-notifications">
+        <div style="text-align:center;padding:24px 0;color:var(--g400);font-size:0.875rem">Loading...</div>
+      </div>
+    </div>
+
+    <div class="list-card teacher-dashboard-activity" style="padding:24px;margin-top:20px">
+      <h3 style="margin:0 0 16px 0">🕐 Recent Activity</h3>
+      <div id="recent-activity-feed">
+        <div style="text-align:center;padding:24px 0;color:var(--g400);font-size:0.875rem">Loading...</div>
+      </div>
+    </div>
+  `;
+}
+
+// Load async data for teacher dashboard
+function loadTeacherDashboardData() {
+  const classId = currentUser?.classId;
+  if (!classId) return;
+
+  // Popular books
+  API.getPopularBooks(classId).then(data => {
+    const el = document.getElementById('popular-books-chart');
+    if (!el) return;
+    if (!data || data.length === 0) {
+      el.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">No book data yet — students need to complete some quizzes!</div>';
+      return;
+    }
+    const maxCount = Math.max(...data.map(b => b.studentCount), 1);
+    const colors = ['#2563EB', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
+    // Store data globally so click handler can access it
+    window._popularBooksData = data;
+    el.innerHTML = data.map((b, i) => {
+      const barWidth = Math.round((b.studentCount / maxCount) * 100);
+      const color = colors[i % colors.length];
+      return `<div class="bar-chart-row popular-book-row" style="cursor:pointer" onclick="showPopularBookDetail(${i})">
+        <span class="bar-chart-label" title="${escapeHtml(b.title)}">${escapeHtml(b.title.length > 22 ? b.title.substring(0, 20) + '…' : b.title)}</span>
+        <div class="bar-chart-track"><div class="bar-chart-fill" style="width:${barWidth}%;background:linear-gradient(90deg, ${color}, ${color}88)"></div></div>
+        <span class="bar-chart-value">${b.studentCount} ${b.studentCount === 1 ? 'student' : 'students'}</span>
+      </div>`;
+    }).join('');
+    // Show the #1 book cover
+    const coverEl = document.getElementById('popular-book-cover');
+    if (coverEl && data[0]) {
+      const top = data[0];
+      coverEl.innerHTML = top.coverUrl
+        ? `<div style="text-align:center">
+            <img src="${top.coverUrl}" alt="${escapeHtml(top.title)}" style="width:140px;height:auto;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.15);cursor:pointer" onclick="showPopularBookDetail(0)" onerror="this.parentElement.innerHTML='<div style=\\'width:140px;height:180px;background:var(--g100);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--g400);text-align:center;padding:12px\\'>#1 ${escapeHtml(top.title)}</div>'">
+            <p style="font-size:0.75rem;color:var(--g500);margin:8px 0 0;font-weight:600">#1 Most Read</p>
+          </div>`
+        : `<div style="text-align:center">
+            <div style="width:140px;height:180px;background:linear-gradient(135deg, var(--blue), var(--purple));border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;padding:16px;font-size:0.85rem;text-align:center;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.15)" onclick="showPopularBookDetail(0)">${escapeHtml(top.title)}</div>
+            <p style="font-size:0.75rem;color:var(--g500);margin:8px 0 0;font-weight:600">#1 Most Read</p>
+          </div>`;
+    }
+  }).catch(() => {
+    const el = document.getElementById('popular-books-chart');
+    if (el) el.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--g400);font-size:0.875rem">Could not load book data</div>';
+  });
+
+  // Recent activity
+  API.getRecentActivity(classId).then(data => {
+    const el = document.getElementById('recent-activity-feed');
+    if (!el) return;
+    if (!data || data.length === 0) {
+      el.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--g400);font-size:0.875rem">No activity yet — once students start taking quizzes, their progress will show up here!</div>';
+      return;
+    }
+    el.innerHTML = data.map(a => {
+      const timeAgo = formatTimeAgo(a.completedAt);
+      const scoreCls = a.score >= 80 ? 'green' : a.score >= 60 ? 'gold' : 'red';
+      return `<div class="activity-row">
+        <span class="activity-time">${timeAgo}</span>
+        <span class="activity-desc"><strong>${escapeHtml(a.studentName)}</strong> completed Chapter ${a.chapterNumber}: ${escapeHtml(a.chapterTitle)} of <em>${escapeHtml(a.bookTitle)}</em></span>
+        <span class="activity-score ${scoreCls}">${a.score}%</span>
+        <span class="activity-keys">🔑 ${a.keysEarned}</span>
+      </div>`;
+    }).join('');
+  }).catch(() => {
+    const el = document.getElementById('recent-activity-feed');
+    if (el) el.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--g400);font-size:0.875rem">Could not load activity</div>';
+  });
+
+  // Purchase notifications
+  API.getRecentPurchases(classId).then(data => {
+    const el = document.getElementById('purchase-notifications');
+    if (!el) return;
+    if (!data || data.length === 0) {
+      el.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--g400);font-size:0.875rem">No purchases yet — when students spend Keys in the store, you\'ll see them here!</div>';
+      return;
+    }
+    el.innerHTML = data.map(p => {
+      const timeAgo = formatTimeAgo(p.purchasedAt);
+      const st = students.find(s => s.name === p.studentName);
+      const initials = p.studentName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      const color = st ? st.color : '#8B5CF6';
+      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--g100)">
+        <div style="width:32px;height:32px;border-radius:50%;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.65rem;flex-shrink:0">${escapeHtml(initials)}</div>
+        <div style="flex:1;min-width:0">
+          <span style="font-weight:600;color:var(--navy)">${escapeHtml(p.studentName)}</span>
+          <span style="color:var(--g500)"> purchased </span>
+          <span style="font-weight:600;color:var(--purple)">${escapeHtml(p.itemName)}</span>
+          <span style="color:var(--g500)"> for </span>
+          <span style="font-weight:600;color:var(--gold)">🔑 ${p.price} Keys</span>
+        </div>
+        <span style="font-size:0.75rem;color:var(--g400);flex-shrink:0">${timeAgo}</span>
+      </div>`;
+    }).join('');
+  }).catch(() => {
+    const el = document.getElementById('purchase-notifications');
+    if (el) el.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--g400);font-size:0.875rem">No purchases yet — when students spend Keys in the store, you\'ll see them here!</div>';
+  });
+}
+
+function formatTimeAgo(dateStr) {
+  if (!dateStr) return '';
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function showStatHelp(title, description) {
+  const modal = document.getElementById('modal-root');
+  modal.innerHTML = `
+    <div class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()" style="max-width:380px">
+        <div class="modal-header">
+          <h3>${escapeHtml(title)}</h3>
+          <button class="modal-close" onclick="closeModal()">${IC.x}</button>
+        </div>
+        <div class="modal-body" style="padding:20px">
+          <p style="font-size:0.9rem;color:var(--g600);line-height:1.7;margin:0">${description}</p>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderDashboardRoster() {
+  if (students.length === 0) return '';
+
+  // Sort by reading score ascending (kids who need the most help first)
+  const sorted = [...students].sort((a, b) => (a.reading_score || a.score || 0) - (b.reading_score || b.score || 0));
+  const show = sorted.slice(0, 5);
+  const remaining = students.length - show.length;
+
+  return `
+    <div id="dashboard-roster" class="list-card" style="padding:24px;margin-top:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div>
+          <h3 style="margin:0 0 2px 0">👥 Student Roster</h3>
+          <p style="font-size:0.8rem;color:var(--g400);margin:0">Sorted by who needs the most help</p>
+        </div>
+        <button class="btn btn-sm btn-outline" onclick="navigate('students')">View all ${students.length} students →</button>
+      </div>
+      <div class="dashboard-roster">
+        ${show.map(s => {
+          const score = s.reading_score || s.score || 0;
+          const accuracy = s.accuracy || 0;
+          const initials = s.initials || s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+          const comp = s.comprehension_label || 'No Data';
+          const quizzes = s.quizzes_completed || 0;
+          const keys = s.keys_earned || s.keys || 0;
+
+          // Status indicator
+          let statusLabel, statusBg, statusColor;
+          if (score < 500 || accuracy < 60) {
+            statusLabel = 'Needs Support'; statusBg = '#FEE2E2'; statusColor = '#DC2626';
+          } else if (score < 700) {
+            statusLabel = 'Developing'; statusBg = '#FEF9C3'; statusColor = '#92400E';
+          } else {
+            statusLabel = 'On Track'; statusBg = '#ECFDF5'; statusColor = '#059669';
+          }
+
+          return `<div class="roster-row" onclick="navigate('students', null, ${s.id})">
+            <div class="roster-avatar" style="background:${s.color || '#2563EB'}">${escapeHtml(initials)}</div>
+            <div class="roster-info">
+              <div class="roster-name">${escapeHtml(s.name)}</div>
+              <div class="roster-stats">
+                <span>Score: <strong>${score}</strong></span>
+                <span>Accuracy: <strong>${accuracy}%</strong></span>
+                <span>Quizzes: <strong>${quizzes}</strong></span>
+                <span>Keys: <strong>${keys}</strong> 🔑</span>
+              </div>
+            </div>
+            <span class="roster-status" style="background:${statusBg};color:${statusColor}">${statusLabel}</span>
+          </div>`;
+        }).join('')}
+      </div>
+      ${remaining > 0 ? `<div style="text-align:center;margin-top:12px">
+        <button class="btn btn-ghost btn-sm" onclick="navigate('students')" style="color:var(--blue)">+ ${remaining} more student${remaining > 1 ? 's' : ''} — View all →</button>
+      </div>` : ''}
+    </div>`;
+}
+
+function showPopularBookDetail(idx) {
+  const data = window._popularBooksData;
+  if (!data || !data[idx]) return;
+  const b = data[idx];
+
+  const modal = document.getElementById('modal-root');
+  modal.innerHTML = `
+    <div class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()" style="max-width:420px">
+        <div class="modal-header">
+          <h3>📚 ${escapeHtml(b.title)}</h3>
+          <button class="modal-close" onclick="closeModal()">${IC.x}</button>
+        </div>
+        <div class="modal-body" style="padding:24px">
+          <div style="display:flex;gap:16px;margin-bottom:16px">
+            <div style="padding:12px;background:var(--blue-p, #EFF6FF);border-radius:10px;text-align:center;flex:1">
+              <div style="font-size:1.5rem;font-weight:800;color:var(--navy)">${b.studentCount}</div>
+              <div style="font-size:0.75rem;color:var(--g500)">Students Reading</div>
+            </div>
+            <div style="padding:12px;background:var(--green-p, #ECFDF5);border-radius:10px;text-align:center;flex:1">
+              <div style="font-size:1.5rem;font-weight:800;color:var(--green)">${b.quizCount}</div>
+              <div style="font-size:0.75rem;color:var(--g500)">Quizzes Taken</div>
+            </div>
+          </div>
+          <h4 style="font-size:0.9rem;margin:0 0 10px 0;color:var(--g600)">Students reading this book:</h4>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            ${(b.studentNames || []).map(name => {
+              const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+              const st = students.find(s => s.name === name);
+              const color = st ? st.color : '#2563EB';
+              return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--g50);border-radius:8px;cursor:pointer" onclick="closeModal(); navigate('students', null, ${st ? st.id : 'null'})">
+                <div style="width:28px;height:28px;border-radius:50%;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.65rem;flex-shrink:0">${escapeHtml(initials)}</div>
+                <span style="font-size:0.875rem;font-weight:600;color:var(--navy)">${escapeHtml(name)}</span>
+                <span style="margin-left:auto;font-size:0.75rem;color:var(--g400)">View profile →</span>
+              </div>`;
+            }).join('')}
+          </div>
+          ${b.bookId ? `<button class="btn btn-outline btn-sm" style="margin-top:16px;width:100%" onclick="closeModal(); openBook(${b.bookId})">View Book Details</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
 function renderQuizzes() {
   const classCode = currentUser?.classCode || '';
   const avgAcc = students.length > 0 ? Math.round(students.reduce((s, st) => s + (st.accuracy || 0), 0) / students.length) : 0;
@@ -870,11 +1337,11 @@ function renderQuizzes() {
         <div class="stat-card-value">${students.length}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-label">Avg Reading Score</div>
+        <div class="stat-card-label">Average Reading Score</div>
         <div class="stat-card-value">${avgScore}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-label">Avg Comprehension</div>
+        <div class="stat-card-label">Average Comprehension</div>
         <div class="stat-card-value">${avgAcc}%</div>
       </div>
       <div class="stat-card">
@@ -906,7 +1373,7 @@ function renderQuizzes() {
       </table>
     </div>` : `
     <div class="list-card" style="padding:32px;text-align:center;color:var(--g400)">
-      <p>No quizzes assigned yet. <a href="#" onclick="event.preventDefault();navigate('library')" style="color:var(--blue)">Browse the book library</a> to get started.</p>
+      <p>Browse the book in your <a href="#" onclick="event.preventDefault();navigate('library')" style="color:var(--blue)">library</a> to see and take a quiz.</p>
     </div>`}`;
 
   return html;
@@ -1498,60 +1965,6 @@ function renderBasicStudentStats(s) {
     </div>`;
 }
 
-// ---- Page: Class Goals ----
-function renderGoals() {
-  if (goals.length === 0) {
-    return `
-      <div class="page-header">
-        <h1>Class Goals</h1>
-        <div class="page-header-actions">
-          <button class="btn btn-primary btn-sm" onclick="openModal('goal')">${IC.plus} Add Goal</button>
-        </div>
-      </div>
-      <div class="empty-state">
-        <div class="empty-state-icon">${IC.target}</div>
-        <h2>No Goals Yet</h2>
-        <p>Set class goals to motivate your students! Goals update automatically as students complete quizzes and earn Keys.</p>
-        <button class="btn btn-primary" onclick="openModal('goal')">${IC.plus} Create Your First Goal</button>
-      </div>`;
-  }
-
-  return `
-    <div class="page-header">
-      <h1>Class Goals</h1>
-      <div class="page-header-actions">
-        <button class="btn btn-primary btn-sm" onclick="openModal('goal')">${IC.plus} Add Goal</button>
-      </div>
-    </div>
-
-    <div class="goals-grid">
-      ${goals.map(g => {
-        const p = pct(g.current, g.target);
-        return `
-        <div class="goal-card">
-          <div class="goal-card-header">
-            <h3>${g.title}</h3>
-            <span class="goal-due">${IC.calendar} Due ${g.due}</span>
-          </div>
-          <div class="goal-progress">
-            <div class="goal-progress-bar">
-              <div class="goal-progress-fill ${g.color}" style="width:${p}%"></div>
-            </div>
-          </div>
-          <div class="goal-stats">
-            <span class="goal-current">${typeof g.current === 'number' && g.unit === '%' ? g.current + '%' : g.current.toLocaleString()} / ${typeof g.target === 'number' && g.unit === '%' ? g.target + '%' : g.target.toLocaleString()} ${g.unit}</span>
-            <span class="goal-pct" style="color:var(--${g.color})">${p}%</span>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>
-
-    <div class="info-panel">
-      <h4>${IC.info} How Class Goals Work</h4>
-      <p>Goals update automatically as students complete quizzes and earn Keys. Students can see shared goals on their own dashboards, building a sense of class community and collective achievement. When a goal is reached, consider celebrating with a class reward from the Class Store.</p>
-    </div>`;
-}
-
 // ---- Page: Class Store ----
 let storeEditing = null; // index of item being edited, or null
 let storeAddingNew = false;
@@ -1666,7 +2079,48 @@ function renderStore() {
           </div>
         </div>`;
       }).join('')}
+    </div>
+
+    <div class="list-card" style="padding:24px;margin-top:20px">
+      <h3 style="margin:0 0 4px 0">🔔 Recent Purchases</h3>
+      <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">Notifications when students redeem their Keys</p>
+      <div id="store-purchase-notifications">
+        <div style="text-align:center;padding:24px 0;color:var(--g400);font-size:0.875rem">Loading...</div>
+      </div>
     </div>`;
+}
+
+function loadStorePurchaseNotifications() {
+  const classId = currentUser?.classId;
+  if (!classId) return;
+  API.getRecentPurchases(classId).then(data => {
+    const el = document.getElementById('store-purchase-notifications');
+    if (!el) return;
+    if (!data || data.length === 0) {
+      el.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--g400);font-size:0.875rem">No purchases yet — when students spend Keys, their purchases will show up here!</div>';
+      return;
+    }
+    el.innerHTML = data.map(p => {
+      const timeAgo = formatTimeAgo(p.purchasedAt);
+      const st = students.find(s => s.name === p.studentName);
+      const initials = p.studentName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      const color = st ? st.color : '#8B5CF6';
+      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--g100)">
+        <div style="width:32px;height:32px;border-radius:50%;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.65rem;flex-shrink:0">${escapeHtml(initials)}</div>
+        <div style="flex:1;min-width:0">
+          <span style="font-weight:600;color:var(--navy)">${escapeHtml(p.studentName)}</span>
+          <span style="color:var(--g500)"> redeemed </span>
+          <span style="font-weight:600;color:var(--purple)">${escapeHtml(p.itemName)}</span>
+          <span style="color:var(--g500)"> for </span>
+          <span style="font-weight:600;color:var(--gold)">🔑 ${p.price} Keys</span>
+        </div>
+        <span style="font-size:0.75rem;color:var(--g400);flex-shrink:0">${timeAgo}</span>
+      </div>`;
+    }).join('');
+  }).catch(() => {
+    const el = document.getElementById('store-purchase-notifications');
+    if (el) el.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--g400);font-size:0.875rem">No purchases yet — when students spend Keys, their purchases will show up here!</div>';
+  });
 }
 
 function renderStoreAddForm() {
@@ -1984,6 +2438,7 @@ async function storeBuyItem(idx) {
   try {
     const result = await API.purchaseReward({
       studentId: currentUser.studentId,
+      classId: currentUser.classId,
       itemName: item.name,
       price: item.price
     });
@@ -2147,6 +2602,29 @@ function initBookSearch() {
       : filtered.map(b => renderGuestBookCard(b)).join('');
     if (countEl) countEl.textContent = `${filtered.length} book${filtered.length !== 1 ? 's' : ''} available`;
   });
+}
+
+function handleGlobalSearch(query) {
+  const q = query.toLowerCase().trim();
+  // Dashboard roster search
+  const rosterEl = document.querySelector('.dashboard-roster');
+  if (rosterEl) {
+    const rows = rosterEl.querySelectorAll('.roster-row');
+    rows.forEach(row => {
+      const name = row.querySelector('.roster-name')?.textContent?.toLowerCase() || '';
+      const stats = row.querySelector('.roster-stats')?.textContent?.toLowerCase() || '';
+      const status = row.querySelector('.roster-status')?.textContent?.toLowerCase() || '';
+      row.style.display = (!q || name.includes(q) || stats.includes(q) || status.includes(q)) ? '' : 'none';
+    });
+  }
+  // Students page search
+  const studentRows = document.querySelectorAll('.data-table tbody tr');
+  if (studentRows.length > 0 && page === 'students') {
+    studentRows.forEach(row => {
+      const text = row.textContent?.toLowerCase() || '';
+      row.style.display = (!q || text.includes(q)) ? '' : 'none';
+    });
+  }
 }
 
 function initLibrarySearch() {
@@ -2887,7 +3365,66 @@ function renderCelebrate() {
           </div>
         </div>
       `).join('')}
+    </div>
+
+    <div class="list-card" style="padding:24px;margin-top:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div>
+          <h3 style="margin:0 0 2px 0">🏆 Book Certificates</h3>
+          <p style="font-size:0.8rem;color:var(--g400);margin:0">Print or download certificates for students who completed a book</p>
+        </div>
+      </div>
+      <div id="certificate-list">
+        <div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Loading completed books...</div>
+      </div>
     </div>`;
+}
+
+function loadCertificateData() {
+  const el = document.getElementById('certificate-list');
+  if (!el) return;
+
+  Promise.all(students.map(s =>
+    API.getBookProgress(s.id).then(progress => ({ student: s, progress: progress || [] })).catch(() => ({ student: s, progress: [] }))
+  )).then(results => {
+    const certs = [];
+    results.forEach(({ student, progress }) => {
+      (progress || []).filter(p => p.isComplete).forEach(p => {
+        const b = books.find(bk => bk.id === p.bookId);
+        if (b) certs.push({ student, book: b, progress: p });
+      });
+    });
+
+    if (certs.length === 0) {
+      el.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">No books completed yet. Certificates will appear here as students finish all chapters of a book.</div>';
+      return;
+    }
+
+    // Sort by student name then book title
+    certs.sort((a, b) => a.student.name.localeCompare(b.student.name) || a.book.title.localeCompare(b.book.title));
+
+    el.innerHTML = certs.map(c => {
+      const certParams = JSON.stringify({
+        studentName: c.student.name,
+        bookTitle: c.book.title,
+        bookAuthor: c.book.author || '',
+        score: null
+      }).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+      const initials = c.student.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      const color = c.student.color || '#2563EB';
+      return `<div style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-bottom:1px solid var(--g100);border-radius:8px">
+        <div style="width:36px;height:36px;border-radius:50%;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;flex-shrink:0">${escapeHtml(initials)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:0.9rem;color:var(--navy)">${escapeHtml(c.student.name)}</div>
+          <div style="font-size:0.8rem;color:var(--g500)">Completed <strong>${escapeHtml(c.book.title)}</strong></div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn btn-sm btn-primary" onclick="printCertificate(JSON.parse(decodeHTMLEntities(this.dataset.params)))" data-params="${certParams}">🖨️ Print</button>
+          <button class="btn btn-sm btn-outline" onclick="downloadCertificatePDF(JSON.parse(decodeHTMLEntities(this.dataset.params)))" data-params="${certParams}">📥 PDF</button>
+        </div>
+      </div>`;
+    }).join('');
+  });
 }
 
 // ---- Page: Teaching Tools ----
@@ -2928,7 +3465,7 @@ function renderTeacherSettings() {
     </div>
 
     <div class="card" style="padding:28px;margin-top:20px">
-      <h3 style="margin:0 0 12px;font-size:1.1rem;font-weight:600;color:var(--red)">Danger Zone</h3>
+      <h3 style="margin:0 0 12px;font-size:1.1rem;font-weight:600;color:var(--g600)">Account</h3>
       <p style="color:var(--g500);font-size:0.875rem;margin:0 0 16px">Log out of your account on this device.</p>
       <button class="btn" style="background:var(--red-l);color:var(--red);border:1px solid var(--red);padding:8px 20px" onclick="logoutAndRedirect()">
         ${IC.logout} Log Out
@@ -3037,7 +3574,7 @@ function renderParentSettings() {
     </div>
 
     <div class="card" style="padding:28px;margin-top:20px">
-      <h3 style="margin:0 0 12px;font-size:1.1rem;font-weight:600;color:var(--red)">Danger Zone</h3>
+      <h3 style="margin:0 0 12px;font-size:1.1rem;font-weight:600;color:var(--g600)">Account</h3>
       <p style="color:var(--g500);font-size:0.875rem;margin:0 0 16px">Log out of your account on this device.</p>
       <button class="btn" style="background:var(--red-l);color:var(--red);border:1px solid var(--red);padding:8px 20px" onclick="logoutAndRedirect()">
         ${IC.logout} Log Out
@@ -3082,31 +3619,401 @@ function renderParentSettings() {
 
 function renderAITools() {
   const tools = [
-    { name: 'Generate Quiz Questions',   desc: 'Create custom comprehension questions for any book in the library.', barColor: 'blue',   iconColor: 'blue',   icon: IC.layers },
-    { name: 'Struggling Reader Report',  desc: 'Get an in-depth analysis of students who need additional support.', barColor: 'red',    iconColor: 'red',    icon: IC.warn },
-    { name: 'Reading Level Predictor',   desc: 'Predict where each student\'s reading level will be in 30/60/90 days.', barColor: 'green',  iconColor: 'green',  icon: IC.trend },
-    { name: 'Adaptive Recommendations',  desc: 'Smart book recommendations matched to each student\'s level and interests.', barColor: 'purple', iconColor: 'purple', icon: IC.target },
-    { name: 'Parent Report Generator',   desc: 'Auto-generate parent-friendly progress reports with actionable insights.', barColor: 'orange', iconColor: 'orange', icon: IC.download },
-    { name: 'Vocabulary Gap Analysis',   desc: 'Identify vocabulary gaps across your class based on quiz performance data.', barColor: 'gold',   iconColor: 'gold',   icon: IC.activity },
+    { name: 'Student Progress Report',   desc: 'Generate a printable 8.5×11 progress report for any student with scores, skills, and suggestions.', barColor: 'blue',   iconColor: 'blue',   icon: IC.printer, action: 'showProgressReportPicker()' },
+    { name: 'Struggling Reader Report',  desc: 'See which students need additional support based on their quiz scores and reading levels.', barColor: 'red',    iconColor: 'red',    icon: IC.warn, action: 'showStrugglingReaderReport()' },
+    { name: 'Parent Report Generator',   desc: 'Generate a parent-friendly progress report for any student with actionable insights.', barColor: 'orange', iconColor: 'orange', icon: IC.download, action: 'showParentReportPicker()' },
   ];
 
   return `
     <div class="page-header">
-      <h1>Teaching Tools</h1>
+      <h1>${IC.bulb} Teaching Tools</h1>
     </div>
 
     <div class="tools-grid">
       ${tools.map(t => `
-        <div class="tool-card">
+        <div class="tool-card" style="cursor:pointer" onclick="${t.action}">
           <div class="tool-card-bar ${t.barColor}"></div>
           <div class="tool-card-body">
             <div class="tool-card-icon ${t.iconColor}">${t.icon}</div>
             <h3>${t.name}</h3>
             <p>${t.desc}</p>
+            <button class="btn btn-sm btn-outline" style="margin-top:12px">Generate Report</button>
           </div>
         </div>
       `).join('')}
     </div>`;
+}
+
+// ---- Printable Student Progress Report ----
+function showProgressReportPicker() {
+  if (students.length === 0) {
+    showToast('No students in your class yet.');
+    return;
+  }
+  const modal = document.getElementById('modal-root');
+  modal.innerHTML = `
+    <div class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()" style="max-width:420px">
+        <div class="modal-header">
+          <h3>Student Progress Report</h3>
+          <button class="modal-close" onclick="closeModal()">${IC.x}</button>
+        </div>
+        <div class="modal-body" style="padding:20px">
+          <p style="font-size:0.875rem;color:var(--g600);margin:0 0 16px">Select a student to generate a printable progress report:</p>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            ${students.map(s => {
+              const initials = (s.initials || s.name.split(' ').map(n => n[0]).join('').substring(0, 2)).toUpperCase();
+              return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--g50);border-radius:8px;cursor:pointer" onclick="printStudentProgressReport(${s.id})">
+                <div style="width:32px;height:32px;border-radius:50%;background:${s.color || '#2563EB'};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.7rem;flex-shrink:0">${escapeHtml(initials)}</div>
+                <span style="font-size:0.9rem;font-weight:600;color:var(--navy)">${escapeHtml(s.name)}</span>
+                <span style="margin-left:auto;font-size:0.75rem;color:var(--g400)">Print →</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function printStudentProgressReport(studentId) {
+  const s = students.find(st => st.id === studentId);
+  if (!s) return;
+
+  const score = s.reading_score || s.score || 0;
+  const accuracy = s.accuracy || 0;
+  const quizzes = s.quizzes_completed || 0;
+  const keys = s.keys_earned || s.keys || 0;
+  const comp = s.comprehension_label || 'No Data';
+  const reason = s.reasoning_label || 'No Data';
+  const indep = s.independence_label || 'No Data';
+  const persist = s.persistence_label || 'No Data';
+  const vocab = s.vocab_words_learned || 0;
+  const teacherName = currentUser?.name || 'Teacher';
+  const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+  let overallStatus, statusColor;
+  if (score >= 700 && accuracy >= 70) { overallStatus = 'On Track'; statusColor = '#059669'; }
+  else if (score >= 500 && accuracy >= 50) { overallStatus = 'Developing'; statusColor = '#B45309'; }
+  else { overallStatus = 'Needs Support'; statusColor = '#DC2626'; }
+
+  const strengths = [];
+  if (comp === 'Strong') strengths.push('Excellent reading comprehension — understands key ideas and details');
+  if (reason === 'Strong') strengths.push('Strong reasoning skills — can make inferences and connections');
+  if (indep === 'Strong') strengths.push('Great independence — answers questions without needing hints');
+  if (persist === 'Strong') strengths.push('Wonderful persistence — doesn\'t give up on challenging questions');
+  if (accuracy >= 80) strengths.push('High quiz accuracy — consistently answers correctly');
+  if (quizzes >= 10) strengths.push('Strong engagement — completed many quizzes');
+  if (strengths.length === 0) strengths.push('Still building foundational reading skills');
+
+  const suggestions = [];
+  if (comp === 'Needs Support' || comp === 'Developing') suggestions.push('Read aloud together and pause to ask "What just happened?" and "What do you think will happen next?" to build comprehension.');
+  if (reason === 'Needs Support' || reason === 'Developing') suggestions.push('Practice making connections by asking "Why do you think the character did that?" and "How is this similar to something you know?"');
+  if (indep === 'Needs Support' || indep === 'Developing') suggestions.push('Encourage answering questions before looking at hints. Try saying "What do you think the answer is first?" to build confidence.');
+  if (persist === 'Needs Support' || persist === 'Developing') suggestions.push('Celebrate effort, not just correct answers. If the student gets stuck, say "Let\'s try re-reading that part together" instead of giving the answer.');
+  if (accuracy < 60) suggestions.push('Focus on re-reading chapters before taking quizzes. Understanding the story first leads to better quiz results.');
+  if (quizzes < 3) suggestions.push('Encourage completing more quizzes to build reading stamina and track progress over time.');
+  if (suggestions.length === 0) suggestions.push('Keep up the great work! Continue reading regularly and challenging themselves with new books.');
+
+  const skillBar = (label, value) => {
+    let pct = 0, color = '#D1D5DB';
+    if (value === 'Strong') { pct = 100; color = '#059669'; }
+    else if (value === 'Developing') { pct = 60; color = '#F59E0B'; }
+    else if (value === 'Needs Support') { pct = 25; color = '#EF4444'; }
+    return '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>' + label + '</span><span style="color:' + color + ';font-weight:600">' + value + '</span></div><div style="height:8px;background:#E5E7EB;border-radius:4px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:4px"></div></div></div>';
+  };
+
+  const html = '<!DOCTYPE html><html><head><title>Progress Report - ' + s.name + '</title>' +
+    '<style>' +
+    '@page { size: letter; margin: 0.5in; }' +
+    'body { font-family: Georgia, "Times New Roman", serif; margin: 0; padding: 0.5in; color: #1a1a1a; font-size: 13px; line-height: 1.5; max-width: 8.5in; }' +
+    '.header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #1A6FC4; padding-bottom: 14px; margin-bottom: 20px; }' +
+    '.header h1 { font-size: 22px; margin: 0 0 2px; color: #0F172A; }' +
+    '.header .meta { font-size: 12px; color: #64748B; }' +
+    '.header .logo { font-size: 18px; font-weight: 800; color: #1A6FC4; }' +
+    '.status-badge { display: inline-block; padding: 4px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; }' +
+    '.stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin: 18px 0; }' +
+    '.stat-box { text-align: center; padding: 12px; border: 1px solid #E5E7EB; border-radius: 8px; }' +
+    '.stat-box .val { font-size: 24px; font-weight: 800; color: #0F172A; }' +
+    '.stat-box .lbl { font-size: 11px; color: #64748B; margin-top: 2px; }' +
+    '.section { margin-top: 20px; }' +
+    '.section h3 { font-size: 15px; margin: 0 0 10px; color: #0F172A; border-bottom: 1px solid #E5E7EB; padding-bottom: 6px; }' +
+    '.suggestion { padding: 8px 12px; margin-bottom: 6px; background: #F0F9FF; border-left: 3px solid #1A6FC4; border-radius: 0 6px 6px 0; font-size: 12px; line-height: 1.5; }' +
+    '.strength { padding: 8px 12px; margin-bottom: 6px; background: #ECFDF5; border-left: 3px solid #059669; border-radius: 0 6px 6px 0; font-size: 12px; line-height: 1.5; }' +
+    '.footer { margin-top: 30px; padding-top: 12px; border-top: 1px solid #E5E7EB; display: flex; justify-content: space-between; font-size: 11px; color: #94A3B8; }' +
+    '</style></head><body>' +
+    '<div class="header">' +
+      '<div><h1>' + s.name + '\'s Progress Report</h1>' +
+      '<div class="meta">' + teacherName + '\'s Class &bull; ' + dateStr + '</div></div>' +
+      '<div class="logo">key2read</div>' +
+    '</div>' +
+    '<div><strong>Overall Status:</strong> <span class="status-badge" style="background:' + statusColor + '22;color:' + statusColor + '">' + overallStatus + '</span></div>' +
+    '<div class="stats-grid">' +
+      '<div class="stat-box"><div class="val">' + score + '</div><div class="lbl">Reading Score</div></div>' +
+      '<div class="stat-box"><div class="val">' + accuracy + '%</div><div class="lbl">Quiz Accuracy</div></div>' +
+      '<div class="stat-box"><div class="val">' + quizzes + '</div><div class="lbl">Quizzes Done</div></div>' +
+      '<div class="stat-box"><div class="val">' + keys + ' 🔑</div><div class="lbl">Keys Earned</div></div>' +
+    '</div>' +
+    '<div class="section"><h3>Reading Skills Breakdown</h3>' +
+      skillBar('Comprehension', comp) +
+      skillBar('Reasoning', reason) +
+      skillBar('Independence', indep) +
+      skillBar('Persistence', persist) +
+      (vocab > 0 ? '<div style="font-size:12px;color:#64748B;margin-top:4px">Vocabulary words learned: <strong>' + vocab + '</strong></div>' : '') +
+    '</div>' +
+    '<div class="section"><h3>✨ Strengths</h3>' +
+      strengths.map(st => '<div class="strength">' + st + '</div>').join('') +
+    '</div>' +
+    '<div class="section"><h3>💡 Suggestions to Help</h3>' +
+      suggestions.map(sg => '<div class="suggestion">' + sg + '</div>').join('') +
+    '</div>' +
+    '<div class="footer"><span>Generated by key2read &bull; ' + dateStr + '</span><span>For questions, contact ' + teacherName + '</span></div>' +
+    '</body></html>';
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  win.print();
+  closeModal();
+}
+
+// ---- Struggling Reader Report (local data, no API) ----
+function showStrugglingReaderReport() {
+  if (students.length === 0) {
+    showToast('No students in your class yet.');
+    return;
+  }
+
+  // Identify struggling readers: low reading score or low accuracy
+  const struggling = students
+    .map(s => ({
+      name: s.name,
+      initials: s.initials || s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
+      color: s.color || '#2563EB',
+      score: s.reading_score || s.score || 0,
+      accuracy: s.accuracy || 0,
+      quizzes: s.quizzes_completed || 0,
+      keys: s.keys_earned || s.keys || 0,
+      comprehension: s.comprehension_label || 'No Data',
+      reasoning: s.reasoning_label || 'No Data',
+      independence: s.independence_label || 'No Data',
+      persistence: s.persistence_label || 'No Data',
+    }))
+    .sort((a, b) => a.score - b.score);
+
+  // Students with score < 500 or accuracy < 60% are "needs support"
+  const needsSupport = struggling.filter(s => s.score < 500 || s.accuracy < 60);
+  const developing = struggling.filter(s => s.score >= 500 && s.score < 700 && s.accuracy >= 60);
+
+  const modal = document.getElementById('modal-root');
+  modal.innerHTML = `
+    <div class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()" style="max-width:700px">
+        <div class="modal-header">
+          <h3>${IC.warn} Struggling Reader Report</h3>
+          <button class="modal-close" onclick="closeModal()">${IC.x}</button>
+        </div>
+        <div class="modal-body" style="padding:24px;max-height:70vh;overflow-y:auto">
+          <div style="margin-bottom:20px">
+            <div style="font-size:0.85rem;color:var(--g500);margin-bottom:4px">Report generated from current class data</div>
+            <div style="font-size:0.85rem;color:var(--g400)">${students.length} students analyzed • ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
+          </div>
+
+          ${needsSupport.length > 0 ? `
+            <h4 style="color:#DC2626;margin:0 0 12px 0;font-size:0.95rem">⚠️ Needs Support (${needsSupport.length} student${needsSupport.length > 1 ? 's' : ''})</h4>
+            ${needsSupport.map(s => renderStudentReportRow(s, 'red')).join('')}
+          ` : '<div style="padding:16px;background:#ECFDF5;border-radius:10px;color:#059669;font-size:0.9rem;margin-bottom:16px">✅ No students currently need urgent support!</div>'}
+
+          ${developing.length > 0 ? `
+            <h4 style="color:#B45309;margin:16px 0 12px 0;font-size:0.95rem">📊 Developing (${developing.length} student${developing.length > 1 ? 's' : ''})</h4>
+            ${developing.map(s => renderStudentReportRow(s, 'gold')).join('')}
+          ` : ''}
+
+          <div style="margin-top:20px;padding:16px;background:var(--g50);border-radius:10px;font-size:0.85rem;color:var(--g500);line-height:1.6">
+            <strong>How to read this report:</strong><br>
+            • <strong style="color:#DC2626">Needs Support</strong>: Reading score below 500 or accuracy below 60%<br>
+            • <strong style="color:#B45309">Developing</strong>: Reading score 500–700 with accuracy above 60%<br>
+            • Students scoring above 700 with good accuracy are on track
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderStudentReportRow(s, level) {
+  const bgColor = level === 'red' ? '#FEE2E2' : '#FEF9C3';
+  const borderColor = level === 'red' ? '#FECACA' : '#FDE68A';
+  return `
+    <div style="display:flex;align-items:flex-start;gap:14px;padding:14px;background:${bgColor};border:1px solid ${borderColor};border-radius:10px;margin-bottom:10px">
+      <div style="width:36px;height:36px;border-radius:50%;background:${s.color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;flex-shrink:0">${escapeHtml(s.initials)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;color:var(--navy);margin-bottom:4px">${escapeHtml(s.name)}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:0.8rem;color:var(--g600)">
+          <span>Score: <strong>${s.score}</strong></span>
+          <span>Accuracy: <strong>${s.accuracy}%</strong></span>
+          <span>Quizzes: <strong>${s.quizzes}</strong></span>
+          <span>Keys: <strong>${s.keys}</strong></span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+          ${renderSkillPill('Comprehension', s.comprehension)}
+          ${renderSkillPill('Reasoning', s.reasoning)}
+          ${renderSkillPill('Independence', s.independence)}
+          ${renderSkillPill('Persistence', s.persistence)}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderSkillPill(label, value) {
+  let bg, color;
+  if (value === 'Strong') { bg = '#DCFCE7'; color = '#166534'; }
+  else if (value === 'Developing') { bg = '#FEF9C3'; color = '#92400E'; }
+  else if (value === 'Needs Support') { bg = '#FEE2E2'; color = '#991B1B'; }
+  else { bg = 'var(--g100)'; color = 'var(--g500)'; }
+  return `<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:600;background:${bg};color:${color}">${label}: ${value}</span>`;
+}
+
+// ---- Parent Report Generator (local data, no API) ----
+function showParentReportPicker() {
+  if (students.length === 0) {
+    showToast('No students in your class yet.');
+    return;
+  }
+
+  const modal = document.getElementById('modal-root');
+  modal.innerHTML = `
+    <div class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()" style="max-width:450px">
+        <div class="modal-header">
+          <h3>${IC.download} Parent Report Generator</h3>
+          <button class="modal-close" onclick="closeModal()">${IC.x}</button>
+        </div>
+        <div class="modal-body" style="padding:24px">
+          <p style="font-size:0.9rem;color:var(--g500);margin-bottom:16px">Select a student to generate their parent progress report:</p>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            ${students.map(s => {
+              const initials = s.initials || s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+              return `<button class="btn btn-outline" style="justify-content:flex-start;gap:12px;padding:12px 16px" onclick="generateParentReport(${s.id})">
+                <div style="width:32px;height:32px;border-radius:50%;background:${s.color || '#2563EB'};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.7rem;flex-shrink:0">${escapeHtml(initials)}</div>
+                <span>${escapeHtml(s.name)}</span>
+              </button>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function generateParentReport(studentId) {
+  const s = students.find(st => st.id === studentId);
+  if (!s) return;
+
+  const initials = s.initials || s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  const score = s.reading_score || s.score || 0;
+  const accuracy = s.accuracy || 0;
+  const quizzes = s.quizzes_completed || 0;
+  const keys = s.keys_earned || s.keys || 0;
+  const comp = s.comprehension_label || 'No Data';
+  const reason = s.reasoning_label || 'No Data';
+  const indep = s.independence_label || 'No Data';
+  const persist = s.persistence_label || 'No Data';
+  const vocab = s.vocab_words_learned || 0;
+
+  // Determine overall status
+  let overallStatus, statusColor, statusBg;
+  if (score >= 700 && accuracy >= 70) { overallStatus = 'On Track'; statusColor = '#059669'; statusBg = '#ECFDF5'; }
+  else if (score >= 500 && accuracy >= 50) { overallStatus = 'Developing'; statusColor = '#B45309'; statusBg = '#FEF9C3'; }
+  else { overallStatus = 'Needs Support'; statusColor = '#DC2626'; statusBg = '#FEE2E2'; }
+
+  // Generate encouragement based on strengths
+  const strengths = [];
+  if (comp === 'Strong') strengths.push('excellent reading comprehension');
+  if (reason === 'Strong') strengths.push('strong reasoning skills');
+  if (indep === 'Strong') strengths.push('great independence when answering questions');
+  if (persist === 'Strong') strengths.push('wonderful persistence — they don\'t give up easily');
+  if (accuracy >= 80) strengths.push('high quiz accuracy');
+
+  const areas = [];
+  if (comp === 'Needs Support') areas.push('reading comprehension');
+  if (reason === 'Needs Support') areas.push('reasoning and inference');
+  if (indep === 'Needs Support') areas.push('answering independently (using fewer hints)');
+  if (persist === 'Needs Support') areas.push('persistence with challenging questions');
+
+  const modal = document.getElementById('modal-root');
+  modal.innerHTML = `
+    <div class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()" style="max-width:600px">
+        <div class="modal-header">
+          <h3>${IC.download} Parent Report — ${escapeHtml(s.name)}</h3>
+          <button class="modal-close" onclick="closeModal()">${IC.x}</button>
+        </div>
+        <div class="modal-body" style="padding:24px;max-height:70vh;overflow-y:auto" id="parent-report-content">
+          <div style="text-align:center;margin-bottom:20px">
+            <div style="width:56px;height:56px;border-radius:50%;background:${s.color || '#2563EB'};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;margin:0 auto 8px">${escapeHtml(initials)}</div>
+            <h2 style="margin:0 0 4px 0;font-size:1.25rem">${escapeHtml(s.name)}'s Progress Report</h2>
+            <div style="font-size:0.85rem;color:var(--g400)">${currentUser?.name || 'Teacher'}'s Class • ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
+          </div>
+
+          <div style="display:inline-block;padding:6px 16px;border-radius:999px;font-size:0.85rem;font-weight:700;background:${statusBg};color:${statusColor};margin-bottom:20px">${overallStatus}</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+            <div style="padding:14px;background:var(--g50);border-radius:10px;text-align:center">
+              <div style="font-size:0.75rem;color:var(--g500);margin-bottom:4px">Reading Score</div>
+              <div style="font-size:1.5rem;font-weight:800;color:var(--navy)">${score}</div>
+            </div>
+            <div style="padding:14px;background:var(--g50);border-radius:10px;text-align:center">
+              <div style="font-size:0.75rem;color:var(--g500);margin-bottom:4px">Quiz Accuracy</div>
+              <div style="font-size:1.5rem;font-weight:800;color:var(--navy)">${accuracy}%</div>
+            </div>
+            <div style="padding:14px;background:var(--g50);border-radius:10px;text-align:center">
+              <div style="font-size:0.75rem;color:var(--g500);margin-bottom:4px">Quizzes Completed</div>
+              <div style="font-size:1.5rem;font-weight:800;color:var(--navy)">${quizzes}</div>
+            </div>
+            <div style="padding:14px;background:var(--g50);border-radius:10px;text-align:center">
+              <div style="font-size:0.75rem;color:var(--g500);margin-bottom:4px">Keys Earned</div>
+              <div style="font-size:1.5rem;font-weight:800;color:var(--gold)">${keys} 🔑</div>
+            </div>
+          </div>
+
+          <h4 style="margin:0 0 10px 0;font-size:0.95rem">Reading Skills</h4>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
+            ${renderSkillPill('Comprehension', comp)}
+            ${renderSkillPill('Reasoning', reason)}
+            ${renderSkillPill('Independence', indep)}
+            ${renderSkillPill('Persistence', persist)}
+            ${vocab > 0 ? `<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:600;background:#DBEAFE;color:#1E40AF">Vocab: ${vocab} words</span>` : ''}
+          </div>
+
+          ${strengths.length > 0 ? `
+            <div style="padding:14px;background:#ECFDF5;border:1px solid #A7F3D0;border-radius:10px;margin-bottom:12px;font-size:0.875rem;line-height:1.6">
+              <strong style="color:#059669">✨ Strengths:</strong> ${escapeHtml(s.name)} shows ${strengths.join(', ')}.
+            </div>
+          ` : ''}
+
+          ${areas.length > 0 ? `
+            <div style="padding:14px;background:#FEF9C3;border:1px solid #FDE68A;border-radius:10px;margin-bottom:12px;font-size:0.875rem;line-height:1.6">
+              <strong style="color:#92400E">📌 Areas to grow:</strong> ${escapeHtml(s.name)} could use more practice with ${areas.join(', ')}.
+            </div>
+          ` : ''}
+
+          <div style="padding:14px;background:var(--blue-p, #EFF6FF);border:1px solid #BFDBFE;border-radius:10px;font-size:0.875rem;line-height:1.6">
+            <strong style="color:var(--blue)">💡 How to help at home:</strong> Encourage ${escapeHtml(s.name)} to read for 15–20 minutes each day and discuss what they've read. Ask questions like "What happened in this chapter?" and "Why do you think the character did that?" to strengthen comprehension and reasoning.
+          </div>
+        </div>
+        <div style="padding:16px 24px;border-top:1px solid var(--g200);display:flex;justify-content:flex-end;gap:8px">
+          <button class="btn btn-outline btn-sm" onclick="printParentReport()">🖨️ Print</button>
+          <button class="btn btn-primary btn-sm" onclick="closeModal()">Done</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function printParentReport() {
+  const content = document.getElementById('parent-report-content');
+  if (!content) return;
+  const win = window.open('', '_blank');
+  win.document.write('<html><head><title>Parent Report</title><style>body{font-family:system-ui,-apple-system,sans-serif;padding:32px;max-width:700px;margin:0 auto;color:#1a1a1a;font-size:14px;line-height:1.6}h2{margin:0 0 4px}h4{margin:16px 0 8px}strong{font-weight:700}</style></head><body>' + content.innerHTML + '</body></html>');
+  win.document.close();
+  win.print();
 }
 
 // ---- Page: Growth Reports (Class View) ----
@@ -3141,7 +4048,7 @@ function renderReports() {
   const totalKeysAll = students.reduce((s, st) => s + (st.keys || 0), 0);
   const improvingCount = students.filter(s => {
     const gd = growthData[s.id];
-    return gd ? gd.scores[5] > gd.scores[0] : false;
+    return gd ? gd.scores[gd.scores.length - 1] > gd.scores[0] : false;
   }).length;
 
   return `
@@ -3161,7 +4068,7 @@ function renderReports() {
             <h2>Class Growth Report</h2>
             <div class="report-meta">
               <span>${currentUser?.name || 'Teacher'}'s Class</span>
-              <span>${IC.calendar} Sep 2025 \u2014 Feb 2026</span>
+              <span>${IC.calendar} Last 8 Weeks</span>
               <span>${students.length} Students</span>
             </div>
           </div>
@@ -3174,27 +4081,27 @@ function renderReports() {
 
     <div class="stat-cards">
       <div class="stat-card">
-        <div class="stat-card-label">Avg Reading Score</div>
-        <div class="stat-card-value">${classScores[5]} ${growthArrow(classScores[0], classScores[5])}</div>
+        <div class="stat-card-label">Average Reading Score <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Reading Score', 'A score from 0 to 1000 that measures how well your class is reading overall. It combines quiz scores, reading effort, independence (using fewer hints), vocabulary growth, and persistence. The arrow shows growth over the last 8 weeks.')">?</button></div>
+        <div class="stat-card-value">${classScores[classScores.length - 1]} ${growthArrow(classScores[0], classScores[classScores.length - 1])}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-label">Avg Accuracy</div>
-        <div class="stat-card-value">${classAccuracy[5]}% ${growthArrow(classAccuracy[0], classAccuracy[5])}</div>
+        <div class="stat-card-label">Average Accuracy <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Accuracy', 'The average percentage of quiz questions your students answer correctly on the first try. This tells you how well students are understanding what they read. The arrow shows change over the last 8 weeks.')">?</button></div>
+        <div class="stat-card-value">${classAccuracy[classAccuracy.length - 1]}% ${growthArrow(classAccuracy[0], classAccuracy[classAccuracy.length - 1])}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-label">Total Keys Earned</div>
+        <div class="stat-card-label">Total Keys Earned <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Total Keys Earned', 'The total number of Keys all your students have earned by passing quizzes with 80% or higher. Students can spend Keys in the Class Store on rewards you set up.')">?</button></div>
         <div class="stat-card-value">${totalKeysAll.toLocaleString()}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-label">Students Improving</div>
+        <div class="stat-card-label">Students Improving <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Students Improving', 'The number of students whose reading score has gone up over the last 8 weeks. If a student\\'s current score is higher than their score 8 weeks ago, they count as improving.')">?</button></div>
         <div class="stat-card-value">${improvingCount}/${students.length}</div>
       </div>
     </div>
 
     <div class="chart-container">
-      <h3>Class Reading Score Trend</h3>
-      <p class="chart-subtitle">Average reading score across all students, Sep 2025 \u2013 Feb 2026</p>
-      ${svgAreaChart(classScores, months, 'var(--blue)', 620, 220)}
+      <h3>📈 Class Reading Score Trend</h3>
+      <p class="chart-subtitle">Average reading score across all students, last 8 weeks</p>
+      ${svgGradientAreaChart(classScores, months, 620, 220)}
     </div>
 
     <div class="data-table-wrap" style="margin-top:24px">
@@ -3202,19 +4109,19 @@ function renderReports() {
         <thead>
           <tr>
             <th>Student</th>
-            <th>Sep Score</th>
-            <th>Feb Score</th>
-            <th>Change</th>
-            <th>Trend</th>
-            <th>Status</th>
+            <th>Week 1 <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Week 1 Score', 'The student\\'s reading score at the start of the 8-week period. This is the baseline used to measure recent growth.')">?</button></th>
+            <th>Current <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Current Score', 'The student\\'s current reading score this week. Compare this to Week 1 to see how much they\\'ve grown.')">?</button></th>
+            <th>Change <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Change', 'The number of points the student\\'s reading score went up or down over the last 8 weeks. A green arrow means improvement, red means decline.')">?</button></th>
+            <th>Trend <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Trend', 'A mini chart showing the student\\'s reading score over the last 8 weeks. An upward line means steady growth.')">?</button></th>
+            <th>Status <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Status', 'Improving = score went up 5% or more. Steady = score stayed about the same. Declining = score went down. New = student just joined.')">?</button></th>
           </tr>
         </thead>
         <tbody>
           ${[...students].sort((a, b) => {
             const aGd = growthData[a.id];
             const bGd = growthData[b.id];
-            const aGain = aGd ? aGd.scores[5] - aGd.scores[0] : 0;
-            const bGain = bGd ? bGd.scores[5] - bGd.scores[0] : 0;
+            const aGain = aGd ? aGd.scores[aGd.scores.length - 1] - aGd.scores[0] : 0;
+            const bGain = bGd ? bGd.scores[bGd.scores.length - 1] - bGd.scores[0] : 0;
             return bGain - aGain;
           }).map(s => {
             const gd = growthData[s.id];
@@ -3229,7 +4136,7 @@ function renderReports() {
                 <td><span class="badge badge-blue">New</span></td>
               </tr>`;
             }
-            const gain = gd.scores[5] - gd.scores[0];
+            const gain = gd.scores[gd.scores.length - 1] - gd.scores[0];
             const gainPct = Math.round((gain / gd.scores[0]) * 100);
             let statusCls = 'green', statusLabel = 'Improving';
             if (gainPct < 5) { statusCls = 'gold'; statusLabel = 'Steady'; }
@@ -3238,7 +4145,7 @@ function renderReports() {
             <tr onclick="reportStudentId=${s.id}; renderMain();" style="cursor:pointer">
               <td><div class="student-cell">${avatar(s)} <span class="student-name">${s.name}</span> ${warnTag(s)}</div></td>
               <td>${gd.scores[0]}</td>
-              <td><strong>${gd.scores[5]}</strong></td>
+              <td><strong>${gd.scores[gd.scores.length - 1]}</strong></td>
               <td><span class="growth-arrow ${gain >= 0 ? 'up' : 'down'}">${gain >= 0 ? IC.arrowUp + '+' : IC.arrowDown}${Math.abs(gain)} pts</span></td>
               <td>${miniChart(gd.scores, gain >= 50 ? 'var(--green)' : 'var(--gold)', 80, 28)}</td>
               <td><span class="badge badge-${statusCls}">${statusLabel}</span></td>
@@ -3251,9 +4158,9 @@ function renderReports() {
     <div class="info-panel" style="margin-top:24px">
       <h4>${IC.bulb} Key Insights</h4>
       <ul class="insight-list">
-        <li>${improvingCount} of ${students.length} students showed reading score improvement since September</li>
-        <li>Class average reading score increased by ${classScores[5] - classScores[0]} points (+${Math.round(((classScores[5] - classScores[0]) / classScores[0]) * 100)}%)</li>
-        <li>Average accuracy improved from ${classAccuracy[0]}% to ${classAccuracy[5]}% (+${classAccuracy[5] - classAccuracy[0]} percentage points)</li>
+        <li>${improvingCount} of ${students.length} students showed reading score improvement over the last 8 weeks</li>
+        <li>Class average reading score changed by ${classScores[classScores.length - 1] - classScores[0]} points (${classScores[classScores.length - 1] - classScores[0] >= 0 ? '+' : ''}${Math.round(((classScores[classScores.length - 1] - classScores[0]) / (classScores[0] || 1)) * 100)}%)</li>
+        <li>Average accuracy went from ${classAccuracy[0]}% to ${classAccuracy[classAccuracy.length - 1]}% (${classAccuracy[classAccuracy.length - 1] - classAccuracy[0] >= 0 ? '+' : ''}${classAccuracy[classAccuracy.length - 1] - classAccuracy[0]} percentage points)</li>
         <li>Students collectively earned ${totalKeysAll.toLocaleString()} Keys, demonstrating consistent engagement</li>
       </ul>
     </div>`;
@@ -3312,7 +4219,7 @@ function renderStudentReport() {
               <div class="report-meta">
                 <span>Grade: ${s.grade}</span>
                 <span>Level ${s.level}</span>
-                <span>${IC.calendar} Sep 2025 \u2014 Feb 2026</span>
+                <span>${IC.calendar} Last 8 Weeks</span>
               </div>
             </div>
           </div>
@@ -3327,11 +4234,11 @@ function renderStudentReport() {
     <div class="stat-cards">
       <div class="stat-card">
         <div class="stat-card-label">Reading Score</div>
-        <div class="stat-card-value">${s.score} ${growthArrow(gd.scores[0], gd.scores[5])}</div>
+        <div class="stat-card-value">${s.score} ${growthArrow(gd.scores[0], gd.scores[gd.scores.length - 1])}</div>
       </div>
       <div class="stat-card">
         <div class="stat-card-label">Accuracy</div>
-        <div class="stat-card-value">${s.accuracy}% ${growthArrow(gd.accuracy[0], gd.accuracy[5])}</div>
+        <div class="stat-card-value">${s.accuracy}% ${growthArrow(gd.accuracy[0], gd.accuracy[gd.accuracy.length - 1])}</div>
       </div>
       <div class="stat-card">
         <div class="stat-card-label">Keys Earned</div>
@@ -3712,7 +4619,7 @@ function openModal(type, prefill) {
               <label class="form-label">Goal Type</label>
               <select class="form-select">
                 <option>Books Completed</option>
-                <option>Avg Comprehension %</option>
+                <option>Average Comprehension %</option>
                 <option>Total Keys</option>
                 <option>Students Passing</option>
               </select>
@@ -4411,8 +5318,8 @@ function renderStudentQuizzes() {
     <div class="empty-state" style="margin-top:24px">
       <div class="empty-state-icon" style="font-size:2rem">&#128203;</div>
       <h2>No Quizzes Yet</h2>
-      <p>If you have read a book and are ready to take a quiz, go to the Book Library!</p>
-      <button class="btn btn-primary" onclick="navigate('library')">Go to Book Library</button>
+      <p>Browse the book in your library to see and take a quiz!</p>
+      <button class="btn btn-primary" onclick="navigate('library')">Go to Library</button>
     </div>` : ''}
   `;
 }
@@ -4557,7 +5464,7 @@ function renderPrincipalDashboard() {
 
     <div class="stat-cards">
       <div class="stat-card"><div class="stat-card-label">Total Students</div><div class="stat-card-value">${totalStudents + 60}</div></div>
-      <div class="stat-card"><div class="stat-card-label">Avg Reading Score</div><div class="stat-card-value">${avgScore}</div><div class="stat-card-trend" style="color:var(--green)"><span class="icon-sm">${IC.arrowUp}</span> +14%</div></div>
+      <div class="stat-card"><div class="stat-card-label">Average Reading Score</div><div class="stat-card-value">${avgScore}</div><div class="stat-card-trend" style="color:var(--green)"><span class="icon-sm">${IC.arrowUp}</span> +14%</div></div>
       <div class="stat-card"><div class="stat-card-label">Active Teachers</div><div class="stat-card-value">4</div></div>
       <div class="stat-card"><div class="stat-card-label">Total Keys Earned</div><div class="stat-card-value">${(totalKeys + 12500).toLocaleString()}</div></div>
     </div>

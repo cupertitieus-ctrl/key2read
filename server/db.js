@@ -477,6 +477,50 @@ async function deductStudentKeys(studentId, amount) {
   return { success: true, newBalance };
 }
 
+async function recordPurchase(studentId, classId, itemName, price) {
+  try {
+    await supabase.from('store_purchases').insert({
+      student_id: studentId,
+      class_id: classId,
+      item_name: itemName,
+      price: price
+    });
+  } catch (e) {
+    console.warn('Could not record purchase (table may not exist):', e.message);
+  }
+}
+
+async function getRecentPurchases(classId) {
+  try {
+    const { data, error } = await supabase
+      .from('store_purchases')
+      .select('id, item_name, price, purchased_at, student_id')
+      .eq('class_id', classId)
+      .order('purchased_at', { ascending: false })
+      .limit(20);
+    if (error) return [];
+    // Join student names
+    const studentIds = [...new Set((data || []).map(p => p.student_id))];
+    if (studentIds.length === 0) return [];
+    const { data: students } = await supabase
+      .from('students')
+      .select('id, name')
+      .in('id', studentIds);
+    const nameMap = {};
+    (students || []).forEach(s => { nameMap[s.id] = s.name; });
+    return (data || []).map(p => ({
+      id: p.id,
+      studentName: nameMap[p.student_id] || 'Unknown',
+      itemName: p.item_name,
+      price: p.price,
+      purchasedAt: p.purchased_at
+    }));
+  } catch (e) {
+    console.warn('Could not get purchases (table may not exist):', e.message);
+    return [];
+  }
+}
+
 // ─── GET TEACHER CLASS ───
 
 async function getTeacherClass(teacherId) {
@@ -1562,6 +1606,96 @@ async function deleteRewardGalleryItem(id) {
   return true;
 }
 
+// ─── Popular Books for a class ───
+async function getPopularBooks(classId) {
+  // Get all students in this class
+  const { data: classStudents, error: sErr } = await supabase
+    .from('students')
+    .select('id, name')
+    .eq('class_id', classId);
+  if (sErr || !classStudents || classStudents.length === 0) return [];
+
+  const studentIds = classStudents.map(s => s.id);
+
+  // Get all quiz results for these students, joined to chapters → books
+  const { data: results, error: rErr } = await supabase
+    .from('quiz_results')
+    .select(`
+      id, student_id, chapter_id,
+      chapters!inner ( book_id, books!inner ( id, title, cover_url ) )
+    `)
+    .in('student_id', studentIds);
+
+  if (rErr || !results) return [];
+
+  // Build student name lookup
+  const studentNameMap = {};
+  classStudents.forEach(s => { studentNameMap[s.id] = s.name; });
+
+  // Aggregate: count unique students per book and total quizzes per book
+  const bookMap = {};
+  for (const r of results) {
+    const bookId = r.chapters.book_id;
+    const bookTitle = r.chapters.books.title;
+    const coverUrl = r.chapters.books.cover_url || '';
+    if (!bookMap[bookId]) {
+      bookMap[bookId] = { id: bookId, title: bookTitle, coverUrl, students: new Set(), quizCount: 0 };
+    }
+    bookMap[bookId].students.add(r.student_id);
+    bookMap[bookId].quizCount++;
+  }
+
+  // Convert to array, sort by student count desc
+  return Object.values(bookMap)
+    .map(b => ({
+      bookId: b.id,
+      title: b.title,
+      coverUrl: b.coverUrl,
+      studentCount: b.students.size,
+      quizCount: b.quizCount,
+      studentNames: [...b.students].map(sid => studentNameMap[sid] || 'Student')
+    }))
+    .sort((a, b) => b.studentCount - a.studentCount)
+    .slice(0, 8);
+}
+
+// ─── Recent Activity for a class ───
+async function getRecentActivity(classId) {
+  // Get all students in this class
+  const { data: classStudents, error: sErr } = await supabase
+    .from('students')
+    .select('id, name')
+    .eq('class_id', classId);
+  if (sErr || !classStudents || classStudents.length === 0) return [];
+
+  const studentIds = classStudents.map(s => s.id);
+  const studentMap = {};
+  classStudents.forEach(s => { studentMap[s.id] = s.name; });
+
+  // Get recent quiz results
+  const { data: results, error: rErr } = await supabase
+    .from('quiz_results')
+    .select(`
+      id, student_id, score, keys_earned, completed_at,
+      chapters!inner ( chapter_number, title, books!inner ( title ) )
+    `)
+    .in('student_id', studentIds)
+    .order('completed_at', { ascending: false })
+    .limit(10);
+
+  if (rErr || !results) return [];
+
+  return results.map(r => ({
+    studentName: studentMap[r.student_id] || 'Student',
+    bookTitle: r.chapters.books.title,
+    chapterNumber: r.chapters.chapter_number,
+    chapterTitle: r.chapters.title,
+    score: r.score,
+    keysEarned: r.keys_earned,
+    completedAt: r.completed_at
+  }));
+}
+
 // Export everything
 module.exports = {
   supabase,
@@ -1600,6 +1734,8 @@ module.exports = {
   getWeeklyStats,
   getStudentBookProgress,
   deductStudentKeys,
+  recordPurchase,
+  getRecentPurchases,
   getFavoriteBooks,
   toggleFavoriteBook,
   getStudentPerformance,
@@ -1613,7 +1749,9 @@ module.exports = {
   uploadStoreImage,
   getRewardGallery,
   addRewardGalleryItem,
-  deleteRewardGalleryItem
+  deleteRewardGalleryItem,
+  getPopularBooks,
+  getRecentActivity
 };
 
 async function getFullBookQuiz(bookId) {

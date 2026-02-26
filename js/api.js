@@ -36,6 +36,9 @@ const API = {
   getClassCode: () => API.get('/api/class/code'),
   validateClassCode: (code) => API.get(`/api/class/validate/${code}`),
   getClassAnalytics: (classId) => API.get(`/api/class/${classId}/analytics`),
+  getPopularBooks: (classId) => API.get(`/api/class/${classId}/popular-books`),
+  getRecentActivity: (classId) => API.get(`/api/class/${classId}/recent-activity`),
+  getRecentPurchases: (classId) => API.get(`/api/class/${classId}/recent-purchases`),
 
   // Teacher
   startTeacherQuiz: () => API.post('/api/teacher/start-quiz-mode', {}),

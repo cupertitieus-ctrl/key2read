@@ -595,7 +595,7 @@ const QuizEngine = (function() {
             <p class="quiz-retry-message">Read this hint and give it another try.</p>
             <div class="quiz-retry-hint">
               <span class="quiz-retry-hint-label">📖 Hint</span>
-              <p>${escapeHtml((q.strategy_tip || 'Reread this chapter.').replace(/<[^>]*>/g, ''))}</p>
+              <p>${escapeHtml((q.strategy_tip || 'You can find the answer by rereading this chapter.').replace(/<[^>]*>/g, ''))}</p>
             </div>
             <button class="btn btn-primary quiz-retry-btn" onclick="QuizEngine.dismissRetryModal()">Try Again</button>
           </div>
