@@ -364,6 +364,54 @@ function svgBarChart(data, labels, w, h) {
   </svg>`;
 }
 
+// Line chart for teacher dashboard
+function svgLineChart(data, labels, w, h) {
+  w = w || 620; h = h || 500;
+  const pad = { top: 30, right: 20, bottom: 36, left: 50 };
+  const cw = w - pad.left - pad.right;
+  const ch = h - pad.top - pad.bottom;
+  const min = Math.min(...data) - 20;
+  const max = Math.max(...data) + 20;
+  const range = max - min || 1;
+
+  const pts = data.map((v, i) => {
+    const x = pad.left + (i / (data.length - 1)) * cw;
+    const y = pad.top + ch - ((v - min) / range) * ch;
+    return { x, y, v };
+  });
+
+  const linePoints = pts.map(p => p.x + ',' + p.y).join(' ');
+
+  // Gridlines
+  const gridCount = 4;
+  let gridLines = '';
+  for (let i = 0; i <= gridCount; i++) {
+    const y = pad.top + (i / gridCount) * ch;
+    const val = Math.round(max - (i / gridCount) * range);
+    gridLines += '<line x1="' + pad.left + '" y1="' + y + '" x2="' + (w - pad.right) + '" y2="' + y + '" stroke="#E5E7EB" stroke-width="1" stroke-dasharray="4,4"/>';
+    gridLines += '<text x="' + (pad.left - 8) + '" y="' + (y + 4) + '" text-anchor="end" fill="#9CA3AF" font-size="11">' + val + '</text>';
+  }
+
+  var xLabels = labels.map(function(l, i) {
+    var x = pad.left + (i / (labels.length - 1)) * cw;
+    return '<text x="' + x + '" y="' + (h - 8) + '" text-anchor="middle" fill="#6B7280" font-size="11" font-weight="500">' + l + '</text>';
+  }).join('');
+
+  var dots = pts.map(function(p) {
+    return '<circle cx="' + p.x + '" cy="' + p.y + '" r="7" fill="#2563EB" stroke="#fff" stroke-width="3"/>';
+  }).join('');
+
+  var dotLabels = pts.map(function(p) {
+    return '<text x="' + p.x + '" y="' + (p.y - 16) + '" text-anchor="middle" fill="#2563EB" font-size="13" font-weight="700">' + p.v + '</text>';
+  }).join('');
+
+  return '<svg class="svg-chart svg-chart-stretch" viewBox="0 0 ' + w + ' ' + h + '" width="100%" preserveAspectRatio="xMidYMid meet">' +
+    gridLines +
+    '<polyline points="' + linePoints + '" fill="none" stroke="#2563EB" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' +
+    dots + dotLabels + xLabels +
+  '</svg>';
+}
+
 // Colorful gradient area chart for teacher dashboard
 function svgGradientAreaChart(data, labels, w, h) {
   w = w || 600; h = h || 220;
@@ -967,7 +1015,7 @@ function renderTeacherDashboard() {
       })
     : months.map(() => avgScore);
 
-  const trendChart = svgBarChart(classScores.slice(-4), months.slice(-4), 620, 500);
+  const trendChart = svgLineChart(classScores.slice(-4), months.slice(-4), 620, 500);
 
   // Build reading score pie chart
   const needsSupport = students.filter(s => (s.reading_score || s.score || 0) < 400).length;
@@ -1075,21 +1123,27 @@ function loadTeacherDashboardData() {
     const top3 = data.slice(0, 3);
     const medals = ['🥇', '🥈', '🥉'];
     const borderColors = ['#F59E0B', '#94A3B8', '#CD7F32'];
-    el.innerHTML = `<div style="display:flex;gap:24px;justify-content:center;flex-wrap:wrap">
+    el.innerHTML = `<div style="display:flex;gap:28px;justify-content:center;flex-wrap:wrap">
       ${top3.map((b, i) => {
         const cover = b.coverUrl
           ? `<img src="${b.coverUrl}" alt="${escapeHtml(b.title)}" style="width:100%;height:auto;border-radius:10px;display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
           : '';
-        return `<div style="text-align:center;cursor:pointer;width:160px" onclick="showPopularBookDetail(${i})">
+        const namesList = (b.studentNames || []).slice(0, 4).map(n => escapeHtml(n.split(' ')[0])).join(', ');
+        const extra = (b.studentNames || []).length > 4 ? ' +' + ((b.studentNames || []).length - 4) + ' more' : '';
+        return `<div style="text-align:center;cursor:pointer;width:200px" onclick="showPopularBookDetail(${i})">
           <div style="position:relative;margin-bottom:10px">
             <div style="border:3px solid ${borderColors[i]};border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.12);background:#fff">
               ${cover}
               <div style="display:${b.coverUrl ? 'none' : 'flex'};width:100%;height:200px;background:linear-gradient(135deg, var(--blue), var(--purple));align-items:center;justify-content:center;color:#fff;font-weight:700;padding:16px;font-size:0.85rem;text-align:center">${escapeHtml(b.title)}</div>
             </div>
-            <span style="position:absolute;top:-10px;left:-10px;font-size:1.5rem">${medals[i]}</span>
+            <span style="position:absolute;top:-16px;left:-16px;font-size:2.75rem">${medals[i]}</span>
           </div>
-          <p style="font-size:0.8rem;font-weight:700;color:var(--g800);margin:0 0 2px;line-height:1.3">${escapeHtml(b.title.length > 28 ? b.title.substring(0, 26) + '…' : b.title)}</p>
-          <p style="font-size:0.7rem;color:var(--g400);margin:0">${b.studentCount} ${b.studentCount === 1 ? 'student' : 'students'}</p>
+          <p style="font-size:0.85rem;font-weight:700;color:var(--g800);margin:0 0 4px;line-height:1.3">${escapeHtml(b.title.length > 30 ? b.title.substring(0, 28) + '…' : b.title)}</p>
+          <div style="display:flex;gap:10px;justify-content:center;margin:6px 0 8px">
+            <span style="font-size:0.7rem;background:var(--blue-p);color:var(--blue);padding:3px 8px;border-radius:99px;font-weight:600">👥 ${b.studentCount} ${b.studentCount === 1 ? 'reader' : 'readers'}</span>
+            <span style="font-size:0.7rem;background:var(--green-p, #ECFDF5);color:var(--green);padding:3px 8px;border-radius:99px;font-weight:600">📝 ${b.quizCount} ${b.quizCount === 1 ? 'quiz' : 'quizzes'}</span>
+          </div>
+          <p style="font-size:0.7rem;color:var(--g400);margin:0;line-height:1.4">${namesList}${extra}</p>
         </div>`;
       }).join('')}
     </div>`;
@@ -3664,6 +3718,25 @@ function renderAITools() {
     { name: 'Parent Report Generator',   desc: 'Generate a parent-friendly progress report for any student with actionable insights.', barColor: 'orange', iconColor: 'orange', icon: IC.download, action: 'showParentReportPicker()' },
   ];
 
+  const badgeList = [
+    { img: '/public/Learned_About_You.png',    name: 'Learned About You',    desc: 'Awarded when a student fills out their profile for the first time.' },
+    { img: '/public/Quiz_Streak_Badge_.png',   name: 'Quiz Streak',          desc: 'Awarded for completing their very first chapter quiz.' },
+    { img: '/public/Book_Boss_Badge.png',      name: 'Book Boss',            desc: 'Awarded for finishing all chapters in a book.' },
+    { img: '/public/Genre_Jumper_Badge.png',   name: 'Genre Jumper',         desc: 'Awarded for reading books from 3 different genres.' },
+    { img: '/public/First_Book_Badge.png',     name: 'First Book Done',      desc: 'Awarded for finishing their very first book.' },
+    { img: '/public/Quiz_Conqueror_Badge.png', name: 'Quiz Conqueror',       desc: 'Awarded for completing 10 quizzes.' },
+    { img: '/public/Grow_Hero_Badge.png',      name: 'Grow Hero',            desc: 'Awarded for achieving 90%+ quiz accuracy.' },
+    { img: '/public/Ultimate_Key_Badge.png',   name: 'Ultimate Key Reader',  desc: 'Awarded for earning 500 keys.' },
+  ];
+
+  const badgesHtml = badgeList.map(b => '<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--g50);border-radius:12px">' +
+    '<img src="' + b.img + '" alt="' + b.name + '" style="width:64px;height:64px;object-fit:contain;flex-shrink:0">' +
+    '<div>' +
+    '<div style="font-size:0.9rem;font-weight:700;color:var(--navy);margin-bottom:3px">' + b.name + '</div>' +
+    '<div style="font-size:0.8rem;color:var(--g500);line-height:1.4">' + b.desc + '</div>' +
+    '</div></div>'
+  ).join('');
+
   return `
     <div class="page-header">
       <h1>${IC.bulb} Teaching Tools</h1>
@@ -3681,6 +3754,14 @@ function renderAITools() {
           </div>
         </div>
       `).join('')}
+    </div>
+
+    <div class="list-card" style="padding:24px;margin-top:24px">
+      <h3 style="margin:0 0 4px 0">🏅 Student Badges</h3>
+      <p style="font-size:0.8rem;color:var(--g400);margin:0 0 20px 0">These are the badges your students can earn through reading and quizzes</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));gap:16px">
+        ${badgesHtml}
+      </div>
     </div>`;
 }
 
