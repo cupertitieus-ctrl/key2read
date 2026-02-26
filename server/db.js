@@ -516,12 +516,25 @@ async function recordPurchase(studentId, classId, itemName, price) {
 
 async function getRecentPurchases(classId) {
   try {
-    const { data, error } = await supabase
+    // Try with fulfilled column first, fall back without it
+    let data, error;
+    ({ data, error } = await supabase
       .from('store_purchases')
-      .select('id, item_name, price, purchased_at, student_id')
+      .select('id, item_name, price, purchased_at, student_id, fulfilled')
       .eq('class_id', classId)
       .order('purchased_at', { ascending: false })
-      .limit(20);
+      .limit(50));
+
+    if (error && error.message?.includes('fulfilled')) {
+      // Column doesn't exist yet — query without it
+      ({ data, error } = await supabase
+        .from('store_purchases')
+        .select('id, item_name, price, purchased_at, student_id')
+        .eq('class_id', classId)
+        .order('purchased_at', { ascending: false })
+        .limit(50));
+    }
+
     if (error) {
       console.error('getRecentPurchases query error:', error.message, error.code);
       return [];
@@ -540,11 +553,32 @@ async function getRecentPurchases(classId) {
       studentName: nameMap[p.student_id] || 'Unknown',
       itemName: p.item_name,
       price: p.price,
-      purchasedAt: p.purchased_at
+      purchasedAt: p.purchased_at,
+      fulfilled: p.fulfilled || false
     }));
   } catch (e) {
     console.warn('Could not get purchases (table may not exist):', e.message);
     return [];
+  }
+}
+
+// ─── Toggle purchase fulfilled status ───
+async function fulfillPurchase(purchaseId, fulfilled) {
+  try {
+    const { data, error } = await supabase
+      .from('store_purchases')
+      .update({ fulfilled: fulfilled })
+      .eq('id', purchaseId)
+      .select()
+      .single();
+    if (error) {
+      console.error('fulfillPurchase error:', error.message);
+      return null;
+    }
+    return data;
+  } catch (e) {
+    console.error('fulfillPurchase error:', e.message);
+    return null;
   }
 }
 
@@ -1688,18 +1722,18 @@ async function getPopularBooks(classId) {
 
 // ─── Weekly Growth Data for a class (for Class Reading Score Trend chart) ───
 async function getWeeklyGrowthData(classId, weeks) {
-  weeks = weeks || 4;
-  // Get all students in this class with their current reading scores
+  weeks = weeks || 8;
+  // Get all students in this class
   const { data: classStudents, error: sErr } = await supabase
     .from('students')
-    .select('id, reading_score')
+    .select('id')
     .eq('class_id', classId)
     .or('is_teacher_demo.is.null,is_teacher_demo.eq.false');
   if (sErr || !classStudents || classStudents.length === 0) return [];
 
   const studentIds = classStudents.map(s => s.id);
 
-  // Calculate week boundaries going back N weeks from current Monday
+  // Calculate week boundaries from N weeks ago to NOW (including current partial week)
   const now = new Date();
   const dayOfWeek = now.getUTCDay();
   const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
@@ -1707,16 +1741,17 @@ async function getWeeklyGrowthData(classId, weeks) {
   thisMonday.setUTCDate(now.getUTCDate() - daysSinceMonday);
   thisMonday.setUTCHours(0, 0, 0, 0);
 
-  // Build week boundaries (from oldest to newest)
+  // Build week boundaries: N weeks ago → next Monday (to include current week)
   const weekBoundaries = [];
-  for (let i = weeks; i >= 0; i--) {
+  for (let i = weeks; i >= -1; i--) {
     const d = new Date(thisMonday);
     d.setUTCDate(thisMonday.getUTCDate() - (i * 7));
     weekBoundaries.push(d);
   }
 
-  // Get reading_level_history for these students in the time window
   const startDate = weekBoundaries[0].toISOString();
+
+  // Get ALL reading_level_history entries for these students in the window
   const { data: history, error: hErr } = await supabase
     .from('reading_level_history')
     .select('student_id, lexile, recorded_at')
@@ -1724,62 +1759,37 @@ async function getWeeklyGrowthData(classId, weeks) {
     .gte('recorded_at', startDate)
     .order('recorded_at');
 
-  // Also get quiz_results to know which weeks had quiz activity
-  const { data: quizResults, error: qErr } = await supabase
-    .from('quiz_results')
-    .select('student_id, score, completed_at')
-    .in('student_id', studentIds)
-    .gte('completed_at', startDate)
-    .order('completed_at');
+  console.log('[WeeklyGrowth] classId=' + classId + ' students=' + studentIds.length + ' history_rows=' + (history ? history.length : 0));
 
-  // For each week, compute the class average reading score
-  // Strategy: use reading_level_history snapshots within that week
-  // For students without a snapshot that week, carry forward their last known score
+  if (!history || history.length === 0) return [];
+
+  // Group history entries into weeks and compute average
   const weeklyData = [];
-  const lastKnownScore = {}; // student_id -> last known reading score
-  // Initialize with current scores as baseline
-  classStudents.forEach(s => { lastKnownScore[s.id] = s.reading_score || 500; });
-
-  for (let w = 0; w < weeks; w++) {
+  for (let w = 0; w <= weeks; w++) {
     const weekStart = weekBoundaries[w];
     const weekEnd = weekBoundaries[w + 1];
     const label = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-    // Check if any quizzes happened this week
-    const weekQuizzes = (quizResults || []).filter(r => {
-      const d = new Date(r.completed_at);
+    // Find all reading_level_history entries in this week
+    const weekEntries = history.filter(h => {
+      const d = new Date(h.recorded_at);
       return d >= weekStart && d < weekEnd;
     });
 
-    // Get reading level snapshots for this week
-    const weekHistory = (history || []).filter(r => {
-      const d = new Date(r.recorded_at);
-      return d >= weekStart && d < weekEnd;
+    if (weekEntries.length === 0) continue; // Skip weeks with no data
+
+    // For each student, use their LAST (most recent) entry in this week
+    const studentScores = {};
+    weekEntries.forEach(h => {
+      studentScores[h.student_id] = h.lexile || 500;
     });
 
-    // Update last known scores from this week's history entries
-    // Use the LATEST entry per student within the week
-    const weekScoresByStudent = {};
-    weekHistory.forEach(h => {
-      weekScoresByStudent[h.student_id] = h.lexile || 500;
-    });
-
-    // Update carry-forward scores
-    for (const [sid, score] of Object.entries(weekScoresByStudent)) {
-      lastKnownScore[sid] = score;
-    }
-
-    if (weekQuizzes.length === 0 && weekHistory.length === 0) {
-      // No activity this week
-      weeklyData.push({ label, avgScore: null, quizCount: 0 });
-    } else {
-      // Compute class average from students who have scores
-      const scores = studentIds.map(sid => lastKnownScore[sid] || 500);
-      const avg = Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length);
-      weeklyData.push({ label, avgScore: avg, quizCount: weekQuizzes.length });
-    }
+    const scores = Object.values(studentScores);
+    const avg = Math.round(scores.reduce((s, v) => s + v, 0) / scores.length);
+    weeklyData.push({ label, avgScore: avg, quizCount: weekEntries.length });
   }
 
+  console.log('[WeeklyGrowth] returning ' + weeklyData.length + ' data points:', JSON.stringify(weeklyData));
   return weeklyData;
 }
 
@@ -1860,6 +1870,7 @@ module.exports = {
   deductStudentKeys,
   recordPurchase,
   getRecentPurchases,
+  fulfillPurchase,
   getFavoriteBooks,
   toggleFavoriteBook,
   getStudentPerformance,

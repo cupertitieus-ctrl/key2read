@@ -1135,24 +1135,26 @@ function loadTeacherDashboardData() {
   const classId = currentUser?.classId;
   if (!classId) return;
 
-  // Weekly growth chart (real data from quiz_results)
-  API.getWeeklyGrowth(classId, 4).then(function(data) {
+  // Weekly growth chart (real data from reading_level_history)
+  API.getWeeklyGrowth(classId, 12).then(function(data) {
     var container = document.getElementById('trend-chart-container');
     if (!container) return;
+    console.log('[Dashboard] Weekly growth data:', JSON.stringify(data));
     if (!data || data.length === 0) {
       container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">No quiz data yet — chart will appear once students start taking quizzes!</div>';
       return;
     }
-    // Fill null weeks with interpolated or zero values for chart continuity
-    var scores = data.map(function(w) { return w.avgScore !== null ? w.avgScore : 0; });
+    // Data already filtered to only weeks with actual data
+    var scores = data.map(function(w) { return w.avgScore; });
     var labels = data.map(function(w) { return w.label; });
-    var hasAnyData = data.some(function(w) { return w.avgScore !== null; });
-    if (!hasAnyData) {
-      container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">No quiz data yet — chart will appear once students start taking quizzes!</div>';
+    if (scores.length === 1) {
+      // Only one data point — show as a value instead of a useless single-dot chart
+      container.innerHTML = '<div style="text-align:center;padding:40px 0"><div style="font-size:2.5rem;font-weight:800;color:var(--blue)">' + scores[0] + '</div><div style="font-size:0.85rem;color:var(--g400);margin-top:4px">Class avg reading score · ' + labels[0] + '</div></div>';
       return;
     }
     container.innerHTML = svgLineChart(scores, labels, 620, 500);
-  }).catch(function() {
+  }).catch(function(err) {
+    console.error('[Dashboard] Weekly growth error:', err);
     var container = document.getElementById('trend-chart-container');
     if (container) container.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Could not load chart data</div>';
   });
@@ -1252,20 +1254,26 @@ function loadTeacherDashboardData() {
     }
     el.innerHTML = data.map(p => {
       const timeAgo = formatTimeAgo(p.purchasedAt);
+      const dateStr = p.purchasedAt ? new Date(p.purchasedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
       const st = students.find(s => s.name === p.studentName);
       const initials = p.studentName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
       const color = st ? st.color : '#8B5CF6';
-      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--g100)">
-        <div style="width:32px;height:32px;border-radius:50%;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.65rem;flex-shrink:0">${escapeHtml(initials)}</div>
-        <div style="flex:1;min-width:0">
-          <span style="font-weight:600;color:var(--navy)">${escapeHtml(p.studentName)}</span>
-          <span style="color:var(--g500)"> purchased </span>
-          <span style="font-weight:600;color:var(--purple)">${escapeHtml(p.itemName)}</span>
-          <span style="color:var(--g500)"> for </span>
-          <span style="font-weight:600;color:var(--gold)">🔑 ${p.price} Keys</span>
-        </div>
-        <span style="font-size:0.75rem;color:var(--g400);flex-shrink:0">${timeAgo}</span>
-      </div>`;
+      const checkedAttr = p.fulfilled ? 'checked' : '';
+      const fulfilledStyle = p.fulfilled ? 'opacity:0.6;' : '';
+      return '<div id="purchase-row-' + p.id + '" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--g100);' + fulfilledStyle + '">' +
+        '<label style="display:flex;align-items:center;cursor:pointer;flex-shrink:0" title="' + (p.fulfilled ? 'Prize given' : 'Mark as given') + '">' +
+          '<input type="checkbox" ' + checkedAttr + ' onchange="togglePurchaseFulfilled(' + p.id + ', this.checked)" style="width:18px;height:18px;accent-color:var(--green, #10B981);cursor:pointer">' +
+        '</label>' +
+        '<div style="width:32px;height:32px;border-radius:50%;background:' + color + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.65rem;flex-shrink:0">' + escapeHtml(initials) + '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div><span style="font-weight:600;color:var(--navy)">' + escapeHtml(p.studentName) + '</span>' +
+          ' <span style="color:var(--g500)">purchased</span> ' +
+          '<span style="font-weight:600;color:var(--purple)">' + escapeHtml(p.itemName) + '</span>' +
+          ' <span style="color:var(--g500)">for</span> ' +
+          '<span style="font-weight:600;color:var(--gold)">\uD83D\uDD11 ' + p.price + ' Keys</span></div>' +
+          '<div style="font-size:0.72rem;color:var(--g400);margin-top:2px">' + dateStr + ' · ' + timeAgo + (p.fulfilled ? ' · <span style="color:var(--green, #10B981);font-weight:600">✓ Prize given</span>' : '') + '</div>' +
+        '</div>' +
+      '</div>';
     }).join('');
   }).catch(() => {
     const el = document.getElementById('purchase-notifications');
@@ -1289,6 +1297,32 @@ function formatTimeAgo(dateStr) {
   if (diffDays < 7) return `${diffDays}d ago`;
   if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+async function togglePurchaseFulfilled(purchaseId, fulfilled) {
+  try {
+    await API.fulfillPurchase(purchaseId, fulfilled);
+    const row = document.getElementById('purchase-row-' + purchaseId);
+    if (row) {
+      row.style.opacity = fulfilled ? '0.6' : '1';
+      // Update the status text
+      const statusEl = row.querySelector('[data-fulfilled-status]');
+      if (statusEl) statusEl.innerHTML = fulfilled ? ' · <span style="color:var(--green, #10B981);font-weight:600">✓ Prize given</span>' : '';
+    }
+    // Also update the store purchases page if it's visible
+    const storeRow = document.getElementById('store-purchase-row-' + purchaseId);
+    if (storeRow) {
+      storeRow.style.opacity = fulfilled ? '0.6' : '1';
+    }
+  } catch (e) {
+    console.error('Failed to toggle fulfilled:', e);
+    // Revert the checkbox
+    const row = document.getElementById('purchase-row-' + purchaseId);
+    if (row) {
+      const cb = row.querySelector('input[type="checkbox"]');
+      if (cb) cb.checked = !fulfilled;
+    }
+  }
 }
 
 function showStatHelp(title, description) {
@@ -2331,20 +2365,26 @@ function loadStorePurchaseNotifications() {
     }
     el.innerHTML = data.map(p => {
       const timeAgo = formatTimeAgo(p.purchasedAt);
+      const dateStr = p.purchasedAt ? new Date(p.purchasedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
       const st = students.find(s => s.name === p.studentName);
       const initials = p.studentName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
       const color = st ? st.color : '#8B5CF6';
-      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--g100)">
-        <div style="width:32px;height:32px;border-radius:50%;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.65rem;flex-shrink:0">${escapeHtml(initials)}</div>
-        <div style="flex:1;min-width:0">
-          <span style="font-weight:600;color:var(--navy)">${escapeHtml(p.studentName)}</span>
-          <span style="color:var(--g500)"> redeemed </span>
-          <span style="font-weight:600;color:var(--purple)">${escapeHtml(p.itemName)}</span>
-          <span style="color:var(--g500)"> for </span>
-          <span style="font-weight:600;color:var(--gold)">🔑 ${p.price} Keys</span>
-        </div>
-        <span style="font-size:0.75rem;color:var(--g400);flex-shrink:0">${timeAgo}</span>
-      </div>`;
+      const checkedAttr = p.fulfilled ? 'checked' : '';
+      const fulfilledStyle = p.fulfilled ? 'opacity:0.6;' : '';
+      return '<div id="store-purchase-row-' + p.id + '" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--g100);' + fulfilledStyle + '">' +
+        '<label style="display:flex;align-items:center;cursor:pointer;flex-shrink:0" title="' + (p.fulfilled ? 'Prize given' : 'Mark as given') + '">' +
+          '<input type="checkbox" ' + checkedAttr + ' onchange="togglePurchaseFulfilled(' + p.id + ', this.checked)" style="width:18px;height:18px;accent-color:var(--green, #10B981);cursor:pointer">' +
+        '</label>' +
+        '<div style="width:32px;height:32px;border-radius:50%;background:' + color + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.65rem;flex-shrink:0">' + escapeHtml(initials) + '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div><span style="font-weight:600;color:var(--navy)">' + escapeHtml(p.studentName) + '</span>' +
+          ' <span style="color:var(--g500)">redeemed</span> ' +
+          '<span style="font-weight:600;color:var(--purple)">' + escapeHtml(p.itemName) + '</span>' +
+          ' <span style="color:var(--g500)">for</span> ' +
+          '<span style="font-weight:600;color:var(--gold)">\uD83D\uDD11 ' + p.price + ' Keys</span></div>' +
+          '<div style="font-size:0.72rem;color:var(--g400);margin-top:2px">' + dateStr + ' · ' + timeAgo + (p.fulfilled ? ' · <span style="color:var(--green, #10B981);font-weight:600">\u2713 Prize given</span>' : '') + '</div>' +
+        '</div>' +
+      '</div>';
     }).join('');
   }).catch(() => {
     const el = document.getElementById('store-purchase-notifications');
@@ -4323,12 +4363,15 @@ function renderReports() {
       <div class="report-header-bar"></div>
       <div class="report-header-body">
         <div class="report-header-top">
-          <div>
-            <h2>Class Growth Report</h2>
-            <div class="report-meta">
-              <span>${currentUser?.name || 'Teacher'}'s Class</span>
-              <span>${IC.calendar} Last 8 Weeks</span>
-              <span>${students.length} Students</span>
+          <div style="display:flex;align-items:center;gap:12px">
+            <img src="/public/logo.png" alt="key2read" style="height:40px;width:auto">
+            <div>
+              <h2>Class Growth Report</h2>
+              <div class="report-meta">
+                <span>${currentUser?.name || 'Teacher'}'s Class</span>
+                <span>${IC.calendar} Last 8 Weeks</span>
+                <span>${students.length} Students</span>
+              </div>
             </div>
           </div>
           <div class="report-share-badge">
@@ -4357,10 +4400,28 @@ function renderReports() {
       </div>
     </div>
 
-    <div class="chart-container">
-      <h3>📈 Class Reading Score Trend</h3>
-      <p class="chart-subtitle">Average reading score across all students, last 8 weeks</p>
-      ${svgGradientAreaChart(classScores, months, 620, 220)}
+    <div class="report-charts-grid">
+      <div class="chart-container">
+        <h3>📈 Class Reading Score Trend</h3>
+        <p class="chart-subtitle">Average reading score across all students, last 8 weeks</p>
+        ${svgGradientAreaChart(classScores, months, 620, 220)}
+      </div>
+      <div class="chart-container">
+        <h3>🥧 Reading Score Distribution</h3>
+        <p class="chart-subtitle">How your students are performing across reading levels</p>
+        ${(() => {
+          const ns = students.filter(s => (s.reading_score || s.score || 0) < 400).length;
+          const dev = students.filter(s => { const sc = s.reading_score || s.score || 0; return sc >= 400 && sc < 600; }).length;
+          const ot = students.filter(s => { const sc = s.reading_score || s.score || 0; return sc >= 600 && sc < 800; }).length;
+          const adv = students.filter(s => (s.reading_score || s.score || 0) >= 800).length;
+          return svgPieChart([
+            { label: 'Needs Support (0\u2013399)', value: ns, color: '#EF4444' },
+            { label: 'Developing (400\u2013599)', value: dev, color: '#F59E0B' },
+            { label: 'On Track (600\u2013799)', value: ot, color: '#10B981' },
+            { label: 'Advanced (800+)', value: adv, color: '#2563EB' }
+          ], 280);
+        })()}
+      </div>
     </div>
 
     <div class="data-table-wrap" style="margin-top:24px">
@@ -4440,6 +4501,7 @@ function renderStudentReport() {
         <div class="report-header-body">
           <div class="report-header-top">
             <div style="display:flex;align-items:center;gap:16px">
+              <img src="/public/logo.png" alt="key2read" style="height:36px;width:auto">
               ${avatar(s, 'lg')}
               <div>
                 <h2>${s.name} ${warnTag(s)}</h2>
@@ -4472,6 +4534,7 @@ function renderStudentReport() {
       <div class="report-header-body">
         <div class="report-header-top">
           <div style="display:flex;align-items:center;gap:16px">
+            <img src="/public/logo.png" alt="key2read" style="height:36px;width:auto">
             ${avatar(s, 'lg')}
             <div>
               <h2>${s.name} ${warnTag(s)}</h2>

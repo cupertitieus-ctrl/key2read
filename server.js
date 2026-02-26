@@ -1027,6 +1027,19 @@ app.get('/api/class/:classId/recent-purchases', async (req, res) => {
   }
 });
 
+// ─── Toggle purchase fulfilled status ───
+app.put('/api/store/purchases/:id/fulfill', async (req, res) => {
+  try {
+    const { fulfilled } = req.body;
+    const result = await db.fulfillPurchase(parseInt(req.params.id), !!fulfilled);
+    if (!result) return res.status(500).json({ error: 'Could not update purchase' });
+    res.json({ success: true, purchase: result });
+  } catch (e) {
+    console.error('Fulfill purchase error:', e);
+    res.status(500).json({ error: 'Failed to update purchase' });
+  }
+});
+
 // ─── ASSIGNMENT ROUTES ───
 app.post('/api/assignments', async (req, res) => {
   const { classId, bookId, name, chapterStart, chapterEnd, dueDate, personalized } = req.body;

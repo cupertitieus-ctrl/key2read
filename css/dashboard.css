@@ -2534,6 +2534,16 @@
   height: 14px;
 }
 
+.report-charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 768px) {
+  .report-charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
 .chart-container {
   background: #fff;
   border: 1px solid var(--g200);

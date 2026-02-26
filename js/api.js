@@ -82,6 +82,7 @@ const API = {
   addRewardGallery: (data) => API.post('/api/store/gallery', data),
   deleteRewardGallery: (id) => fetch(`/api/store/gallery/${id}`, { method: 'DELETE' }).then(r => r.json()),
   purchaseReward: (data) => API.post('/api/store/purchase', data),
+  fulfillPurchase: (id, fulfilled) => API.put(`/api/store/purchases/${id}/fulfill`, { fulfilled }),
 
   // Assignments
   createAssignment: (data) => API.post('/api/assignments', data),
