@@ -845,10 +845,10 @@ function renderHeader() {
         </svg>
       </button>
     </div>
-    <div class="header-search">
+    ${(userRole === 'student' || userRole === 'child') ? `<div class="header-search">
       ${IC.search}
-      <input type="text" id="global-search-input" placeholder="${(userRole === 'student' || userRole === 'child') ? 'Search books, quizzes...' : userRole === 'parent' ? 'Search children, books, quizzes...' : 'Search students, books, quizzes...'}" oninput="handleGlobalSearch(this.value)">
-    </div>
+      <input type="text" id="global-search-input" placeholder="Search books, quizzes..." oninput="handleGlobalSearch(this.value)">
+    </div>` : ''}
     <div class="header-actions">
       ${(userRole === 'teacher' || userRole === 'parent') ? `<button class="dash-icon-btn" onclick="navigate('purchases')" title="Recent Purchases">
         <span style="width:20px;height:20px;display:inline-flex">${IC.bell}</span>
