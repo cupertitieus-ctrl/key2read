@@ -2192,18 +2192,18 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
     </div>
 
     <div class="student-quick-stats" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:20px 0">
-      <div style="background:linear-gradient(135deg,#3B82F6,#2563EB);border-radius:14px;padding:18px 16px;text-align:center;color:#fff">
-        <img src="/public/Single_Book_Outline_White.png" alt="" style="width:32px;height:32px;margin-bottom:6px">
+      <div style="background:linear-gradient(135deg,#FB923C,#C2410C);border-radius:14px;padding:18px 16px;text-align:center;color:#fff;display:flex;flex-direction:column;align-items:center">
+        <img src="/public/Single_Book_Outline_White.png" alt="" style="width:32px;height:32px;margin-bottom:6px;display:block">
         <div style="font-size:1.5rem;font-weight:800">${booksCompleted}</div>
         <div style="font-size:0.75rem;font-weight:600;opacity:0.85">Books Completed</div>
       </div>
-      <div style="background:linear-gradient(135deg,#8B5CF6,#7C3AED);border-radius:14px;padding:18px 16px;text-align:center;color:#fff">
-        <img src="/public/Quiz_Outline_Icon.png" alt="" style="width:32px;height:32px;margin-bottom:6px;filter:brightness(0) invert(1)" onerror="this.style.display='none'">
+      <div style="background:linear-gradient(135deg,#A78BFA,#6D28D9);border-radius:14px;padding:18px 16px;text-align:center;color:#fff;display:flex;flex-direction:column;align-items:center">
+        <img src="/public/Quiz_Outline_Icon.png" alt="" style="width:32px;height:32px;margin-bottom:6px;display:block;filter:brightness(0) invert(1)" onerror="this.style.display='none'">
         <div style="font-size:1.5rem;font-weight:800">${s.quizzes_completed || s.quizzes || 0}</div>
         <div style="font-size:0.75rem;font-weight:600;opacity:0.85">Quizzes Completed</div>
       </div>
-      <div style="background:linear-gradient(135deg,#F59E0B,#D97706);border-radius:14px;padding:18px 16px;text-align:center;color:#fff">
-        <img src="/public/Key_Outline_Icon.png" alt="" style="width:32px;height:32px;margin-bottom:6px;filter:brightness(0) invert(1)" onerror="this.style.display='none'">
+      <div style="background:linear-gradient(135deg,#FBBF24,#D97706);border-radius:14px;padding:18px 16px;text-align:center;color:#fff;display:flex;flex-direction:column;align-items:center">
+        <img src="/public/Key_Outline_Icon.png" alt="" style="width:32px;height:32px;margin-bottom:6px;display:block;filter:brightness(0) invert(1)" onerror="this.style.display='none'">
         <div style="font-size:1.5rem;font-weight:800">${s.keys_earned || s.keys || 0}</div>
         <div style="font-size:0.75rem;font-weight:600;opacity:0.85">Keys Earned</div>
       </div>
