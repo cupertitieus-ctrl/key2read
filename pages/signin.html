@@ -220,17 +220,37 @@ function showError(msg) {
 // Initialize fields for default role (Teacher) on page load
 selectRole(document.querySelector('.role-card.active'), 'teacher');
 
-// Auto-fill email from localStorage if previously remembered
-(function() {
+// Auto-fill and auto-login from localStorage if previously remembered
+(async function() {
+  // Auto-signin for remembered teacher/parent (email + password)
+  const savedCreds = localStorage.getItem('k2r_remember_creds');
+  if (savedCreds) {
+    try {
+      const creds = JSON.parse(atob(savedCreds));
+      if (creds.email && creds.password && creds.role) {
+        // Show loading state
+        const submitBtn = document.querySelector('.auth-form button[type="submit"]');
+        if (submitBtn) { submitBtn.textContent = 'Signing in...'; submitBtn.disabled = true; }
+        await API.login({ email: creds.email, password: creds.password, role: creds.role, rememberMe: true });
+        window.location.href = 'dashboard.html';
+        return;
+      }
+    } catch(e) {
+      // Saved credentials are invalid — clear them and let user login manually
+      localStorage.removeItem('k2r_remember_creds');
+      const submitBtn = document.querySelector('.auth-form button[type="submit"]');
+      if (submitBtn) { submitBtn.textContent = 'Sign In'; submitBtn.disabled = false; }
+    }
+  }
+
+  // Fallback: auto-fill email only (if saved from older version)
   const savedEmail = localStorage.getItem('k2r_remember_email');
   if (savedEmail) {
     const emailInput = document.getElementById('email');
     if (emailInput) emailInput.value = savedEmail;
   }
-})();
 
-// Auto-signin for students (localStorage)
-(async function() {
+  // Auto-signin for students (localStorage)
   const savedName = localStorage.getItem('k2r_student_name');
   const savedCode = localStorage.getItem('k2r_student_classcode');
   if (savedName && savedCode) {
@@ -292,8 +312,13 @@ document.querySelector('.auth-form').addEventListener('submit', async function(e
     if (!password) return showError('Please enter your password');
     try {
       await API.login({ email, password, role: 'parent', rememberMe });
-      if (rememberMe) { localStorage.setItem('k2r_remember_email', email); }
-      else { localStorage.removeItem('k2r_remember_email'); }
+      if (rememberMe) {
+        localStorage.setItem('k2r_remember_creds', btoa(JSON.stringify({ email, password, role: 'parent' })));
+        localStorage.setItem('k2r_remember_email', email);
+      } else {
+        localStorage.removeItem('k2r_remember_creds');
+        localStorage.removeItem('k2r_remember_email');
+      }
       window.location.href = 'dashboard.html';
     } catch(e) { showError(e.message || 'Login failed. Check your email and password.'); }
   } else if (selectedRole === 'owner') {
@@ -313,8 +338,13 @@ document.querySelector('.auth-form').addEventListener('submit', async function(e
     if (!password) return showError('Please enter your password');
     try {
       await API.login({ email, password, role: selectedRole, rememberMe });
-      if (rememberMe) { localStorage.setItem('k2r_remember_email', email); }
-      else { localStorage.removeItem('k2r_remember_email'); }
+      if (rememberMe) {
+        localStorage.setItem('k2r_remember_creds', btoa(JSON.stringify({ email, password, role: selectedRole })));
+        localStorage.setItem('k2r_remember_email', email);
+      } else {
+        localStorage.removeItem('k2r_remember_creds');
+        localStorage.removeItem('k2r_remember_email');
+      }
       window.location.href = 'dashboard.html';
     } catch(e) { showError(e.message || 'Login failed. Check your email and password.'); }
   }

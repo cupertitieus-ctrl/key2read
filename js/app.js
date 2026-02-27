@@ -874,9 +874,13 @@ function renderHeader() {
 // ---- Logout ----
 async function handleLogout() {
   try { await API.logout(); } catch(e) { /* ignore */ }
-  // Clear student auto-signin localStorage
+  // Clear all auto-signin localStorage
   localStorage.removeItem('k2r_student_name');
   localStorage.removeItem('k2r_student_classcode');
+  localStorage.removeItem('k2r_child_name');
+  localStorage.removeItem('k2r_child_familycode');
+  localStorage.removeItem('k2r_remember_creds');
+  localStorage.removeItem('k2r_remember_email');
   window.location.href = 'signin.html';
 }
 
