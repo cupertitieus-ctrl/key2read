@@ -78,15 +78,25 @@ async function buildSessionUser(user) {
       sessionUser.grade = cls.grade || '4th';
     }
   } else if (user.role === 'parent') {
-    // Parent: look up their family class
+    // Parent: look up their family class by class_id first, then fallback to teacher_id
+    let cls = null;
     if (user.class_id) {
-      const { data: cls } = await db.supabase.from('classes').select('id, name, class_code, grade').eq('id', user.class_id).single();
-      if (cls) {
-        sessionUser.classId = cls.id;
-        sessionUser.classCode = cls.class_code;
-        sessionUser.familyCode = cls.class_code;
-        sessionUser.className = cls.name;
-        sessionUser.grade = cls.grade || '4th';
+      const { data } = await db.supabase.from('classes').select('id, name, class_code, grade').eq('id', user.class_id).single();
+      cls = data;
+    }
+    // Fallback: find class where parent is the teacher_id (family class creator)
+    if (!cls) {
+      cls = await db.getTeacherClass(user.id);
+    }
+    if (cls) {
+      sessionUser.classId = cls.id;
+      sessionUser.classCode = cls.class_code;
+      sessionUser.familyCode = cls.class_code;
+      sessionUser.className = cls.name;
+      sessionUser.grade = cls.grade || '4th';
+      // Also fix the user record if class_id was missing
+      if (!user.class_id) {
+        await db.supabase.from('users').update({ class_id: cls.id }).eq('id', user.id);
       }
     }
     sessionUser.plan = user.plan || 'free';

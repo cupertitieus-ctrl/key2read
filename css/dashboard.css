@@ -892,7 +892,26 @@
 }
 @media (max-width: 480px) {
   .dashboard-badge-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+  .dashboard-badge-card {
+    padding: 10px 4px 8px;
+  }
+  .dashboard-badge-img {
+    width: 48px;
+    height: 48px;
+  }
+  .dashboard-badge-name {
+    font-size: 0.6rem;
+    min-height: 2.4em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .dashboard-badge-status {
+    font-size: 0.55rem;
+    padding: 1px 6px;
   }
 }
 
@@ -3787,32 +3806,39 @@
 /* --- All Badges Page --- */
 .all-badges-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
   margin-top: 12px;
   max-width: 900px;
 }
 .all-badge-card {
-  background: none;
-  border: none;
-  padding: 0;
+  background: #fff;
+  border: 2px solid var(--g200);
+  border-radius: 16px;
+  padding: 16px 8px 12px;
   text-align: center;
   cursor: pointer;
-  transition: transform 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 .all-badge-card:hover {
-  transform: scale(1.05);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.all-badge-card.earned {
+  border-color: #BBF7D0;
+  background: linear-gradient(135deg, #F0FDF4, #fff);
 }
 .all-badge-img-wrap {
   position: relative;
-  width: 100%;
-  padding-bottom: 100%;
-  overflow: hidden;
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+  margin-bottom: 8px;
 }
 .all-badge-img-wrap > img {
-  position: absolute;
-  bottom: 0;
-  left: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -3826,8 +3852,8 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 60px;
-  height: 60px;
+  width: 44px;
+  height: 44px;
 }
 .all-badge-lock img {
   width: 100%;
@@ -3835,18 +3861,24 @@
   object-fit: contain;
 }
 .all-badge-name {
-  font-size: 0.9rem;
-  font-weight: 800;
+  font-size: 0.8rem;
+  font-weight: 700;
   color: var(--navy);
   line-height: 1.3;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .all-badge-status {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
-  color: var(--g500);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.all-badge-card.locked .all-badge-status {
+  background: var(--g100);
+  color: var(--g400);
 }
 .all-badge-card.earned .all-badge-status {
+  background: #ECFDF5;
   color: #059669;
 }
 
@@ -4032,7 +4064,21 @@
 
   .all-badges-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: 10px;
+  }
+  .all-badge-img-wrap {
+    width: 80px;
+    height: 80px;
+  }
+  .all-badge-card {
+    padding: 14px 8px 10px;
+  }
+  .all-badge-name {
+    font-size: 0.75rem;
+  }
+  .all-badge-lock {
+    width: 36px;
+    height: 36px;
   }
 
 }

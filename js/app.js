@@ -229,7 +229,11 @@ function mapStudentFromAPI(s) {
     accuracy: s.accuracy || 0,
     keys: s.keys_earned || 0,
     quizzes: s.quizzes_completed || 0,
+    quizzes_completed: s.quizzes_completed || 0,
+    keys_earned: s.keys_earned || 0,
+    reading_score: s.reading_score || 500,
     streak: s.streak_days || 0,
+    streak_days: s.streak_days || 0,
     struggling: (s.quizzes_completed || 0) > 0 && ((s.reading_score || 500) < 400 || (s.accuracy || 0) < 50),
     joined: s.created_at ? new Date(s.created_at).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) : '—',
     interests: onboarded ? {
@@ -1222,11 +1226,6 @@ function renderTeacherDashboard() {
     </div>
 
     <div class="stat-cards stat-cards-5">
-      <div class="stat-card clickable-card" onclick="document.getElementById('dashboard-roster')?.scrollIntoView({behavior:'smooth'})">
-        <div class="stat-card-icon"><img src="/public/Student_Outline_Icon.png" alt="${userRole === 'parent' ? 'Children' : 'Students'}"></div>
-        <div class="stat-card-label">${userRole === 'parent' ? 'Children' : 'Students'} <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('${userRole === 'parent' ? 'Children' : 'Students'}', 'The total number of ${userRole === 'parent' ? 'children in your family' : 'students in your class'}. Click to scroll to your ${userRole === 'parent' ? 'children' : 'student'} roster.')">?</button></div>
-        <div class="stat-card-value">${students.length}</div>
-      </div>
       <div class="stat-card clickable-card" onclick="navigate('reports')">
         <div class="stat-card-icon"><img src="/public/Book_Outline_Icon.png" alt="Reading Score"></div>
         <div class="stat-card-label">Average Reading Score <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Reading Score', 'A score from 0 to 1000 that measures how well your ${groupLabel} is reading overall. It\\'s based on quiz scores, reading effort, independence (using fewer hints), vocabulary growth, and persistence. Click to see Growth Reports.')">?</button></div>
@@ -1246,6 +1245,11 @@ function renderTeacherDashboard() {
         <div class="stat-card-icon"><img src="/public/Quiz_Outline_Icon.png" alt="Quizzes"></div>
         <div class="stat-card-label">Quizzes Completed <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Quizzes Completed', 'The total number of chapter quizzes all your ${membersLabel} have completed. Each book chapter has its own quiz. Click to view assignments.')">?</button></div>
         <div class="stat-card-value">${totalQuizzes}</div>
+      </div>
+      <div class="stat-card clickable-card" onclick="navigate('celebrate')">
+        <div class="stat-card-icon"><img src="/public/Single_Book_Outline_White.png" alt="Books Completed"></div>
+        <div class="stat-card-label">Books Completed <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Books Completed', 'The total number of books your ${membersLabel} have finished by completing all chapter quizzes. Click to see certificates.')">?</button></div>
+        <div class="stat-card-value" id="stat-books-completed">—</div>
       </div>
     </div>
 
@@ -1305,6 +1309,15 @@ function renderTeacherDashboard() {
 function loadTeacherDashboardData() {
   const classId = currentUser?.classId;
   if (!classId) return;
+
+  // Total books completed across all students
+  Promise.all(students.map(s =>
+    API.getBookProgress(s.id).then(p => (p || []).filter(b => b.isComplete || b.is_complete).length).catch(() => 0)
+  )).then(counts => {
+    const total = counts.reduce((sum, c) => sum + c, 0);
+    const el = document.getElementById('stat-books-completed');
+    if (el) el.textContent = total;
+  }).catch(() => {});
 
   // Weekly growth chart (real data from reading_level_history) — dashboard always shows this week
   API.getWeeklyGrowth(classId, 'week').then(function(data) {
@@ -2031,6 +2044,7 @@ async function loadStudentPerformance(s) {
 }
 
 function renderPerformanceDashboard(s, perf, bookProgress) {
+  const booksCompleted = (bookProgress || []).filter(p => p.isComplete || p.is_complete).length;
   const trendIcon = perf.trend === 'improving' ? `<span class="trend-up">&#9650;</span>` :
                     perf.trend === 'declining' ? `<span class="trend-down">&#9660;</span>` :
                     `<span class="trend-stable">&#9472;</span>`;
@@ -2157,6 +2171,17 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
           <li><strong>Persistence (15%)</strong> &mdash; Whether they keep trying after getting answers wrong</li>
         </ul>
         <p>A score of <strong>500</strong> is average for a new reader. Scores improve as students read more, answer questions carefully, and build good habits.</p>
+      </div>
+    </div>
+
+    <div class="student-quick-stats" style="display:flex;gap:12px;margin-bottom:20px">
+      <div style="flex:1;background:var(--g50);border-radius:12px;padding:14px 16px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:800;color:var(--navy)">${booksCompleted}</div>
+        <div style="font-size:0.75rem;font-weight:600;color:var(--g500)">Books Completed</div>
+      </div>
+      <div style="flex:1;background:var(--g50);border-radius:12px;padding:14px 16px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:800;color:var(--navy)">${s.quizzes_completed || s.quizzes || 0}</div>
+        <div style="font-size:0.75rem;font-weight:600;color:var(--g500)">Quizzes Completed</div>
       </div>
     </div>
 
@@ -3558,21 +3583,21 @@ function renderBookDetail() {
 
     ${(() => {
       if (completedChapters.length < chapCount || chapCount === 0 || !currentUser) return '';
-      const certData = JSON.stringify({
+      const certParams = JSON.stringify({
         bookTitle: b.title || 'Book',
         bookAuthor: b.author || '',
         studentName: currentUser?.name || 'Student',
         coverUrl: b.cover_url || '',
         dateStr: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-      }).replace(/"/g, '&quot;');
+      }).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
       return `
       <div class="list-card" style="padding:28px;margin-top:24px;text-align:center;background:linear-gradient(135deg, #FEFCE8 0%, #FFF7ED 50%, #FEFCE8 100%);border:2px solid #FDE68A">
         <div style="font-size:2.5rem;margin-bottom:8px">🏆</div>
         <h3 style="margin:0 0 6px;font-size:1.25rem;color:var(--navy)">Book Completed!</h3>
         <p style="margin:0 0 20px;color:var(--g500);font-size:0.9rem">Congratulations on finishing all ${chapCount} ${/diary|diaries/i.test(b.title) ? 'entries' : 'chapters'} of <strong>${escapeHtml(b.title)}</strong>!</p>
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-          <button class="btn btn-primary" data-cert="${certData}" onclick="downloadCertificatePDF(JSON.parse(this.dataset.cert))">📥 Download Certificate PDF</button>
-          <button class="btn btn-outline" data-cert="${certData}" onclick="printCertificate(JSON.parse(this.dataset.cert))">🖨️ Print Certificate</button>
+          <button class="btn btn-primary" data-params="${certParams}" onclick="downloadCertificatePDF(JSON.parse(decodeHTMLEntities(this.dataset.params)))">📥 Download Certificate PDF</button>
+          <button class="btn btn-outline" data-params="${certParams}" onclick="printCertificate(JSON.parse(decodeHTMLEntities(this.dataset.params)))">🖨️ Print Certificate</button>
         </div>
       </div>`;
     })()}`;
@@ -3814,7 +3839,7 @@ async function downloadCertificatePDF(params) {
     try {
       await new Promise((resolve, reject) => {
         const s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js';
+        s.src = '/public/js/jspdf.umd.min.js';
         s.onload = resolve;
         s.onerror = reject;
         document.head.appendChild(s);
@@ -6646,6 +6671,8 @@ function renderStudentBadges() {
             <img src="${b.img}" alt="${b.name}">
             ${!b.earned ? '<div class="all-badge-lock"><img src="/public/Lock_Icon_.png" alt="Locked"></div>' : ''}
           </div>
+          <div class="all-badge-name">${b.name}</div>
+          <div class="all-badge-status">${b.earned ? 'Earned' : 'Locked'}</div>
         </div>
       `).join('')}
     </div>
