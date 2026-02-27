@@ -4044,9 +4044,9 @@ function renderCelebrate() {
         <div class="award-card">
           <div class="award-card-icon ${aw.icon}">${IC.star}</div>
           <h3>${aw.title}</h3>
-          <div class="award-student">
+          <div class="award-student" style="cursor:pointer" onclick="navigate('students', null, ${aw.student.id})">
             ${avatar(aw.student)}
-            <span class="award-student-name">${aw.student.name}</span>
+            <a href="#" onclick="event.preventDefault()" class="award-student-name" style="text-decoration:underline">${aw.student.name}</a>
             <span class="award-student-score">${aw.stat}</span>
           </div>
         </div>
@@ -4117,7 +4117,7 @@ function renderCertificateList(certs) {
     return `<div style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-bottom:1px solid var(--g100);border-radius:8px">
       <div style="width:36px;height:36px;border-radius:50%;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;flex-shrink:0">${escapeHtml(initials)}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:0.9rem;color:var(--navy)">${escapeHtml(c.student.name)}</div>
+        <a href="#" onclick="event.preventDefault(); navigate('students', null, ${c.student.id})" style="font-weight:700;font-size:0.9rem;color:var(--navy);text-decoration:underline">${escapeHtml(c.student.name)}</a>
         <div style="font-size:0.8rem;color:var(--g500)">Completed <strong>${escapeHtml(c.book.title)}</strong></div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
