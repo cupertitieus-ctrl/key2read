@@ -1754,7 +1754,7 @@ function renderQuizzes() {
       <h3 style="margin:0 0 4px 0;font-size:1.25rem;font-weight:700;color:var(--navy);display:flex;align-items:center"><img src="/public/Comprehension_Outline_Black_Icon_.png" alt="" style="width:36px;height:36px;margin-right:10px;object-fit:contain">How Does the Software Work?</h3>
       <p style="margin:0 0 16px 0;font-size:0.8rem;color:var(--g400)">Students must read the physical book first · <a href="https://www.dianealber.com/pages/keychapterbooks" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:600">Purchase books here →</a></p>
       <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:16px">
-        <div style="text-align:center;padding:16px 12px;background:var(--blue-p, #EFF6FF);border-radius:var(--radius-md);cursor:pointer" onclick="navigate('library')">
+        <div style="text-align:center;padding:16px 12px;background:var(--blue-p, #EFF6FF);border-radius:var(--radius-md)">
           <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Stacked_Book_Outline.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
           <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">1. Pick a Book</div>
           <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">Students choose a chapter book from the library</div>
@@ -1764,7 +1764,7 @@ function renderQuizzes() {
           <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">2. Take the Quiz</div>
           <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">5 questions test comprehension, vocabulary, and reasoning</div>
         </div>
-        <div style="text-align:center;padding:16px 12px;background:var(--purple-l, #F5F3FF);border-radius:var(--radius-md);cursor:pointer" onclick="navigate('reports')">
+        <div style="text-align:center;padding:16px 12px;background:var(--purple-l, #F5F3FF);border-radius:var(--radius-md)">
           <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Key_Outline_Icon_Blk.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
           <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">3. Earn Keys & Grow</div>
           <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">Score 80%+ to earn Keys and boost their Reading Score</div>
@@ -3348,7 +3348,7 @@ function renderLibrary() {
       <h3 style="margin:0 0 4px 0;font-size:1.25rem;font-weight:700;color:var(--navy);display:flex;align-items:center"><img src="/public/Comprehension_Outline_Black_Icon_.png" alt="" style="width:36px;height:36px;margin-right:10px;object-fit:contain">How Does the Software Work?</h3>
       <p style="margin:0 0 16px 0;font-size:0.8rem;color:var(--g400)">Students must read the physical book first · <a href="https://www.dianealber.com/pages/keychapterbooks" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:600">Purchase books here →</a></p>
       <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:16px">
-        <div style="text-align:center;padding:16px 12px;background:var(--blue-p, #EFF6FF);border-radius:var(--radius-md);cursor:pointer" onclick="navigate('library')">
+        <div style="text-align:center;padding:16px 12px;background:var(--blue-p, #EFF6FF);border-radius:var(--radius-md)">
           <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Stacked_Book_Outline.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
           <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">1. Pick a Book</div>
           <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">Students choose a chapter book from the library</div>
@@ -3358,7 +3358,7 @@ function renderLibrary() {
           <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">2. Take the Quiz</div>
           <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">5 questions test comprehension, vocabulary, and reasoning</div>
         </div>
-        <div style="text-align:center;padding:16px 12px;background:var(--purple-l, #F5F3FF);border-radius:var(--radius-md);cursor:pointer" onclick="navigate('reports')">
+        <div style="text-align:center;padding:16px 12px;background:var(--purple-l, #F5F3FF);border-radius:var(--radius-md)">
           <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Key_Outline_Icon_Blk.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
           <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">3. Earn Keys & Grow</div>
           <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">Score 80%+ to earn Keys and boost their Reading Score</div>
@@ -3829,9 +3829,9 @@ async function downloadCertificatePDF(params) {
     if (coverUrl) {
       try {
         const coverDataUrl = await loadImage(coverUrl, true);
-        const coverW = 38;
-        const coverH = 50;
-        doc.addImage(coverDataUrl, 'PNG', (w - coverW) / 2, h * 0.70, coverW, coverH);
+        const coverW = 52;
+        const coverH = 68;
+        doc.addImage(coverDataUrl, 'PNG', (w - coverW) / 2, h * 0.68, coverW, coverH);
       } catch(e) { console.log('Could not load book cover for PDF:', e); }
     }
 
@@ -3860,7 +3860,7 @@ function printCertificate(params) {
       .cert-content { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; }
       .student-name { position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%); font-size: 36px; font-weight: 800; color: #1a1a2e; text-align: center; width: 70%; }
       .book-name { position: absolute; top: 62%; left: 50%; transform: translate(-50%, -50%); font-size: 26px; font-weight: 700; color: #1a1a2e; font-style: italic; text-align: center; width: 70%; }
-      .book-cover { position: absolute; top: 70%; left: 50%; transform: translateX(-50%); width: 80px; height: 110px; object-fit: cover; border-radius: 6px; box-shadow: 0 3px 10px rgba(0,0,0,0.25); border: 2px solid #fff; }
+      .book-cover { position: absolute; top: 68%; left: 50%; transform: translateX(-50%); width: 110px; height: 145px; object-fit: cover; border-radius: 6px; box-shadow: 0 3px 10px rgba(0,0,0,0.25); border: 2px solid #fff; }
       .cert-date { position: absolute; bottom: 5%; left: 50%; transform: translateX(-50%); font-size: 11px; color: #777; }
     </style>
   </head><body>
@@ -7043,14 +7043,76 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentUser = me.user;
       userRole = me.user.role || 'teacher';
     } else {
-      // Not logged in — guest mode
-      userRole = 'guest';
-      currentUser = null;
+      // Not logged in — try auto-login from saved remember-me credentials
+      let reauthed = false;
+      const savedCreds = localStorage.getItem('k2r_remember_creds');
+      if (savedCreds) {
+        try {
+          const creds = JSON.parse(atob(savedCreds));
+          if (creds.email && creds.password && creds.role) {
+            const result = await API.login({ email: creds.email, password: creds.password, role: creds.role, rememberMe: true });
+            if (result.user) { currentUser = result.user; userRole = result.user.role || 'teacher'; reauthed = true; }
+          }
+        } catch(e2) { localStorage.removeItem('k2r_remember_creds'); }
+      }
+      // Try student auto-login
+      if (!reauthed) {
+        const savedName = localStorage.getItem('k2r_student_name');
+        const savedCode = localStorage.getItem('k2r_student_classcode');
+        if (savedName && savedCode) {
+          try {
+            const result = await API.login({ name: savedName, classCode: savedCode, role: 'student' });
+            if (result.user) { currentUser = result.user; userRole = result.user.role || 'student'; reauthed = true; }
+          } catch(e2) { localStorage.removeItem('k2r_student_name'); localStorage.removeItem('k2r_student_classcode'); }
+        }
+      }
+      // Try child auto-login
+      if (!reauthed) {
+        const savedChildName = localStorage.getItem('k2r_child_name');
+        const savedFamilyCode = localStorage.getItem('k2r_child_familycode');
+        if (savedChildName && savedFamilyCode) {
+          try {
+            const result = await API.login({ name: savedChildName, classCode: savedFamilyCode, role: 'child' });
+            if (result.user) { currentUser = result.user; userRole = result.user.role || 'student'; reauthed = true; }
+          } catch(e2) { localStorage.removeItem('k2r_child_name'); localStorage.removeItem('k2r_child_familycode'); }
+        }
+      }
+      if (!reauthed) { userRole = 'guest'; currentUser = null; }
     }
   } catch(e) {
-    // API error — guest mode
-    userRole = 'guest';
-    currentUser = null;
+    // API error — try auto-login from saved credentials before falling to guest
+    let reauthed = false;
+    const savedCreds = localStorage.getItem('k2r_remember_creds');
+    if (savedCreds) {
+      try {
+        const creds = JSON.parse(atob(savedCreds));
+        if (creds.email && creds.password && creds.role) {
+          const result = await API.login({ email: creds.email, password: creds.password, role: creds.role, rememberMe: true });
+          if (result.user) { currentUser = result.user; userRole = result.user.role || 'teacher'; reauthed = true; }
+        }
+      } catch(e2) { localStorage.removeItem('k2r_remember_creds'); }
+    }
+    if (!reauthed) {
+      const savedName = localStorage.getItem('k2r_student_name');
+      const savedCode = localStorage.getItem('k2r_student_classcode');
+      if (savedName && savedCode) {
+        try {
+          const result = await API.login({ name: savedName, classCode: savedCode, role: 'student' });
+          if (result.user) { currentUser = result.user; userRole = result.user.role || 'student'; reauthed = true; }
+        } catch(e2) { localStorage.removeItem('k2r_student_name'); localStorage.removeItem('k2r_student_classcode'); }
+      }
+    }
+    if (!reauthed) {
+      const savedChildName = localStorage.getItem('k2r_child_name');
+      const savedFamilyCode = localStorage.getItem('k2r_child_familycode');
+      if (savedChildName && savedFamilyCode) {
+        try {
+          const result = await API.login({ name: savedChildName, classCode: savedFamilyCode, role: 'child' });
+          if (result.user) { currentUser = result.user; userRole = result.user.role || 'student'; reauthed = true; }
+        } catch(e2) { localStorage.removeItem('k2r_child_name'); localStorage.removeItem('k2r_child_familycode'); }
+      }
+    }
+    if (!reauthed) { userRole = 'guest'; currentUser = null; }
   }
 
   // Load books from API and sort: Book 1 first (randomized), then rest (randomized)
