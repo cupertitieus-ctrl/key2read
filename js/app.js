@@ -6318,7 +6318,9 @@ function renderDashboardBadges() {
       <div class="dashboard-badge-grid">
         ${badges.map(b => `
           <div class="dashboard-badge-card${b.earned ? '' : ' locked'}" title="${b.desc}">
-            <img class="dashboard-badge-img" src="${b.img}" alt="${b.name}">
+            <div class="dashboard-badge-img-wrap">
+              <img src="${b.img}" alt="${b.name}">
+            </div>
             <div class="dashboard-badge-name">${b.name}</div>
             <div class="dashboard-badge-status ${b.earned ? 'earned' : 'locked-label'}">${b.earned ? 'Earned' : 'Locked'}</div>
           </div>

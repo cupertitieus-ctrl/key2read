@@ -786,18 +786,20 @@
   opacity: 0.4;
   filter: grayscale(1);
 }
-.badge-compact img {
-  width: 100%;
-  height: 100%;
+.badge-compact > img {
+  width: 80px;
+  height: 80px;
   object-fit: contain;
+  display: block;
+  margin: 0 auto;
 }
 .badge-lock-overlay {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -813,7 +815,21 @@
     grid-template-columns: 1fr;
   }
   .badges-compact-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .badge-compact > img {
+    width: 70px;
+    height: 70px;
+  }
+}
+@media (max-width: 400px) {
+  .badge-compact > img {
+    width: 60px;
+    height: 60px;
+  }
+  .badge-lock-overlay {
+    width: 26px;
+    height: 26px;
   }
 }
 
@@ -837,6 +853,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
 }
 .dashboard-badge-card:hover {
   transform: translateY(-2px);
@@ -845,15 +862,23 @@
 .dashboard-badge-card.locked {
   opacity: 0.5;
 }
-.dashboard-badge-card.locked .dashboard-badge-img {
+.dashboard-badge-card.locked .dashboard-badge-img-wrap > img {
   filter: grayscale(1);
   opacity: 0.5;
 }
-.dashboard-badge-img {
+.dashboard-badge-img-wrap {
   width: 72px;
   height: 72px;
-  object-fit: contain;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   margin-bottom: 8px;
+}
+.dashboard-badge-img-wrap > img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 .dashboard-badge-name {
   font-size: 0.75rem;
@@ -882,9 +907,9 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 8px;
   }
-  .dashboard-badge-img {
-    width: 56px;
-    height: 56px;
+  .dashboard-badge-img-wrap {
+    width: 60px;
+    height: 60px;
   }
   .dashboard-badge-name {
     font-size: 0.65rem;
@@ -898,9 +923,9 @@
   .dashboard-badge-card {
     padding: 10px 4px 8px;
   }
-  .dashboard-badge-img {
-    width: 48px;
-    height: 48px;
+  .dashboard-badge-img-wrap {
+    width: 52px;
+    height: 52px;
   }
   .dashboard-badge-name {
     font-size: 0.6rem;

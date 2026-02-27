@@ -331,14 +331,22 @@
 <script src="js/landing-search.js"></script>
 <script>
 // ─── Auth-aware Navbar ───
-(async function() {
+async function updateNavbar() {
   try {
-    const res = await fetch('/api/auth/me');
-    const data = await res.json();
-    if (!data.user) return; // Not signed in — keep default buttons
-
     const actions = document.getElementById('navbar-actions');
     if (!actions) return;
+
+    const res = await fetch('/api/auth/me');
+    const data = await res.json();
+
+    if (!data.user) {
+      // Not signed in — restore default buttons
+      actions.innerHTML = `
+        <a href="pages/signin.html" class="btn btn-ghost btn-sm">Sign In</a>
+        <a href="pages/signup.html" class="btn btn-primary btn-sm">Get Started Free</a>
+      `;
+      return;
+    }
 
     const user = data.user;
     const displayName = user.name || user.email || 'Account';
@@ -379,7 +387,15 @@
       window.location.reload();
     });
   } catch(e) { /* Server may not be running */ }
-})();
+}
+
+// Run on initial load
+updateNavbar();
+
+// Re-run when returning via back/forward (bfcache restore)
+window.addEventListener('pageshow', function(e) {
+  if (e.persisted) updateNavbar();
+});
 </script>
 
 <style>
