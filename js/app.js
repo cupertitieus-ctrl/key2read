@@ -1157,18 +1157,22 @@ async function launchQuiz(bookId, chapterNum, sid) {
 // ---- Page: Quizzes & Assessments ----
 // ---- Teacher Dashboard (Overview) ----
 function renderTeacherDashboard() {
+  const isParent = userRole === 'parent';
+  const membersLabel = isParent ? 'children' : 'students';
+  const MembersLabel = isParent ? 'Children' : 'Students';
+  const groupLabel = isParent ? 'family' : 'class';
   const avgAcc = students.length > 0 ? Math.round(students.reduce((s, st) => s + (st.accuracy || 0), 0) / students.length) : 0;
   const totalKeys = students.reduce((s, st) => s + (st.keys_earned || st.keys || 0), 0);
   const avgScore = students.length > 0 ? Math.round(students.reduce((s, st) => s + (st.reading_score || st.score || 0), 0) / students.length) : 0;
   const totalQuizzes = students.reduce((s, st) => s + (st.quizzes_completed || 0), 0);
 
-  if (students.length === 0) {
+  if (students.length === 0 && !isParent) {
     return `
       <div class="page-header"><h1><img src="/public/logo.png" alt="key2read" style="height:44px;width:auto;vertical-align:middle;margin-right:10px">Dashboard</h1></div>
       <div class="empty-state">
         <div class="empty-state-icon">${IC.users}</div>
         <h2>Welcome to key2read!</h2>
-        <p>Your dashboard will come alive once students join your class and start taking quizzes.</p>
+        <p>Your dashboard will come alive once ${membersLabel} join your ${groupLabel} and start taking quizzes.</p>
         <button class="btn btn-primary" onclick="navigate('quizzes')">${IC.clip} Go to Quizzes</button>
       </div>`;
   }
@@ -1233,11 +1237,11 @@ function renderTeacherDashboard() {
     <div class="teacher-dashboard-charts">
       <div class="list-card" style="padding:24px">
         <h3 style="margin:0 0 4px 0;display:flex;align-items:center"><img src="/public/Book_Outline_Icon_Black.png" alt="" style="width:32px;height:32px;margin-right:8px">Reading Score Distribution</h3>
-        <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">How your students are performing across reading levels</p>
+        <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">How your ${membersLabel} are performing across reading levels</p>
         ${pieChart}
       </div>
       <div class="list-card" style="padding:24px;cursor:pointer;display:flex;flex-direction:column" onclick="navigate('reports')">
-        <h3 style="margin:0 0 4px 0;display:flex;align-items:center"><img src="/public/Growth_Outline_.png" alt="" style="width:32px;height:32px;margin-right:8px">Class Reading Score Trend</h3>
+        <h3 style="margin:0 0 4px 0;display:flex;align-items:center"><img src="/public/Growth_Outline_.png" alt="" style="width:32px;height:32px;margin-right:8px">${isParent ? 'Family' : 'Class'} Reading Score Trend</h3>
         <p style="font-size:0.8rem;color:var(--g400);margin:0 0 8px 0">This week's daily average · <span style="color:var(--blue);font-weight:600">View Full Report →</span></p>
         <div style="flex:1;min-height:200px">${trendChart}</div>
       </div>
@@ -1246,7 +1250,7 @@ function renderTeacherDashboard() {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px">
       <div class="list-card" style="padding:24px">
         <h3 style="margin:0 0 4px 0;display:flex;align-items:center"><img src="/public/Stacked_Book_Outline.png" alt="" style="width:32px;height:32px;margin-right:8px">Top 3 Books</h3>
-        <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">The most popular books your students are reading of all time</p>
+        <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">The most popular books your ${membersLabel} are reading of all time</p>
         <div id="popular-books-chart">
           <div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Loading...</div>
         </div>
@@ -1524,7 +1528,7 @@ function renderDashboardRoster() {
     <div id="dashboard-roster" class="list-card" style="padding:24px;margin-top:20px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <div>
-          <h3 style="margin:0 0 2px 0;display:flex;align-items:center"><img src="/public/Student_Outline_Icon_Blk.png" alt="" style="width:32px;height:32px;margin-right:8px">Student Roster</h3>
+          <h3 style="margin:0 0 2px 0;display:flex;align-items:center"><img src="/public/Student_Outline_Icon_Blk.png" alt="" style="width:32px;height:32px;margin-right:8px">${isParent ? 'My Children' : 'Student Roster'}</h3>
           <p style="font-size:0.8rem;color:var(--g400);margin:0">Sorted by who needs the most help</p>
         </div>
         <button class="btn btn-sm btn-outline" onclick="navigate('students')">View all ${students.length} students →</button>
@@ -3946,7 +3950,7 @@ function renderCelebrate() {
       <div class="empty-state">
         <div class="empty-state-icon">${IC.star}</div>
         <h2>No Students Yet</h2>
-        <p>Once students join your class and start taking quizzes, their achievements will appear here!</p>
+        <p>Once ${userRole === 'parent' ? 'children' : 'students'} join your ${userRole === 'parent' ? 'family' : 'class'} and start taking quizzes, their achievements will appear here!</p>
         <button class="btn btn-primary" onclick="navigate('quizzes')">${IC.arrowLeft} Go to Dashboard</button>
       </div>`;
   }
@@ -4970,7 +4974,7 @@ function renderReports() {
       <div class="empty-state">
         <div class="empty-state-icon">${IC.chart}</div>
         <h2>No Data Yet</h2>
-        <p>Growth reports will appear once students join your class and start taking quizzes. Share your class code to get started!</p>
+        <p>Growth reports will appear once ${userRole === 'parent' ? 'children' : 'students'} join your ${userRole === 'parent' ? 'family' : 'class'} and start taking quizzes. Share your ${userRole === 'parent' ? 'family code' : 'class code'} to get started!</p>
         <button class="btn btn-primary" onclick="navigate('quizzes')">${IC.arrowLeft} Go to Dashboard</button>
       </div>`;
   }
