@@ -3870,7 +3870,7 @@ async function downloadCertificatePDF(params) {
         const coverDataUrl = await loadImage(coverUrl, true);
         const coverW = 42;
         const coverH = 55;
-        doc.addImage(coverDataUrl, 'PNG', (w - coverW) / 2, h * 0.65, coverW, coverH);
+        doc.addImage(coverDataUrl, 'PNG', (w - coverW) / 2, h * 0.70, coverW, coverH);
       } catch(e) { console.log('Could not load book cover for PDF:', e); }
     }
 
@@ -3899,7 +3899,7 @@ function printCertificate(params) {
       .cert-content { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; }
       .student-name { position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%); font-size: 36px; font-weight: 800; color: #1a1a2e; text-align: center; width: 70%; }
       .book-name { position: absolute; top: 62%; left: 50%; transform: translate(-50%, -50%); font-size: 26px; font-weight: 700; color: #1a1a2e; font-style: italic; text-align: center; width: 70%; }
-      .book-cover { position: absolute; top: 65%; left: 50%; transform: translateX(-50%); width: 90px; height: 118px; object-fit: cover; border-radius: 6px; box-shadow: 0 3px 10px rgba(0,0,0,0.25); border: 2px solid #fff; }
+      .book-cover { position: absolute; top: 70%; left: 50%; transform: translateX(-50%); width: 90px; height: 118px; object-fit: cover; border-radius: 6px; box-shadow: 0 3px 10px rgba(0,0,0,0.25); border: 2px solid #fff; }
       .cert-date { position: absolute; bottom: 5%; left: 50%; transform: translateX(-50%); font-size: 11px; color: #777; }
     </style>
   </head><body>
