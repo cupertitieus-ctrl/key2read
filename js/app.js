@@ -1379,19 +1379,24 @@ function loadTeacherDashboardData() {
     // Populate the ranked list on the right
     const listEl = document.getElementById('popular-books-list');
     if (listEl) {
-      listEl.innerHTML = data.slice(0, 10).map((b, i) => {
+      const items = data.slice(0, 10);
+      const half = Math.ceil(items.length / 2);
+      const renderCol = (slice, startIdx) => slice.map((b, i) => {
+        const rank = startIdx + i;
         const rankColors = ['#F59E0B', '#94A3B8', '#CD7F32'];
-        const rankBg = i < 3 ? rankColors[i] : 'var(--navy)';
-        const namesList = (b.studentNames || []).slice(0, 3).map(n => n.split(' ')[0]).join(', ');
-        const extra = (b.studentNames || []).length > 3 ? ' +' + ((b.studentNames || []).length - 3) + ' more' : '';
-        return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;' + (i < data.slice(0,10).length - 1 ? 'border-bottom:1px solid var(--g100);' : '') + '">' +
-          '<div style="width:28px;height:28px;border-radius:50%;background:' + rankBg + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.75rem;flex-shrink:0">' + (i + 1) + '</div>' +
+        const rankBg = rank < 3 ? rankColors[rank] : 'var(--navy)';
+        return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;' + (i < slice.length - 1 ? 'border-bottom:1px solid var(--g100);' : '') + '">' +
+          '<div style="width:28px;height:28px;border-radius:50%;background:' + rankBg + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.75rem;flex-shrink:0">' + (rank + 1) + '</div>' +
           '<div style="flex:1;min-width:0">' +
             '<div style="font-size:0.8rem;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(b.title) + '</div>' +
             '<div style="font-size:0.7rem;color:var(--g400)">' + b.studentCount + ' ' + (b.studentCount === 1 ? 'reader' : 'readers') + ' · ' + b.quizCount + ' ' + (b.quizCount === 1 ? 'quiz' : 'quizzes') + '</div>' +
           '</div>' +
         '</div>';
       }).join('');
+      listEl.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px">' +
+        '<div>' + renderCol(items.slice(0, half), 0) + '</div>' +
+        '<div>' + renderCol(items.slice(half), half) + '</div>' +
+      '</div>';
     }
   }).catch(() => {
     const el = document.getElementById('popular-books-chart');
