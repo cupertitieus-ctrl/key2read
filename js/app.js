@@ -3862,17 +3862,17 @@ async function downloadCertificatePDF(params) {
     if (coverUrl) {
       try {
         const coverDataUrl = await loadImage(coverUrl, true);
-        const coverW = 34;
-        const coverH = 44;
-        doc.addImage(coverDataUrl, 'PNG', (w - coverW) / 2, h * 0.66, coverW, coverH);
+        const coverW = 38;
+        const coverH = 52;
+        doc.addImage(coverDataUrl, 'PNG', (w - coverW) / 2, h * 0.67, coverW, coverH);
       } catch(e) { console.log('Could not load book cover for PDF:', e); }
     }
 
-    // Date — bottom center (inside the certificate border)
+    // Date — bottom center, between the key badge and key2read logo
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100, 100, 100);
-    doc.text(safe(dateStr), w / 2, h * 0.87, { align: 'center' });
+    doc.text(safe(dateStr), w / 2, h * 0.90, { align: 'center' });
 
     // Save
     const safeTitle = (book.title || 'Book').replace(/[^a-zA-Z0-9]/g, '-');
@@ -3899,8 +3899,8 @@ function printCertificate(params) {
       .cert-content { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; }
       .student-name { position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%); font-size: 36px; font-weight: 800; color: #1a1a2e; text-align: center; width: 70%; }
       .book-name { position: absolute; top: 62%; left: 50%; transform: translate(-50%, -50%); font-size: 26px; font-weight: 700; color: #1a1a2e; font-style: italic; text-align: center; width: 70%; }
-      .book-cover { position: absolute; top: 66%; left: 50%; transform: translateX(-50%); width: 72px; height: 92px; object-fit: cover; border-radius: 6px; box-shadow: 0 3px 10px rgba(0,0,0,0.25); border: 2px solid #fff; }
-      .cert-date { position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%); font-size: 11px; color: #777; }
+      .book-cover { position: absolute; top: 67%; left: 50%; transform: translateX(-50%); width: 80px; height: 110px; object-fit: contain; border-radius: 6px; box-shadow: 0 3px 10px rgba(0,0,0,0.25); border: 2px solid #fff; background: #fff; }
+      .cert-date { position: absolute; bottom: 6%; left: 50%; transform: translateX(-50%); font-size: 11px; color: #777; }
     </style>
   </head><body>
     <div class="cert">
