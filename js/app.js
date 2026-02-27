@@ -7339,6 +7339,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       await loadStoreItems();
     }
 
+    // Mark all existing badges as "already shown" so we only popup truly new ones
+    initShownBadges();
+
     // Auto-launch onboarding wizard for new students (onboarded === 0)
     if (currentUser && currentUser.onboarded === 0) {
       // Push current student into students array so the onboarding modal can find them
