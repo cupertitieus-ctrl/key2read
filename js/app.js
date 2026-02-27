@@ -3843,7 +3843,8 @@ async function downloadCertificatePDF(params) {
 
     // Load the certificate background image (same-origin, no CORS needed)
     const bgDataUrl = await loadImage('/public/Certificate.png', false);
-    doc.addImage(bgDataUrl, 'PNG', 0, 0, w, h);
+    const margin = 5;
+    doc.addImage(bgDataUrl, 'PNG', margin, margin, w - margin * 2, h - margin * 2);
 
     // Student name — centered, positioned below "This is to certify that"
     doc.setFontSize(28);
@@ -3890,11 +3891,11 @@ function printCertificate(params) {
 
   const html = `<!DOCTYPE html><html><head><title>Certificate - ${book.title}</title>
     <style>
-      @page { size: landscape; margin: 0; }
+      @page { size: landscape; margin: 5mm; }
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: 'Arial', 'Helvetica', sans-serif; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
-      .cert { width: 270mm; height: 190mm; position: relative; overflow: hidden; }
-      .cert-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      .cert { width: 100%; max-width: 287mm; height: 200mm; position: relative; overflow: hidden; margin: auto; }
+      .cert-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
       .cert-content { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; }
       .student-name { position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%); font-size: 36px; font-weight: 800; color: #1a1a2e; text-align: center; width: 70%; }
       .book-name { position: absolute; top: 62%; left: 50%; transform: translate(-50%, -50%); font-size: 26px; font-weight: 700; color: #1a1a2e; font-style: italic; text-align: center; width: 70%; }
