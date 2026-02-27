@@ -84,6 +84,8 @@ CREATE TABLE student_surveys (
   favorite_color TEXT DEFAULT '',
   favorite_movie_or_show TEXT DEFAULT '',
   fun_fact TEXT DEFAULT '',
+  reading_feeling TEXT DEFAULT '',
+  likes_reading TEXT DEFAULT '',
   favorite_books JSONB DEFAULT '[]'::jsonb,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

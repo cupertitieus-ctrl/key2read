@@ -58,18 +58,12 @@ const IC = {
 
 // ---- Interest Categories ----
 const interestCategories = [
-  { id: 'sports',      label: 'Sports',         icon: IC.target,   color: 'blue'   },
-  { id: 'animals',     label: 'Animals',         icon: IC.eye,      color: 'green'  },
-  { id: 'science',     label: 'Science',         icon: IC.bulb,     color: 'purple' },
-  { id: 'adventure',   label: 'Adventure',       icon: IC.fire,     color: 'orange' },
-  { id: 'fantasy',     label: 'Fantasy',         icon: IC.star,     color: 'gold'   },
+  { id: 'humor',       label: 'Funny',           icon: IC.star,     color: 'gold'   },
   { id: 'mystery',     label: 'Mystery',         icon: IC.search,   color: 'red'    },
-  { id: 'technology',  label: 'Technology',       icon: IC.layers,   color: 'blue'   },
-  { id: 'art',         label: 'Art & Music',     icon: IC.activity, color: 'purple' },
-  { id: 'history',     label: 'History',          icon: IC.clock,    color: 'orange' },
-  { id: 'humor',       label: 'Funny Stories',   icon: IC.star,     color: 'gold'   },
-  { id: 'friendship',  label: 'Friendship',      icon: IC.users,    color: 'green'  },
-  { id: 'cooking',     label: 'Food & Cooking',  icon: IC.bag,      color: 'red'    },
+  { id: 'animals',     label: 'Animals',         icon: IC.eye,      color: 'green'  },
+  { id: 'fantasy',     label: 'Fantasy',         icon: IC.star,     color: 'purple' },
+  { id: 'sports',      label: 'Sports',          icon: IC.target,   color: 'blue'   },
+  { id: 'adventure',   label: 'Adventure',       icon: IC.fire,     color: 'orange' },
 ];
 
 // ---- Data (loaded from API on init) ----
@@ -2173,7 +2167,23 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
             <div style="font-weight:700;color:${statusColor};font-size:0.95rem">${statusText}</div>
             <div style="color:var(--g500);font-size:0.8rem;margin-top:2px">Based on onboarding survey: "Favorite Animals (Pick up to 3)" — student selected ${animalsArr.length} animal${animalsArr.length !== 1 ? 's' : ''}</div>
           </div>
-        </div>`;
+        </div>
+        ${raw.likes_reading ? `
+        <div style="background:#F0F9FF;border:1px solid #BAE6FD;border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:12px;margin-top:12px">
+          <span style="font-size:1.5rem">${raw.likes_reading === 'yes' ? '👍' : raw.likes_reading === 'no' ? '👎' : '🤷'}</span>
+          <div>
+            <div style="font-weight:700;color:var(--navy);font-size:0.95rem">Likes reading: ${raw.likes_reading.charAt(0).toUpperCase() + raw.likes_reading.slice(1)}</div>
+            <div style="color:var(--g500);font-size:0.8rem;margin-top:2px">From onboarding survey: "Do you like reading?"</div>
+          </div>
+        </div>` : ''}
+        ${raw.reading_feeling ? `
+        <div style="background:#F0F9FF;border:1px solid #BAE6FD;border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:12px;margin-top:12px">
+          <span style="font-size:1.5rem">${raw.reading_feeling === 'confident' ? '💪' : raw.reading_feeling === 'frustrated' ? '😤' : raw.reading_feeling === 'calm' ? '😌' : raw.reading_feeling === 'bored' ? '😴' : '📖'}</span>
+          <div>
+            <div style="font-weight:700;color:var(--navy);font-size:0.95rem">Reading makes them feel: ${raw.reading_feeling.charAt(0).toUpperCase() + raw.reading_feeling.slice(1)}</div>
+            <div style="color:var(--g500);font-size:0.8rem;margin-top:2px">From onboarding survey: "How does reading make you feel?"</div>
+          </div>
+        </div>` : ''}`;
     })()}
 
     ${quizHistoryHtml}
@@ -5369,7 +5379,7 @@ function prevOnboardingStep() {
 function selectInterestTag(tagId) {
   const idx = selectedInterests.indexOf(tagId);
   if (idx >= 0) selectedInterests.splice(idx, 1);
-  else if (selectedInterests.length < 4) selectedInterests.push(tagId);
+  else if (selectedInterests.length < 3) selectedInterests.push(tagId);
   refreshOnboardingContent();
 }
 
@@ -5398,12 +5408,7 @@ function refreshOnboardingContent() {
 }
 
 function saveSurveyInputs() {
-  const job = document.getElementById('survey-dream-job');
-  const place = document.getElementById('survey-fav-place');
-  const fact = document.getElementById('survey-fun-fact');
-  if (job) window._surveyDreamJob = job.value;
-  if (place) window._surveyFavPlace = place.value;
-  if (fact) window._surveyFunFact = fact.value;
+  // placeholder for future survey input fields
 }
 
 async function saveOnboarding() {
@@ -5422,11 +5427,9 @@ async function saveOnboarding() {
         interest_tags: JSON.stringify(selectedInterests),
         reading_style: selectedReadingStyle || 'detailed',
         favorite_genre: genreSelect ? genreSelect.value : 'Fantasy',
-        hobbies: JSON.stringify(window._surveyHobbies || []),
         favorite_animals: JSON.stringify(window._surveyAnimals || []),
-        dream_job: window._surveyDreamJob || '',
-        favorite_place: window._surveyFavPlace || '',
-        fun_fact: window._surveyFunFact || ''
+        reading_feeling: window._surveyReadingFeeling || '',
+        likes_reading: window._surveyLikesReading || ''
       });
     } catch(e) { console.log('Survey save (offline mode):', e.message); }
   }
@@ -5438,11 +5441,9 @@ async function saveOnboarding() {
   onboardingStep = 0;
   onboardingStudent = null;
   selectedInterests = [];
-  window._surveyHobbies = [];
   window._surveyAnimals = [];
-  window._surveyDreamJob = '';
-  window._surveyFavPlace = '';
-  window._surveyFunFact = '';
+  window._surveyReadingFeeling = '';
+  window._surveyLikesReading = '';
   closeModal();
   renderMain();
 
@@ -5467,17 +5468,35 @@ function getOnboardingBodyHtml(s) {
   if (onboardingStep === 0) {
     stepContent = `
       <div class="onboarding-welcome">
-        <div style="margin:0 auto 20px">${avatar(s, 'lg')}</div>
-        <h2 style="text-align:center;margin-bottom:8px">Welcome, ${s.name.split(' ')[0]}!</h2>
-        <p style="text-align:center;color:var(--g500);margin-bottom:24px">We'd love to learn about you! Answer a few fun questions so we can make your reading experience awesome.</p>
+        <div style="display:flex;justify-content:center;margin-bottom:8px"><img src="/public/Learned_About_You.png" alt="Learned About You" style="width:160px;height:160px;object-fit:contain"></div>
+        <h2 style="text-align:center;margin-bottom:20px">Hello there! We would love to learn a little more about you!</h2>
         <div style="text-align:center">
           <button class="btn btn-primary" onclick="nextOnboardingStep()">Let's Go!</button>
         </div>
       </div>`;
   } else if (onboardingStep === 1) {
+    if (!window._surveyLikesReading) window._surveyLikesReading = '';
     stepContent = `
-      <h3 style="text-align:center;margin-bottom:4px">What do you love?</h3>
-      <p style="text-align:center;color:var(--g500);margin-bottom:20px"><strong style="color:var(--navy)">Pick 2\u20134 topics</strong> that interest you the most.</p>
+      <h3 style="text-align:center;margin-bottom:8px">Do you like reading?</h3>
+      <div class="survey-chips" style="justify-content:center;margin-top:20px;gap:12px">
+        <div class="survey-chip ${window._surveyLikesReading === 'yes' ? 'selected' : ''}" onclick="window._surveyLikesReading='yes'; openModal('onboarding', onboardingStudent)" style="font-size:1.05rem;padding:12px 28px">
+          <span class="chip-icon">👍</span> Yes
+        </div>
+        <div class="survey-chip ${window._surveyLikesReading === 'no' ? 'selected' : ''}" onclick="window._surveyLikesReading='no'; openModal('onboarding', onboardingStudent)" style="font-size:1.05rem;padding:12px 28px">
+          <span class="chip-icon">👎</span> No
+        </div>
+        <div class="survey-chip ${window._surveyLikesReading === 'sometimes' ? 'selected' : ''}" onclick="window._surveyLikesReading='sometimes'; openModal('onboarding', onboardingStudent)" style="font-size:1.05rem;padding:12px 28px">
+          <span class="chip-icon">🤷</span> Sometimes
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:24px">
+        <button class="btn btn-ghost" onclick="prevOnboardingStep()">Back</button>
+        <button class="btn btn-primary" onclick="nextOnboardingStep()">Next</button>
+      </div>`;
+  } else if (onboardingStep === 2) {
+    stepContent = `
+      <h3 style="text-align:center;margin-bottom:4px">What is your favorite kind of book to read?</h3>
+      <p style="text-align:center;color:var(--g500);margin-bottom:20px"><strong style="color:var(--navy)">Pick 1\u20133</strong> that interest you the most.</p>
       <div class="interest-grid">
         ${interestCategories.map(cat => {
           const selected = selectedInterests.includes(cat.id) ? 'selected' : '';
@@ -5488,36 +5507,10 @@ function getOnboardingBodyHtml(s) {
           </div>`;
         }).join('')}
       </div>
-      <p style="text-align:center;color:var(--g400);font-size:0.8125rem;margin-top:12px">${selectedInterests.length}/4 selected ${selectedInterests.length < 2 ? '(pick at least 2)' : ''}</p>
+      <p style="text-align:center;color:var(--g400);font-size:0.8125rem;margin-top:12px">${selectedInterests.length}/3 selected ${selectedInterests.length < 1 ? '(pick at least 1)' : ''}</p>
       <div style="display:flex;justify-content:space-between;margin-top:20px">
         <button class="btn btn-ghost" onclick="prevOnboardingStep()">Back</button>
-        <button class="btn btn-primary" onclick="nextOnboardingStep()" ${selectedInterests.length < 2 ? 'disabled style="opacity:0.5;pointer-events:none"' : ''}>Next</button>
-      </div>`;
-  } else if (onboardingStep === 2) {
-    const hobbyOptions = [
-      { id: 'drawing', label: 'Drawing', icon: '🎨' }, { id: 'sports', label: 'Sports', icon: '⚽' },
-      { id: 'reading', label: 'Reading', icon: '📚' }, { id: 'gaming', label: 'Video Games', icon: '🎮' },
-      { id: 'music', label: 'Music', icon: '🎵' }, { id: 'cooking', label: 'Cooking', icon: '🍳' },
-      { id: 'building', label: 'Building / LEGO', icon: '🧱' }, { id: 'coding', label: 'Coding', icon: '💻' },
-      { id: 'swimming', label: 'Swimming', icon: '🏊' }, { id: 'dance', label: 'Dance', icon: '💃' },
-      { id: 'writing', label: 'Writing Stories', icon: '✏️' }, { id: 'nature', label: 'Nature / Outdoors', icon: '🌳' },
-      { id: 'science', label: 'Science Experiments', icon: '🔬' }, { id: 'skateboarding', label: 'Skateboarding', icon: '🛹' },
-      { id: 'baking', label: 'Baking', icon: '🧁' }, { id: 'gardening', label: 'Gardening', icon: '🌱' },
-    ];
-    if (!window._surveyHobbies) window._surveyHobbies = [];
-    stepContent = `
-      <h3 style="text-align:center;margin-bottom:4px">What do you like to do for fun?</h3>
-      <p style="text-align:center;color:var(--g500);margin-bottom:20px">Pick your favorite hobbies and activities!</p>
-      <div class="survey-chips" style="justify-content:center">
-        ${hobbyOptions.map(h => `
-          <div class="survey-chip ${(window._surveyHobbies||[]).includes(h.id)?'selected':''}" onclick="toggleSurveyChip('hobbies','${h.id}')">
-            <span class="chip-icon">${h.icon}</span> ${h.label}
-          </div>
-        `).join('')}
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-top:20px">
-        <button class="btn btn-ghost" onclick="prevOnboardingStep()">Back</button>
-        <button class="btn btn-primary" onclick="nextOnboardingStep()">Next</button>
+        <button class="btn btn-primary" onclick="nextOnboardingStep()" ${selectedInterests.length < 1 ? 'disabled style="opacity:0.5;pointer-events:none"' : ''}>Next</button>
       </div>`;
   } else if (onboardingStep === 3) {
     const animalOptions = [
@@ -5527,97 +5520,65 @@ function getOnboardingBodyHtml(s) {
       { id: 'turtles', label: 'Turtles', icon: '🐢' }, { id: 'lizards', label: 'Lizards', icon: '🦎' },
       { id: 'wolves', label: 'Wolves', icon: '🐺' }, { id: 'butterflies', label: 'Butterflies', icon: '🦋' },
       { id: 'owls', label: 'Owls', icon: '🦉' }, { id: 'fish', label: 'Fish', icon: '🐠' },
+      { id: 'hamsters', label: 'Hamsters', icon: '🐹' },
     ];
     if (!window._surveyAnimals) window._surveyAnimals = [];
     stepContent = `
-      <h3 style="text-align:center;margin-bottom:4px">Tell us about your favorites!</h3>
-      <p style="text-align:center;color:var(--g500);margin-bottom:20px">This helps us make your quizzes super interesting.</p>
+      <h3 style="text-align:center;margin-bottom:4px">What are your favorite animals?</h3>
+      <p style="text-align:center;color:var(--g500);margin-bottom:20px"><strong style="color:var(--navy)">Pick up to 3</strong> animals you love!</p>
 
-      <div class="survey-section">
-        <div class="survey-section-label">Favorite Animals (<strong style="color:var(--navy)">Pick up to 3</strong>)</div>
-        <div class="survey-chips">
-          ${animalOptions.map(a => `
-            <div class="survey-chip ${(window._surveyAnimals||[]).includes(a.id)?'selected':''}" onclick="toggleSurveyChip('animals','${a.id}')">
-              <span class="chip-icon">${a.icon}</span> ${a.label}
-            </div>
-          `).join('')}
-        </div>
-      </div>
-
-      <div class="survey-section">
-        <div class="survey-section-label">What do you want to be when you grow up?</div>
-        <input class="survey-input" id="survey-dream-job" placeholder="e.g., Veterinarian, Astronaut, Chef..." value="${window._surveyDreamJob||''}">
-      </div>
-
-      <div class="survey-section">
-        <div class="survey-section-label">Favorite place in the world?</div>
-        <input class="survey-input" id="survey-fav-place" placeholder="e.g., The beach, a treehouse, outer space..." value="${window._surveyFavPlace||''}">
-      </div>
-
-      <div class="survey-section">
-        <div class="survey-section-label">A fun fact about you!</div>
-        <input class="survey-input" id="survey-fun-fact" placeholder="e.g., I can juggle, I have 3 pets..." value="${window._surveyFunFact||''}">
-      </div>
-
-      <div style="display:flex;justify-content:space-between;margin-top:20px">
-        <button class="btn btn-ghost" onclick="saveSurveyInputs(); prevOnboardingStep()">Back</button>
-        <button class="btn btn-primary" onclick="saveSurveyInputs(); nextOnboardingStep()">Next</button>
-      </div>`;
-  } else if (onboardingStep === 4) {
-    const styles = [
-      { id: 'detailed', label: 'Detailed Reader', desc: 'I like lots of details', icon: IC.bookOpen },
-      { id: 'visual',   label: 'Visual Learner',  desc: 'Show me pictures',      icon: IC.eye },
-      { id: 'fast',     label: 'Speed Reader',    desc: 'I read fast',            icon: IC.fire },
-    ];
-    stepContent = `
-      <h3 style="text-align:center;margin-bottom:4px">How do you like to read?</h3>
-      <p style="text-align:center;color:var(--g500);margin-bottom:20px">Choose the style that fits you best.</p>
-      <div class="reading-style-grid">
-        ${styles.map(st => `
-          <div class="interest-card ${selectedReadingStyle === st.id ? 'selected' : ''}" onclick="selectReadingStyle('${st.id}')">
-            <div class="interest-card-icon blue">${st.icon}</div>
-            <span>${st.label}</span>
-            <span style="font-size:0.6875rem;color:var(--g400)">${st.desc}</span>
+      <div class="survey-chips" style="justify-content:center">
+        ${animalOptions.map(a => `
+          <div class="survey-chip ${(window._surveyAnimals||[]).includes(a.id)?'selected':''}" onclick="toggleSurveyChip('animals','${a.id}')">
+            <span class="chip-icon">${a.icon}</span> ${a.label}
           </div>
         `).join('')}
-      </div>
-
-      <div class="form-group" style="margin-top:20px">
-        <label class="form-label">What's your favorite kind of story?</label>
-        <select class="form-select" id="genre-select">
-          <option>Fantasy</option><option>Mystery</option><option>Realistic Fiction</option>
-          <option>Sci-Fi</option><option>Adventure</option><option>Sports Fiction</option>
-          <option>Non-Fiction</option><option>Funny Stories</option><option>Historical Fiction</option>
-        </select>
       </div>
 
       <div style="display:flex;justify-content:space-between;margin-top:20px">
         <button class="btn btn-ghost" onclick="prevOnboardingStep()">Back</button>
         <button class="btn btn-primary" onclick="nextOnboardingStep()">Next</button>
       </div>`;
+  } else if (onboardingStep === 4) {
+    const feelings = [
+      { id: 'confident',  label: 'Confident', icon: '💪' },
+      { id: 'frustrated', label: 'Frustrated', icon: '😤' },
+      { id: 'calm',       label: 'Calm', icon: '😌' },
+      { id: 'bored',      label: 'Bored', icon: '😴' },
+    ];
+    if (!window._surveyReadingFeeling) window._surveyReadingFeeling = '';
+    stepContent = `
+      <h3 style="text-align:center;margin-bottom:4px">How does reading make you feel?</h3>
+      <p style="text-align:center;color:var(--g500);margin-bottom:20px">Pick the one that fits you best.</p>
+
+      <div class="survey-chips" style="justify-content:center">
+        ${feelings.map(f => `
+          <div class="survey-chip ${window._surveyReadingFeeling === f.id ? 'selected' : ''}" onclick="window._surveyReadingFeeling='${f.id}'; openModal('onboarding', onboardingStudent)">
+            <span class="chip-icon">${f.icon}</span> ${f.label}
+          </div>
+        `).join('')}
+      </div>
+
+      <div style="display:flex;justify-content:space-between;margin-top:24px">
+        <button class="btn btn-ghost" onclick="prevOnboardingStep()">Back</button>
+        <button class="btn btn-primary" onclick="nextOnboardingStep()">Next</button>
+      </div>`;
   } else if (onboardingStep === 5) {
-    const hobbies = (window._surveyHobbies || []).slice(0, 4);
     const animals = (window._surveyAnimals || []).slice(0, 3);
     stepContent = `
-      <div style="text-align:center;margin-bottom:20px">
-        <div style="margin:0 auto 12px">${avatar(s, 'lg')}</div>
-        <h2>You're all set, ${s.name.split(' ')[0]}!</h2>
-        <p style="color:var(--g500);margin-top:6px">Thanks for telling us about yourself!</p>
+      <h3 style="text-align:center;margin-bottom:10px">Thank you for telling us about you!</h3>
+      ${window._surveyLikesReading ? `<div style="margin-bottom:8px"><span class="interest-profile-label" style="display:inline;margin-right:6px">Likes Reading:</span><span style="color:var(--g600);font-size:0.85rem">${window._surveyLikesReading.charAt(0).toUpperCase() + window._surveyLikesReading.slice(1)}</span></div>` : ''}
+      <div style="margin-bottom:8px">
+        <span class="interest-profile-label" style="display:inline;margin-right:6px">Favorite Books:</span>
+        ${selectedInterests.map(tagId => {
+          const cat = interestCategories.find(c => c.id === tagId);
+          return cat ? `<span class="interest-tag ${cat.color}">${cat.label}</span>` : '';
+        }).join(' ')}
       </div>
-      <div style="margin-bottom:16px">
-        <span class="interest-profile-label" style="display:block;margin-bottom:6px">Your Interests</span>
-        <div class="interest-tags-wrap">
-          ${selectedInterests.map(tagId => {
-            const cat = interestCategories.find(c => c.id === tagId);
-            return cat ? `<span class="interest-tag ${cat.color}">${cat.label}</span>` : '';
-          }).join('')}
-        </div>
-      </div>
-      ${hobbies.length > 0 ? `<div style="margin-bottom:12px"><span class="interest-profile-label" style="display:block;margin-bottom:4px">Hobbies</span><span style="color:var(--g600);font-size:0.85rem">${hobbies.join(', ')}</span></div>` : ''}
-      ${animals.length > 0 ? `<div style="margin-bottom:12px"><span class="interest-profile-label" style="display:block;margin-bottom:4px">Favorite Animals</span><span style="color:var(--g600);font-size:0.85rem">${animals.join(', ')}</span></div>` : ''}
-      ${window._surveyDreamJob ? `<div style="margin-bottom:12px"><span class="interest-profile-label" style="display:block;margin-bottom:4px">Dream Job</span><span style="color:var(--g600);font-size:0.85rem">${window._surveyDreamJob}</span></div>` : ''}
+      ${animals.length > 0 ? `<div style="margin-bottom:8px"><span class="interest-profile-label" style="display:inline;margin-right:6px">Favorite Animals:</span><span style="color:var(--g600);font-size:0.85rem">${animals.join(', ')}</span></div>` : ''}
+      ${window._surveyReadingFeeling ? `<div style="margin-bottom:8px"><span class="interest-profile-label" style="display:inline;margin-right:6px">Reading Makes Me Feel:</span><span style="color:var(--g600);font-size:0.85rem">${window._surveyReadingFeeling.charAt(0).toUpperCase() + window._surveyReadingFeeling.slice(1)}</span></div>` : ''}
 
-      <div style="display:flex;justify-content:space-between;margin-top:20px">
+      <div style="display:flex;justify-content:space-between;margin-top:16px">
         <button class="btn btn-ghost" onclick="prevOnboardingStep()">Back</button>
         <button class="btn btn-primary" onclick="saveOnboarding()">${IC.check} Save Profile</button>
       </div>`;

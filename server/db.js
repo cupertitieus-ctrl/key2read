@@ -33,7 +33,7 @@ async function initDB() {
 // ─── QUERY HELPERS (async versions) ───
 
 // Survey fields that are safe to query (favorite_books added separately if column exists)
-const SURVEY_FIELDS = 'interest_tags, reading_style, favorite_genre, hobbies, favorite_animals, favorite_sports, favorite_subjects, favorite_foods, dream_job, favorite_place, favorite_color, favorite_movie_or_show, fun_fact';
+const SURVEY_FIELDS = 'interest_tags, reading_style, favorite_genre, hobbies, favorite_animals, favorite_sports, favorite_subjects, favorite_foods, dream_job, favorite_place, favorite_color, favorite_movie_or_show, fun_fact, reading_feeling, likes_reading';
 
 async function getStudents(classId) {
   // Try with favorite_books first, fall back without it
@@ -74,6 +74,8 @@ async function getStudents(classId) {
       favorite_color: survey.favorite_color || '',
       favorite_movie_or_show: survey.favorite_movie_or_show || '',
       fun_fact: survey.fun_fact || '',
+      reading_feeling: survey.reading_feeling || '',
+      likes_reading: survey.likes_reading || '',
       favorite_books: survey.favorite_books || []
     };
   });
@@ -114,12 +116,14 @@ async function getStudent(id) {
     favorite_color: survey.favorite_color || '',
     favorite_movie_or_show: survey.favorite_movie_or_show || '',
     fun_fact: survey.fun_fact || '',
+    reading_feeling: survey.reading_feeling || '',
+    likes_reading: survey.likes_reading || '',
     favorite_books: survey.favorite_books || []
   };
 }
 
 async function updateStudentSurvey(studentId, surveyData) {
-  const fields = ['interest_tags', 'reading_style', 'favorite_genre', 'hobbies', 'favorite_animals', 'favorite_sports', 'favorite_subjects', 'favorite_foods', 'dream_job', 'favorite_place', 'favorite_color', 'favorite_movie_or_show', 'fun_fact', 'favorite_books'];
+  const fields = ['interest_tags', 'reading_style', 'favorite_genre', 'hobbies', 'favorite_animals', 'favorite_sports', 'favorite_subjects', 'favorite_foods', 'dream_job', 'favorite_place', 'favorite_color', 'favorite_movie_or_show', 'fun_fact', 'reading_feeling', 'likes_reading', 'favorite_books'];
   const updates = {};
   for (const f of fields) {
     if (surveyData[f] !== undefined) updates[f] = surveyData[f];
