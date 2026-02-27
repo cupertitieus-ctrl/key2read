@@ -1416,9 +1416,13 @@ function loadTeacherDashboardData() {
     el.innerHTML = data.map(a => {
       const timeAgo = formatTimeAgo(a.completedAt);
       const scoreCls = a.score >= 80 ? 'green' : a.score >= 60 ? 'gold' : 'red';
+      const st = students.find(s => s.name === a.studentName);
+      const nameHtml = st
+        ? `<a href="#" onclick="event.preventDefault(); navigate('students', null, ${st.id})" style="color:var(--navy);text-decoration:underline;font-weight:700">${escapeHtml(a.studentName)}</a>`
+        : `<strong>${escapeHtml(a.studentName)}</strong>`;
       return `<div class="activity-row">
         <span class="activity-time">${timeAgo}</span>
-        <span class="activity-desc"><strong>${escapeHtml(a.studentName)}</strong> completed Chapter ${a.chapterNumber}: ${escapeHtml(a.chapterTitle)} of <em>${escapeHtml(a.bookTitle)}</em></span>
+        <span class="activity-desc">${nameHtml} completed Chapter ${a.chapterNumber}: ${escapeHtml(a.chapterTitle)} of <em>${escapeHtml(a.bookTitle)}</em></span>
         <span class="activity-score ${scoreCls}">${a.score}%</span>
         <span class="activity-keys">🔑 ${a.keysEarned}</span>
       </div>`;
