@@ -1032,7 +1032,7 @@ function renderMain() {
       initBookSearch();
       break;
     // Student pages
-    case 'student-dashboard':  el.innerHTML = renderStudentDashboard(); initStudentBookSearch(); break;
+    case 'student-dashboard':  el.innerHTML = renderStudentDashboard(); initStudentBookSearch(); setTimeout(checkAndShowNewBadges, 800); break;
     case 'student-quizzes':    el.innerHTML = renderStudentQuizzes(); break;
     case 'student-progress':   el.innerHTML = renderStudentProgress(); break;
     case 'student-badges':     el.innerHTML = renderStudentBadges(); break;
@@ -1049,7 +1049,7 @@ function renderMain() {
     case 'owner-gallery':   el.innerHTML = renderOwnerGallery(); break;
     default:
       if (userRole === 'guest') { el.innerHTML = renderGuestBrowse(); initBookSearch(); }
-      else if (userRole === 'student' || userRole === 'child') el.innerHTML = renderStudentDashboard();
+      else if (userRole === 'student' || userRole === 'child') { el.innerHTML = renderStudentDashboard(); setTimeout(checkAndShowNewBadges, 800); }
       else if (userRole === 'owner') el.innerHTML = renderOwnerDashboard();
       else if (userRole === 'principal') el.innerHTML = renderPrincipalDashboard();
       else { el.innerHTML = renderTeacherDashboard(); loadTeacherDashboardData(); }
@@ -1145,8 +1145,6 @@ async function launchQuiz(bookId, chapterNum, sid) {
       }
       // Refresh all student data from server so My Quizzes, dashboard, and Weekly Wins stay in sync
       await refreshStudentData();
-      // Check if any new badges were earned
-      checkAndShowNewBadges();
     }, nextChapterInfo);
     QuizEngine.render();
   } catch(e) {
@@ -1166,7 +1164,24 @@ function renderTeacherDashboard() {
   const avgScore = students.length > 0 ? Math.round(students.reduce((s, st) => s + (st.reading_score || st.score || 0), 0) / students.length) : 0;
   const totalQuizzes = students.reduce((s, st) => s + (st.quizzes_completed || 0), 0);
 
-  if (students.length === 0 && !isParent) {
+  if (students.length === 0) {
+    const familyCode = currentUser?.classCode || '';
+    if (isParent) {
+      return `
+        <div class="page-header"><h1><img src="/public/logo.png" alt="key2read" style="height:44px;width:auto;vertical-align:middle;margin-right:10px">Dashboard</h1></div>
+        <div class="empty-state">
+          <div class="empty-state-icon">${IC.users}</div>
+          <h2>Welcome to key2read!</h2>
+          <p>As soon as a child signs up using your Family Code, data will start to collect here.</p>
+          ${familyCode ? `<div style="margin:20px 0;display:inline-flex;align-items:center;gap:10px;background:var(--blue-p, #EFF6FF);padding:12px 24px;border-radius:12px;border:2px dashed var(--blue)">
+            <span style="font-size:0.85rem;color:var(--g500)">Family Code:</span>
+            <span style="font-size:1.3rem;font-weight:800;color:var(--blue);letter-spacing:0.08em;user-select:all">${familyCode}</span>
+            <button class="btn btn-sm btn-ghost" style="padding:2px 8px;font-size:0.7rem" onclick="navigator.clipboard.writeText('${familyCode}'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
+          </div>` : ''}
+          <p style="font-size:0.85rem;color:var(--g400);margin-top:8px">Have your child go to <strong>Sign Up</strong>, choose <strong>Child</strong>, and enter the Family Code above.</p>
+          <button class="btn btn-primary" onclick="navigate('library')" style="margin-top:16px">${IC.book} Browse Book Library</button>
+        </div>`;
+    }
     return `
       <div class="page-header"><h1><img src="/public/logo.png" alt="key2read" style="height:44px;width:auto;vertical-align:middle;margin-right:10px">Dashboard</h1></div>
       <div class="empty-state">
@@ -1214,22 +1229,22 @@ function renderTeacherDashboard() {
       </div>
       <div class="stat-card clickable-card" onclick="navigate('reports')">
         <div class="stat-card-icon"><img src="/public/Book_Outline_Icon.png" alt="Reading Score"></div>
-        <div class="stat-card-label">Average Reading Score <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Reading Score', 'A score from 0 to 1000 that measures how well your class is reading overall. It\\'s based on quiz scores, reading effort, independence (using fewer hints), vocabulary growth, and persistence. Click to see Growth Reports.')">?</button></div>
+        <div class="stat-card-label">Average Reading Score <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Reading Score', 'A score from 0 to 1000 that measures how well your ${groupLabel} is reading overall. It\\'s based on quiz scores, reading effort, independence (using fewer hints), vocabulary growth, and persistence. Click to see Growth Reports.')">?</button></div>
         <div class="stat-card-value">${avgScore}</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('reports')">
         <div class="stat-card-icon"><img src="/public/Comprehension_Outline_Icon.png" alt="Comprehension"></div>
-        <div class="stat-card-label">Average Comprehension <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Comprehension', 'The average percentage of quiz questions your students answer correctly. A higher number means students are understanding what they read. Click to see Growth Reports.')">?</button></div>
+        <div class="stat-card-label">Average Comprehension <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Comprehension', 'The average percentage of quiz questions your ${membersLabel} answer correctly. A higher number means ${membersLabel} are understanding what they read. Click to see Growth Reports.')">?</button></div>
         <div class="stat-card-value">${avgAcc}%</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('store')">
         <div class="stat-card-icon"><img src="/public/Key_Outline_Icon.png" alt="Keys Earned"></div>
-        <div class="stat-card-label">Total Keys Earned <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Total Keys Earned', 'Keys are rewards students earn by passing quizzes with 80% or higher. Students can spend keys in the Class Store to redeem prizes you set up. Click to manage the store.')">?</button></div>
+        <div class="stat-card-label">Total Keys Earned <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Total Keys Earned', 'Keys are rewards ${membersLabel} earn by passing quizzes with 80% or higher. ${MembersLabel} can spend keys in the ${isParent ? 'Family' : 'Class'} Store to redeem prizes you set up. Click to manage the store.')">?</button></div>
         <div class="stat-card-value">${totalKeys.toLocaleString()}</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('quizzes')">
         <div class="stat-card-icon"><img src="/public/Quiz_Outline_Icon.png" alt="Quizzes"></div>
-        <div class="stat-card-label">Quizzes Completed <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Quizzes Completed', 'The total number of chapter quizzes all your students have completed. Each book chapter has its own quiz. Click to view assignments.')">?</button></div>
+        <div class="stat-card-label">Quizzes Completed <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Quizzes Completed', 'The total number of chapter quizzes all your ${membersLabel} have completed. Each book chapter has its own quiz. Click to view assignments.')">?</button></div>
         <div class="stat-card-value">${totalQuizzes}</div>
       </div>
     </div>
@@ -1271,7 +1286,7 @@ function renderTeacherDashboard() {
 
     <div class="list-card" style="padding:24px;margin-top:20px">
       <h3 style="margin:0 0 4px 0;display:flex;align-items:center"><img src="/public/Key_Outline_Icon_Blk.png" alt="" style="width:32px;height:32px;margin-right:8px">Store Purchases</h3>
-      <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">Students who spent their Keys in the Class Store</p>
+      <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">${MembersLabel} who spent their Keys in the ${isParent ? 'Family' : 'Class'} Store</p>
       <div id="purchase-notifications">
         <div style="text-align:center;padding:24px 0;color:var(--g400);font-size:0.875rem">Loading...</div>
       </div>
@@ -1518,6 +1533,8 @@ function showStatHelp(title, description) {
 
 function renderDashboardRoster() {
   if (students.length === 0) return '';
+  const isParent = userRole === 'parent';
+  const membersLabel = isParent ? 'children' : 'students';
 
   // Sort by reading score ascending (kids who need the most help first)
   const sorted = [...students].sort((a, b) => (a.reading_score || a.score || 0) - (b.reading_score || b.score || 0));
@@ -1531,7 +1548,7 @@ function renderDashboardRoster() {
           <h3 style="margin:0 0 2px 0;display:flex;align-items:center"><img src="/public/Student_Outline_Icon_Blk.png" alt="" style="width:32px;height:32px;margin-right:8px">${isParent ? 'My Children' : 'Student Roster'}</h3>
           <p style="font-size:0.8rem;color:var(--g400);margin:0">Sorted by who needs the most help</p>
         </div>
-        <button class="btn btn-sm btn-outline" onclick="navigate('students')">View all ${students.length} students →</button>
+        <button class="btn btn-sm btn-outline" onclick="navigate('students')">View all ${students.length} ${membersLabel} →</button>
       </div>
       <div class="dashboard-roster">
         ${show.map(s => {
@@ -1568,7 +1585,7 @@ function renderDashboardRoster() {
         }).join('')}
       </div>
       ${remaining > 0 ? `<div style="text-align:center;margin-top:12px">
-        <button class="btn btn-ghost btn-sm" onclick="navigate('students')" style="color:var(--blue)">+ ${remaining} more student${remaining > 1 ? 's' : ''} — View all →</button>
+        <button class="btn btn-ghost btn-sm" onclick="navigate('students')" style="color:var(--blue)">+ ${remaining} more ${isParent ? (remaining > 1 ? 'children' : 'child') : (remaining > 1 ? 'students' : 'student')} — View all →</button>
       </div>` : ''}
     </div>`;
 }
@@ -1722,7 +1739,7 @@ function renderQuizzes() {
           <div class="gs-step-num">5</div>
           <div>
             <strong>Celebrate success</strong>
-            <p>Print certificates when students complete books!</p>
+            <p>Print certificates when ${memberLabel} complete books!</p>
           </div>
         </div>
       </div>
@@ -1744,8 +1761,8 @@ function renderQuizzes() {
 
     <div class="stat-cards stat-cards-5">
       <div class="stat-card clickable-card" onclick="navigate('teacher-dashboard')">
-        <div class="stat-card-icon"><img src="/public/Student_Outline_Icon.png" alt="Students"></div>
-        <div class="stat-card-label">Students</div>
+        <div class="stat-card-icon"><img src="/public/Student_Outline_Icon.png" alt="${MemberLabel}"></div>
+        <div class="stat-card-label">${MemberLabel}</div>
         <div class="stat-card-value">${students.length}</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('reports')">
@@ -1755,7 +1772,7 @@ function renderQuizzes() {
       </div>
       <div class="stat-card clickable-card" onclick="navigate('reports')">
         <div class="stat-card-icon"><img src="/public/Comprehension_Outline_Icon.png" alt="Comprehension"></div>
-        <div class="stat-card-label">Average Comprehension <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Comprehension', 'The average percentage of quiz questions your students answer correctly. A higher number means students are understanding what they read.')">?</button></div>
+        <div class="stat-card-label">Average Comprehension <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Average Comprehension', 'The average percentage of quiz questions your ${memberLabel} answer correctly. A higher number means ${memberLabel} are understanding what they read.')">?</button></div>
         <div class="stat-card-value">${avgAcc}%</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('store')">
@@ -1772,12 +1789,12 @@ function renderQuizzes() {
 
     <div class="list-card" style="padding:24px;margin-bottom:20px">
       <h3 style="margin:0 0 4px 0;font-size:1.25rem;font-weight:700;color:var(--navy);display:flex;align-items:center"><img src="/public/Comprehension_Outline_Black_Icon_.png" alt="" style="width:36px;height:36px;margin-right:10px;object-fit:contain">How Does the Software Work?</h3>
-      <p style="margin:0 0 16px 0;font-size:0.8rem;color:var(--g400)">Students must read the physical book first · <a href="https://www.dianealber.com/pages/keychapterbooks" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:600">Purchase books here →</a></p>
+      <p style="margin:0 0 16px 0;font-size:0.8rem;color:var(--g400)">${MemberLabel} must read the physical book first · <a href="https://www.dianealber.com/pages/keychapterbooks" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:600">Purchase books here →</a></p>
       <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:16px">
         <div style="text-align:center;padding:16px 12px;background:var(--blue-p, #EFF6FF);border-radius:var(--radius-md)">
           <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Stacked_Book_Outline.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
           <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">1. Pick a Book</div>
-          <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">Students choose a chapter book from the library</div>
+          <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">${MemberLabel} choose a chapter book from the library</div>
         </div>
         <div style="text-align:center;padding:16px 12px;background:var(--gold-l, #FFFBEB);border-radius:var(--radius-md)">
           <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Quiz_Outline_Icon_Blk.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
@@ -2106,7 +2123,7 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
       </table>
     </div>` : `
     <div class="info-panel" style="text-align:center;padding:32px;margin-top:24px">
-      <p style="color:var(--g500);margin:0">${IC.bookOpen} No quiz history yet. Quizzes will appear here as ${s.name} completes them.</p>
+      <p style="color:var(--g500);margin:0"><span style="display:inline-block;width:20px;height:20px;vertical-align:middle;margin-right:4px">${IC.bookOpen}</span> No quiz history yet. Quizzes will appear here as ${s.name} completes them.</p>
     </div>`;
 
   return `
@@ -3351,6 +3368,8 @@ function renderLibrary() {
   }
 
   const isStudent = userRole === 'student' || userRole === 'child';
+  const isParent = userRole === 'parent';
+  const MemberLabel = isParent ? 'Children' : 'Students';
   const displayBooks = isStudent && showFavoritesOnly ? books.filter(b => studentFavorites.some(fid => Number(fid) === Number(b.id))) : books;
 
   return `
@@ -3373,12 +3392,12 @@ function renderLibrary() {
 
     <div class="list-card" style="padding:24px;margin-bottom:20px">
       <h3 style="margin:0 0 4px 0;font-size:1.25rem;font-weight:700;color:var(--navy);display:flex;align-items:center"><img src="/public/Comprehension_Outline_Black_Icon_.png" alt="" style="width:36px;height:36px;margin-right:10px;object-fit:contain">How Does the Software Work?</h3>
-      <p style="margin:0 0 16px 0;font-size:0.8rem;color:var(--g400)">Students must read the physical book first · <a href="https://www.dianealber.com/pages/keychapterbooks" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:600">Purchase books here →</a></p>
+      <p style="margin:0 0 16px 0;font-size:0.8rem;color:var(--g400)">${MemberLabel} must read the physical book first · <a href="https://www.dianealber.com/pages/keychapterbooks" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:600">Purchase books here →</a></p>
       <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:16px">
         <div style="text-align:center;padding:16px 12px;background:var(--blue-p, #EFF6FF);border-radius:var(--radius-md)">
           <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Stacked_Book_Outline.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
           <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">1. Pick a Book</div>
-          <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">Students choose a chapter book from the library</div>
+          <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">${MemberLabel} choose a chapter book from the library</div>
         </div>
         <div style="text-align:center;padding:16px 12px;background:var(--gold-l, #FFFBEB);border-radius:var(--radius-md)">
           <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Quiz_Outline_Icon_Blk.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
@@ -5425,21 +5444,52 @@ function selectInterestTag(tagId) {
   const idx = selectedInterests.indexOf(tagId);
   if (idx >= 0) selectedInterests.splice(idx, 1);
   else if (selectedInterests.length < 3) selectedInterests.push(tagId);
-  refreshOnboardingContent();
+  // Direct DOM update instead of re-rendering to avoid flash
+  const cards = document.querySelectorAll('.interest-card');
+  cards.forEach(card => {
+    const id = card.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+    if (!id) return;
+    const isSelected = selectedInterests.includes(id);
+    card.classList.toggle('selected', isSelected);
+    let check = card.querySelector('.interest-card-check');
+    if (isSelected && !check) {
+      check = document.createElement('div');
+      check.className = 'interest-card-check';
+      check.innerHTML = IC.check;
+      card.appendChild(check);
+    } else if (!isSelected && check) {
+      check.remove();
+    }
+  });
+  // Update counter and button
+  const counter = document.querySelector('.modal-body p[style*="text-align:center"][style*="0.8125rem"]');
+  if (counter) counter.textContent = selectedInterests.length + '/3 selected ' + (selectedInterests.length < 1 ? '(pick at least 1)' : '');
+  const nextBtn = document.querySelector('.modal-body .btn-primary');
+  if (nextBtn && nextBtn.textContent.trim() === 'Next') {
+    if (selectedInterests.length < 1) { nextBtn.disabled = true; nextBtn.style.opacity = '0.5'; nextBtn.style.pointerEvents = 'none'; }
+    else { nextBtn.disabled = false; nextBtn.style.opacity = ''; nextBtn.style.pointerEvents = ''; }
+  }
 }
 
 function selectReadingStyle(style) {
   selectedReadingStyle = style;
-  refreshOnboardingContent();
+  // Direct DOM toggle to avoid flash
+  document.querySelectorAll('.reading-style-card').forEach(c => c.classList.remove('selected'));
+  const clicked = document.querySelector(`.reading-style-card[onclick*="'${style}'"]`);
+  if (clicked) clicked.classList.add('selected');
 }
 
-function toggleSurveyChip(type, id) {
+function toggleSurveyChip(type, id, el) {
   const key = '_survey' + type.charAt(0).toUpperCase() + type.slice(1);
   if (!window[key]) window[key] = [];
   const idx = window[key].indexOf(id);
-  if (idx >= 0) window[key].splice(idx, 1);
-  else window[key].push(id);
-  refreshOnboardingContent();
+  if (idx >= 0) {
+    window[key].splice(idx, 1);
+    if (el) el.classList.remove('selected');
+  } else if (window[key].length < 3) {
+    window[key].push(id);
+    if (el) el.classList.add('selected');
+  }
 }
 
 function refreshOnboardingContent() {
@@ -5524,13 +5574,13 @@ function getOnboardingBodyHtml(s) {
     stepContent = `
       <h3 style="text-align:center;margin-bottom:8px">Do you like reading?</h3>
       <div class="survey-chips" style="justify-content:center;margin-top:20px;gap:12px">
-        <div class="survey-chip ${window._surveyLikesReading === 'yes' ? 'selected' : ''}" onclick="window._surveyLikesReading='yes'; openModal('onboarding', onboardingStudent)" style="font-size:1.05rem;padding:12px 28px">
+        <div class="survey-chip ${window._surveyLikesReading === 'yes' ? 'selected' : ''}" onclick="window._surveyLikesReading='yes'; this.parentElement.querySelectorAll('.survey-chip').forEach(c=>c.classList.remove('selected')); this.classList.add('selected')" style="font-size:1.05rem;padding:12px 28px">
           <span class="chip-icon">👍</span> Yes
         </div>
-        <div class="survey-chip ${window._surveyLikesReading === 'no' ? 'selected' : ''}" onclick="window._surveyLikesReading='no'; openModal('onboarding', onboardingStudent)" style="font-size:1.05rem;padding:12px 28px">
+        <div class="survey-chip ${window._surveyLikesReading === 'no' ? 'selected' : ''}" onclick="window._surveyLikesReading='no'; this.parentElement.querySelectorAll('.survey-chip').forEach(c=>c.classList.remove('selected')); this.classList.add('selected')" style="font-size:1.05rem;padding:12px 28px">
           <span class="chip-icon">👎</span> No
         </div>
-        <div class="survey-chip ${window._surveyLikesReading === 'sometimes' ? 'selected' : ''}" onclick="window._surveyLikesReading='sometimes'; openModal('onboarding', onboardingStudent)" style="font-size:1.05rem;padding:12px 28px">
+        <div class="survey-chip ${window._surveyLikesReading === 'sometimes' ? 'selected' : ''}" onclick="window._surveyLikesReading='sometimes'; this.parentElement.querySelectorAll('.survey-chip').forEach(c=>c.classList.remove('selected')); this.classList.add('selected')" style="font-size:1.05rem;padding:12px 28px">
           <span class="chip-icon">🤷</span> Sometimes
         </div>
       </div>
@@ -5574,7 +5624,7 @@ function getOnboardingBodyHtml(s) {
 
       <div class="survey-chips" style="justify-content:center">
         ${animalOptions.map(a => `
-          <div class="survey-chip ${(window._surveyAnimals||[]).includes(a.id)?'selected':''}" onclick="toggleSurveyChip('animals','${a.id}')">
+          <div class="survey-chip ${(window._surveyAnimals||[]).includes(a.id)?'selected':''}" onclick="toggleSurveyChip('animals','${a.id}',this)">
             <span class="chip-icon">${a.icon}</span> ${a.label}
           </div>
         `).join('')}
@@ -5598,7 +5648,7 @@ function getOnboardingBodyHtml(s) {
 
       <div class="survey-chips" style="justify-content:center">
         ${feelings.map(f => `
-          <div class="survey-chip ${window._surveyReadingFeeling === f.id ? 'selected' : ''}" onclick="window._surveyReadingFeeling='${f.id}'; openModal('onboarding', onboardingStudent)">
+          <div class="survey-chip ${window._surveyReadingFeeling === f.id ? 'selected' : ''}" onclick="window._surveyReadingFeeling='${f.id}'; this.parentElement.querySelectorAll('.survey-chip').forEach(c=>c.classList.remove('selected')); this.classList.add('selected')">
             <span class="chip-icon">${f.icon}</span> ${f.label}
           </div>
         `).join('')}
@@ -5648,11 +5698,11 @@ function openModal(type, prefill) {
           </div>
           <div class="modal-body" style="padding:28px 32px">
             <div class="getting-started-steps getting-started-steps-lg" style="margin:0;max-width:100%;gap:20px">
-              <div class="gs-step gs-step-lg"><div class="gs-step-num gs-step-num-lg">1</div><div><strong>Share Your Class Code</strong><p>Give students the code <strong>${classCode}</strong> so they can join your class.</p></div></div>
-              <div class="gs-step gs-step-lg"><div class="gs-step-num gs-step-num-lg">2</div><div><strong>Students Sign Up</strong><p>They go to the signup page, choose "Student", and enter the class code.</p></div></div>
-              <div class="gs-step gs-step-lg"><div class="gs-step-num gs-step-num-lg">3</div><div><strong>Students Read &amp; Take Quizzes</strong><p>Students pick books from the library, read chapters, and take quizzes after each one.</p></div></div>
-              <div class="gs-step gs-step-lg"><div class="gs-step-num gs-step-num-lg">4</div><div><strong>Track Growth</strong><p>Watch your students' reading scores, comprehension, vocabulary, and independence grow on this dashboard.</p></div></div>
-              <div class="gs-step gs-step-lg"><div class="gs-step-num gs-step-num-lg">5</div><div><strong>Celebrate Success</strong><p>Print certificates when students complete books! You can find these on each student's profile page.</p></div></div>
+              <div class="gs-step gs-step-lg"><div class="gs-step-num gs-step-num-lg">1</div><div><strong>Share Your ${userRole === 'parent' ? 'Family Code' : 'Class Code'}</strong><p>Give ${userRole === 'parent' ? 'children' : 'students'} the code <strong>${classCode}</strong> so they can join your ${userRole === 'parent' ? 'family' : 'class'}.</p></div></div>
+              <div class="gs-step gs-step-lg"><div class="gs-step-num gs-step-num-lg">2</div><div><strong>${userRole === 'parent' ? 'Children' : 'Students'} Sign Up</strong><p>They go to the signup page, choose "${userRole === 'parent' ? 'Child' : 'Student'}", and enter the ${userRole === 'parent' ? 'family code' : 'class code'}.</p></div></div>
+              <div class="gs-step gs-step-lg"><div class="gs-step-num gs-step-num-lg">3</div><div><strong>${userRole === 'parent' ? 'Children' : 'Students'} Read &amp; Take Quizzes</strong><p>${userRole === 'parent' ? 'Children' : 'Students'} pick books from the library, read chapters, and take quizzes after each one.</p></div></div>
+              <div class="gs-step gs-step-lg"><div class="gs-step-num gs-step-num-lg">4</div><div><strong>Track Growth</strong><p>Watch your ${userRole === 'parent' ? 'children' : 'students'}' reading scores, comprehension, vocabulary, and independence grow on this dashboard.</p></div></div>
+              <div class="gs-step gs-step-lg"><div class="gs-step-num gs-step-num-lg">5</div><div><strong>Celebrate Success</strong><p>Print certificates when ${userRole === 'parent' ? 'children' : 'students'} complete books! You can find these on each ${userRole === 'parent' ? 'child' : 'student'}'s profile page.</p></div></div>
             </div>
           </div>
         </div>
@@ -7096,7 +7146,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const result = await API.login({ email: creds.email, password: creds.password, role: creds.role, rememberMe: true });
             if (result.user) { currentUser = result.user; userRole = result.user.role || 'teacher'; reauthed = true; }
           }
-        } catch(e2) { localStorage.removeItem('k2r_remember_creds'); }
+        } catch(e2) {
+          // Only clear saved creds on auth failures (wrong password), not network/server errors
+          const msg = (e2.message || '').toLowerCase();
+          if (msg.includes('password') || msg.includes('not found') || msg.includes('no account')) {
+            localStorage.removeItem('k2r_remember_creds');
+          }
+        }
       }
       // Try student auto-login
       if (!reauthed) {
@@ -7133,7 +7189,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           const result = await API.login({ email: creds.email, password: creds.password, role: creds.role, rememberMe: true });
           if (result.user) { currentUser = result.user; userRole = result.user.role || 'teacher'; reauthed = true; }
         }
-      } catch(e2) { localStorage.removeItem('k2r_remember_creds'); }
+      } catch(e2) {
+        const msg = (e2.message || '').toLowerCase();
+        if (msg.includes('password') || msg.includes('not found') || msg.includes('no account')) {
+          localStorage.removeItem('k2r_remember_creds');
+        }
+      }
     }
     if (!reauthed) {
       const savedName = localStorage.getItem('k2r_student_name');

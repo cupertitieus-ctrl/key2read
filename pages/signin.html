@@ -52,32 +52,32 @@
         <!-- Email (Teacher & Parent & Owner) -->
         <div class="form-group" id="field-email">
           <label class="form-label" for="email">Email Address</label>
-          <input type="email" id="email" class="form-input" placeholder="you@school.edu">
+          <input type="email" id="email" name="email" class="form-input" placeholder="you@school.edu" autocomplete="email">
         </div>
 
         <!-- Student/Child Name -->
         <div class="form-group" id="field-name" style="display:none">
           <label class="form-label" for="student-name">Your Name</label>
-          <input type="text" id="student-name" class="form-input" placeholder="Enter your first and last name">
+          <input type="text" id="student-name" name="name" class="form-input" placeholder="Enter your first and last name" autocomplete="name">
         </div>
 
         <!-- Class Code (Student) -->
         <div class="form-group" id="field-classcode" style="display:none">
           <label class="form-label" for="classcode" id="classcode-label">Class Code</label>
-          <input type="text" id="classcode" class="form-input" placeholder="Enter your class code">
+          <input type="text" id="classcode" name="classcode" class="form-input" placeholder="Enter your class code" autocomplete="off">
           <small id="classcode-hint" style="color:var(--g400);margin-top:4px;display:block">Ask your teacher for the class code.</small>
         </div>
 
-        <!-- Parent Class Code -->
+        <!-- Parent Family Code (not shown — parent logs in with email + password) -->
         <div class="form-group" id="field-parent-code" style="display:none">
-          <label class="form-label" for="parent-code">Class Code <span style="font-weight:400;color:var(--g400)">(optional)</span></label>
-          <input type="text" id="parent-code" class="form-input" placeholder="Enter your child's class code">
-          <small style="color:var(--g400);margin-top:4px;display:block">Get the class code from your child's teacher to see their progress.</small>
+          <label class="form-label" for="parent-code">Family Code</label>
+          <input type="text" id="parent-code" name="familycode" class="form-input" placeholder="Enter your family code" autocomplete="off">
+          <small style="color:var(--g400);margin-top:4px;display:block">Your family code was created when you signed up.</small>
         </div>
 
         <div class="form-group" id="field-password" style="display:none">
           <label class="form-label" for="password">Password</label>
-          <input type="password" id="password" class="form-input" placeholder="Enter your password">
+          <input type="password" id="password" name="password" class="form-input" placeholder="Enter your password" autocomplete="current-password">
         </div>
         <div class="auth-extras" id="field-extras" style="display:none">
           <label class="auth-remember">
@@ -236,8 +236,11 @@ selectRole(document.querySelector('.role-card.active'), 'teacher');
         return;
       }
     } catch(e) {
-      // Saved credentials are invalid — clear them and let user login manually
-      localStorage.removeItem('k2r_remember_creds');
+      // Only clear saved creds on auth failures, not network/server errors
+      const msg = (e.message || '').toLowerCase();
+      if (msg.includes('password') || msg.includes('not found') || msg.includes('no account')) {
+        localStorage.removeItem('k2r_remember_creds');
+      }
       const submitBtn = document.querySelector('.auth-form button[type="submit"]');
       if (submitBtn) { submitBtn.textContent = 'Sign In'; submitBtn.disabled = false; }
     }

@@ -11,29 +11,10 @@
 
 <div class="auth-page">
   <!-- ===== LEFT PANEL ===== -->
-  <div class="auth-left">
-    <a href="/index.html" class="auth-left-logo" style="text-decoration:none">
-      <img src="/public/logo.png" alt="key2read" style="height:48px;width:auto">
+  <div class="auth-left" style="display:flex;align-items:stretch;justify-content:center;padding:0;overflow:hidden">
+    <a href="/index.html" style="width:100%;height:100%">
+      <img src="/public/signin-hero.jpg" alt="key2read" style="width:100%;height:100%;object-fit:cover">
     </a>
-    <div class="auth-left-content">
-      <h2>Start reading today!</h2>
-      <p>Free to set up. No credit card needed.</p>
-
-      <div class="auth-left-features">
-        <div class="auth-left-feature">
-          <span class="auth-left-feature-icon">📚</span>
-          <span>Quizzes for popular chapter books</span>
-        </div>
-        <div class="auth-left-feature">
-          <span class="auth-left-feature-icon">🔑</span>
-          <span>Earn keys and shop in the Class Store</span>
-        </div>
-        <div class="auth-left-feature">
-          <span class="auth-left-feature-icon">🧠</span>
-          <span>Build real reading comprehension skills</span>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- ===== RIGHT PANEL (Form) ===== -->
@@ -76,18 +57,18 @@
         <div class="form-row">
           <div class="form-group">
             <label class="form-label" for="first-name">First Name</label>
-            <input type="text" id="first-name" class="form-input" placeholder="Sarah" required>
+            <input type="text" id="first-name" name="first-name" class="form-input" placeholder="Sarah" required autocomplete="given-name">
           </div>
           <div class="form-group">
             <label class="form-label" for="last-name">Last Name</label>
-            <input type="text" id="last-name" class="form-input" placeholder="Johnson" required>
+            <input type="text" id="last-name" name="last-name" class="form-input" placeholder="Johnson" required autocomplete="family-name">
           </div>
         </div>
 
         <!-- Email (Teacher & Parent) -->
         <div class="form-group" id="field-email">
           <label class="form-label" for="email" id="email-label">School Email</label>
-          <input type="email" id="email" class="form-input" placeholder="you@school.edu">
+          <input type="email" id="email" name="email" class="form-input" placeholder="you@school.edu" autocomplete="email">
         </div>
 
         <!-- School Name (Teacher) -->
@@ -154,7 +135,7 @@
         <!-- Password (always visible) -->
         <div class="form-group" id="field-password">
           <label class="form-label" for="password">Password</label>
-          <input type="password" id="password" class="form-input" placeholder="Create a strong password">
+          <input type="password" id="password" name="password" class="form-input" placeholder="Create a strong password" autocomplete="new-password">
           <small id="password-optional" style="color:var(--g400);margin-top:4px;display:none">Password is optional for students.</small>
         </div>
 
@@ -308,6 +289,9 @@ document.getElementById('signup-form').addEventListener('submit', async function
 
     try {
       await API.post('/api/auth/signup', { name, email, password, role: 'teacher', school, grade });
+      // Save credentials for auto-login (remember me)
+      localStorage.setItem('k2r_remember_creds', btoa(JSON.stringify({ email, password, role: 'teacher' })));
+      localStorage.setItem('k2r_remember_email', email);
       window.location.href = 'dashboard.html';
     } catch (err) {
       showError(err.message || 'Signup failed. Please try again.');
@@ -322,6 +306,9 @@ document.getElementById('signup-form').addEventListener('submit', async function
 
     try {
       await API.post('/api/auth/signup', { name, email, password, role: 'parent' });
+      // Save credentials for auto-login (remember me)
+      localStorage.setItem('k2r_remember_creds', btoa(JSON.stringify({ email, password, role: 'parent' })));
+      localStorage.setItem('k2r_remember_email', email);
       window.location.href = 'dashboard.html';
     } catch (err) {
       showError(err.message || 'Signup failed. Please try again.');
