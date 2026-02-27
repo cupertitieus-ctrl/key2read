@@ -1622,6 +1622,9 @@ function showPopularBookDetail(idx) {
           <button class="modal-close" onclick="closeModal()">${IC.x}</button>
         </div>
         <div class="modal-body" style="padding:24px">
+          ${b.coverUrl ? `<div style="text-align:center;margin-bottom:16px">
+            <img src="${b.coverUrl}" alt="${escapeHtml(b.title)}" style="max-height:200px;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,0.12)" onerror="this.parentElement.style.display='none'">
+          </div>` : ''}
           <div style="display:flex;gap:16px;margin-bottom:16px">
             <div style="padding:12px;background:var(--blue-p, #EFF6FF);border-radius:10px;text-align:center;flex:1">
               <div style="font-size:1.5rem;font-weight:800;color:var(--navy)">${b.studentCount}</div>
