@@ -5912,6 +5912,9 @@ function showCompletedBooks() {
   const progressMap = {};
   (currentUser?.bookProgress || []).forEach(p => { progressMap[p.bookId] = p; });
   const completedBooks = books.filter(b => progressMap[b.id]?.isComplete);
+  const studentName = currentUser?.name || 'Student';
+
+  const modal = document.getElementById('modal-root');
 
   let gridHtml = '';
   if (completedBooks.length === 0) {
@@ -5920,31 +5923,20 @@ function showCompletedBooks() {
       <p style="font-size:1.125rem;margin-bottom:4px">No books completed yet</p>
       <p style="font-size:0.875rem">Finish all chapters in a book to see it here!</p>
     </div>`;
-  } else {
-    gridHtml = `<div class="book-progress-grid" style="gap:16px">
-      ${completedBooks.map(b => `
-        <div class="book-progress-card" onclick="closeModal(); openBook(${b.id})" style="cursor:pointer">
-          <div class="book-progress-cover">
-            ${b.cover_url ? `<img src="${b.cover_url}" alt="${b.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
-            <div class="book-progress-cover-fallback" ${b.cover_url ? 'style="display:none"' : ''}>
-              <span>${b.title}</span>
-            </div>
-            <div class="book-completed-overlay">
-              <div class="book-completed-badge">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                <span>COMPLETED</span>
-              </div>
-            </div>
+    modal.innerHTML = `
+      <div class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal modal-lg" onclick="event.stopPropagation()" style="max-width:560px">
+          <div class="modal-header">
+            <h3>📚 Completed Books</h3>
+            <button class="modal-close" onclick="closeModal()">${IC.x}</button>
           </div>
-          <div class="book-progress-info">
-            <div class="book-progress-title">${b.title}</div>
-            <div class="book-progress-status" style="color:var(--green)">✅ All done!</div>
-          </div>
-        </div>`).join('')}
-    </div>`;
+          <div class="modal-body">${gridHtml}</div>
+        </div>
+      </div>`;
+    return;
   }
 
-  const modal = document.getElementById('modal-root');
+  // Show loading state while we fetch quiz results for scores
   modal.innerHTML = `
     <div class="modal-overlay" onclick="closeModal(event)">
       <div class="modal modal-lg" onclick="event.stopPropagation()" style="max-width:560px">
@@ -5952,11 +5944,79 @@ function showCompletedBooks() {
           <h3>📚 Completed Books</h3>
           <button class="modal-close" onclick="closeModal()">${IC.x}</button>
         </div>
-        <div class="modal-body">
-          ${gridHtml}
+        <div class="modal-body" style="text-align:center;padding:32px">
+          <p style="color:var(--g400)">Loading certificates...</p>
         </div>
       </div>
     </div>`;
+
+  // Fetch quiz results to calculate average scores per book
+  const sid = currentUser?.studentId;
+  (sid ? getCachedQuizResults(sid) : Promise.resolve([])).then(function(results) {
+    const resultsByBook = {};
+    (results || []).forEach(function(r) {
+      const title = r.book_title || '';
+      if (!resultsByBook[title]) resultsByBook[title] = [];
+      resultsByBook[title].push(r);
+    });
+
+    gridHtml = `<div class="book-progress-grid" style="gap:16px">
+      ${completedBooks.map(function(b) {
+        const bookResults = resultsByBook[b.title] || [];
+        const avgScore = bookResults.length > 0 ? Math.round(bookResults.reduce(function(s, r) { return s + (r.score || 0); }, 0) / bookResults.length) : null;
+        const certParams = JSON.stringify({ studentName: studentName, bookTitle: b.title, bookAuthor: b.author || '', score: avgScore, coverUrl: b.cover_url || '' }).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+        return '<div class="book-progress-card" style="cursor:pointer">' +
+          '<div class="book-progress-cover" onclick="closeModal(); openBook(' + b.id + ')">' +
+            (b.cover_url ? '<img src="' + b.cover_url + '" alt="' + escapeHtml(b.title) + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' : '') +
+            '<div class="book-progress-cover-fallback" ' + (b.cover_url ? 'style="display:none"' : '') + '>' +
+              '<span>' + escapeHtml(b.title) + '</span>' +
+            '</div>' +
+            '<div class="book-completed-overlay">' +
+              '<div class="book-completed-badge">' +
+                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+                '<span>COMPLETED</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="book-progress-info">' +
+            '<div class="book-progress-title">' + escapeHtml(b.title) + '</div>' +
+            (avgScore !== null ? '<div style="font-size:0.75rem;color:var(--g500);margin-bottom:4px">Avg Score: ' + avgScore + '%</div>' : '') +
+            '<div style="display:flex;gap:6px;margin-top:4px">' +
+              '<button class="btn btn-sm btn-primary" style="font-size:0.7rem;padding:4px 10px" onclick="event.stopPropagation(); printCertificate(JSON.parse(decodeHTMLEntities(this.dataset.params)))" data-params="' + certParams + '">🖨️ Print</button>' +
+              '<button class="btn btn-sm btn-outline" style="font-size:0.7rem;padding:4px 10px" onclick="event.stopPropagation(); downloadCertificatePDF(JSON.parse(decodeHTMLEntities(this.dataset.params)))" data-params="' + certParams + '">📥 PDF</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('')}
+    </div>`;
+
+    const body = modal.querySelector('.modal-body');
+    if (body) body.innerHTML = gridHtml;
+  }).catch(function() {
+    // Fallback without scores
+    gridHtml = `<div class="book-progress-grid" style="gap:16px">
+      ${completedBooks.map(function(b) {
+        const certParams = JSON.stringify({ studentName: studentName, bookTitle: b.title, bookAuthor: b.author || '', coverUrl: b.cover_url || '' }).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+        return '<div class="book-progress-card" style="cursor:pointer">' +
+          '<div class="book-progress-cover" onclick="closeModal(); openBook(' + b.id + ')">' +
+            (b.cover_url ? '<img src="' + b.cover_url + '" alt="' + escapeHtml(b.title) + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' : '') +
+            '<div class="book-progress-cover-fallback" ' + (b.cover_url ? 'style="display:none"' : '') + '>' +
+              '<span>' + escapeHtml(b.title) + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="book-progress-info">' +
+            '<div class="book-progress-title">' + escapeHtml(b.title) + '</div>' +
+            '<div style="display:flex;gap:6px;margin-top:4px">' +
+              '<button class="btn btn-sm btn-primary" style="font-size:0.7rem;padding:4px 10px" onclick="event.stopPropagation(); printCertificate(JSON.parse(decodeHTMLEntities(this.dataset.params)))" data-params="' + certParams + '">🖨️ Print</button>' +
+              '<button class="btn btn-sm btn-outline" style="font-size:0.7rem;padding:4px 10px" onclick="event.stopPropagation(); downloadCertificatePDF(JSON.parse(decodeHTMLEntities(this.dataset.params)))" data-params="' + certParams + '">📥 PDF</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('')}
+    </div>`;
+    const body = modal.querySelector('.modal-body');
+    if (body) body.innerHTML = gridHtml;
+  });
 }
 
 async function showCompletedQuizzes() {
