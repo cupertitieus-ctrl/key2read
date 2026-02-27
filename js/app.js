@@ -1266,21 +1266,23 @@ function renderTeacherDashboard() {
       </div>
     </div>
 
-    <div class="list-card" style="padding:24px;margin-top:20px">
-      <h3 style="margin:0 0 4px 0;display:flex;align-items:center"><img src="/public/Stacked_Book_Outline.png" alt="" style="width:32px;height:32px;margin-right:8px">Top 3 Books</h3>
-      <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">The most popular books your ${membersLabel} are reading of all time</p>
-      <div id="popular-books-chart">
-        <div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Loading...</div>
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:20px;margin-top:20px">
+      <div class="list-card" style="padding:24px">
+        <h3 style="margin:0 0 4px 0;display:flex;align-items:center"><img src="/public/Stacked_Book_Outline.png" alt="" style="width:32px;height:32px;margin-right:8px">Top 3 Books</h3>
+        <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">The most popular books your ${membersLabel} are reading of all time</p>
+        <div id="popular-books-chart">
+          <div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Loading...</div>
+        </div>
       </div>
-    </div>
-    <div class="list-card" style="padding:24px;margin-top:20px">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <h3 style="margin:0 0 4px 0;display:flex;align-items:center"><img src="/public/Single_Book_Outline_.png" alt="" style="width:32px;height:32px;margin-right:8px">Books Ranked by Popularity</h3>
-        <button class="btn btn-sm btn-outline" onclick="showTop10BooksModal()" style="font-size:0.7rem">View Top 10 of All Time</button>
-      </div>
-      <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">All-time books ranked by popularity</p>
-      <div id="popular-books-list">
-        <div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Loading...</div>
+      <div class="list-card" style="padding:24px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <h3 style="margin:0 0 4px 0;display:flex;align-items:center"><img src="/public/Single_Book_Outline_.png" alt="" style="width:32px;height:32px;margin-right:8px">Books Ranked by Popularity</h3>
+          <button class="btn btn-sm btn-outline" onclick="showTop10BooksModal()" style="font-size:0.7rem">View Top 10 of All Time</button>
+        </div>
+        <p style="font-size:0.8rem;color:var(--g400);margin:0 0 16px 0">All-time books ranked by popularity</p>
+        <div id="popular-books-list">
+          <div style="text-align:center;padding:40px 0;color:var(--g400);font-size:0.875rem">Loading...</div>
+        </div>
       </div>
     </div>
 
