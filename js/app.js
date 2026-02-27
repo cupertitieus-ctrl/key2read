@@ -646,7 +646,7 @@ function svgAreaChart(data, labels, colorOrW, wArg, hArg) {
 // ---- Render Sidebar ----
 function renderSidebar() {
   let items;
-  if (userRole === 'student') {
+  if (userRole === 'student' || userRole === 'child') {
     items = [
       { section: 'My Learning' },
       { id: 'student-dashboard', icon: IC.target, label: 'My Dashboard' },
@@ -682,13 +682,19 @@ function renderSidebar() {
     ];
   } else if (userRole === 'parent') {
     items = [
+      { id: 'teacher-dashboard', icon: IC.home, label: 'My Dashboard', isHome: true },
       { section: 'My Family' },
-      { id: 'students',   icon: IC.users, label: 'My Children',    badge: students.length > 0 ? String(students.length) : '', badgeCls: 'blue' },
+      { id: 'quizzes',    icon: IC.clip,  label: 'Quizzes & Assessments', badge: assignments.length > 0 ? String(assignments.length) : '', badgeCls: 'red' },
+      { id: 'students',   icon: IC.users, label: 'My Children',           badge: students.length > 0 ? String(students.length) : '', badgeCls: 'blue' },
       { id: 'reports',    icon: IC.chart, label: 'Growth Reports' },
-      { section: 'Resources' },
+      { section: 'Management' },
+      { id: 'store',      icon: IC.bag,   label: 'Family Store',          badge: String(storeItems.length), badgeCls: 'gold' },
+      { id: 'purchases',  icon: IC.key,   label: 'Recent Purchases',      badge: window._purchaseCount > 0 ? String(window._purchaseCount) : '', badgeCls: 'purple' },
       { id: 'library',    icon: IC.book,  label: 'Book Library' },
-      { section: 'Account' },
-      { id: 'parent-settings', icon: IC.gear, label: 'Settings' },
+      { section: 'Tools' },
+      { id: 'class-goals', icon: IC.trend, label: 'Family Goals' },
+      { id: 'celebrate',  icon: IC.star,  label: 'Celebrate Children' },
+      { id: 'aitools',    icon: IC.bulb,  label: 'Parent Tools' },
     ];
   } else if (userRole === 'guest') {
     items = [
@@ -715,6 +721,7 @@ function renderSidebar() {
   const userName = currentUser?.name || 'Student';
   const userInitials = userName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   const roleLabel = userRole === 'student' ? (currentUser?.grade || '4th') + ' Grade Student' :
+                    userRole === 'child' ? (currentUser?.grade || '4th') + ' Grade Reader' :
                     userRole === 'owner' ? 'Platform Owner' :
                     userRole === 'principal' ? 'School Principal' :
                     userRole === 'parent' ? 'Parent' :
@@ -821,6 +828,7 @@ function renderHeader() {
   const hUserName = currentUser?.name || 'User';
   const hInitials = hUserName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   const hRole = userRole === 'student' ? (currentUser?.grade || '4th') + ' Grade Student' :
+                userRole === 'child' ? (currentUser?.grade || '4th') + ' Grade Reader' :
                 userRole === 'owner' ? 'Platform Owner' :
                 userRole === 'principal' ? 'School Principal' :
                 userRole === 'parent' ? 'Parent' :
@@ -835,14 +843,14 @@ function renderHeader() {
     </div>
     <div class="header-search">
       ${IC.search}
-      <input type="text" id="global-search-input" placeholder="${userRole === 'student' ? 'Search books, quizzes...' : 'Search students, books, quizzes...'}" oninput="handleGlobalSearch(this.value)">
+      <input type="text" id="global-search-input" placeholder="${(userRole === 'student' || userRole === 'child') ? 'Search books, quizzes...' : userRole === 'parent' ? 'Search children, books, quizzes...' : 'Search students, books, quizzes...'}" oninput="handleGlobalSearch(this.value)">
     </div>
     <div class="header-actions">
-      ${userRole === 'teacher' ? `<button class="dash-icon-btn" onclick="navigate('purchases')" title="Recent Purchases">
+      ${(userRole === 'teacher' || userRole === 'parent') ? `<button class="dash-icon-btn" onclick="navigate('purchases')" title="Recent Purchases">
         <span style="width:20px;height:20px;display:inline-flex">${IC.bell}</span>
         ${window._purchaseCount > 0 ? `<span class="dash-icon-badge">${window._purchaseCount}</span>` : ''}
       </button>
-      <button class="dash-icon-btn" onclick="navigate('teacher-settings')" title="Settings">
+      <button class="dash-icon-btn" onclick="navigate('${userRole === 'parent' ? 'parent-settings' : 'teacher-settings'}')" title="Settings">
         <span style="width:20px;height:20px;display:inline-flex">${IC.gear}</span>
       </button>` : ''}
       <div class="header-profile-dropdown" style="position:relative">
@@ -855,6 +863,8 @@ function renderHeader() {
             <div style="font-size:0.75rem;color:var(--g400)">${hRole}</div>
           </div>
           ${userRole === 'teacher' ? `<button class="profile-dropdown-item" onclick="navigate('teacher-settings'); closeProfileDropdown()">
+            <span style="width:16px;height:16px;display:inline-flex">${IC.gear}</span> Settings
+          </button>` : userRole === 'parent' ? `<button class="profile-dropdown-item" onclick="navigate('parent-settings'); closeProfileDropdown()">
             <span style="width:16px;height:16px;display:inline-flex">${IC.gear}</span> Settings
           </button>` : ''}
           <button class="profile-dropdown-item profile-dropdown-item-danger" onclick="handleLogout()">
@@ -967,7 +977,7 @@ function navigate(p, detail, sid) {
   renderSidebar();
   renderMain();
   // Refresh data from server when navigating to student pages from quiz player
-  if (_prevPage === 'quiz-player' && userRole === 'student' &&
+  if (_prevPage === 'quiz-player' && (userRole === 'student' || userRole === 'child') &&
       (p === 'student-dashboard' || p === 'student-quizzes' || p === 'student-progress')) {
     refreshStudentData().then(() => renderMain());
   }
@@ -987,7 +997,7 @@ function renderMain() {
       if (studentId !== null) { el.innerHTML = renderStudentProfile(); break; }
       el.innerHTML = renderStudents();
       break;
-    case 'store':      el.innerHTML = userRole === 'student' ? renderStudentStore() : renderStore(); if (userRole === 'student') loadStudentRecentPurchases(); else loadStorePurchaseNotifications(); break;
+    case 'store':      el.innerHTML = (userRole === 'student' || userRole === 'child') ? renderStudentStore() : renderStore(); if (userRole === 'student' || userRole === 'child') loadStudentRecentPurchases(); else loadStorePurchaseNotifications(); break;
     case 'purchases':
       if (!window._purchaseData && currentUser?.classId) {
         API.getRecentPurchases(currentUser.classId).then(data => {
@@ -1039,7 +1049,7 @@ function renderMain() {
     case 'owner-gallery':   el.innerHTML = renderOwnerGallery(); break;
     default:
       if (userRole === 'guest') { el.innerHTML = renderGuestBrowse(); initBookSearch(); }
-      else if (userRole === 'student') el.innerHTML = renderStudentDashboard();
+      else if (userRole === 'student' || userRole === 'child') el.innerHTML = renderStudentDashboard();
       else if (userRole === 'owner') el.innerHTML = renderOwnerDashboard();
       else if (userRole === 'principal') el.innerHTML = renderPrincipalDashboard();
       else { el.innerHTML = renderTeacherDashboard(); loadTeacherDashboardData(); }
@@ -1050,7 +1060,7 @@ function renderMain() {
 async function launchQuiz(bookId, chapterNum, sid) {
   // Find student — check students array first, then fall back to currentUser for student role
   let s = sid != null ? students.find(st => st.id === sid) : students[0];
-  if (!s && userRole === 'student' && currentUser) {
+  if (!s && (userRole === 'student' || userRole === 'child') && currentUser) {
     s = {
       id: currentUser.studentId,
       name: currentUser.name,
@@ -1108,7 +1118,7 @@ async function launchQuiz(bookId, chapterNum, sid) {
       // Invalidate cached quiz results so modals fetch fresh data
       invalidateQuizResultsCache();
       // Update currentUser so dashboard shows new scores immediately
-      if (currentUser && userRole === 'student') {
+      if (currentUser && (userRole === 'student' || userRole === 'child')) {
         currentUser.reading_score = results.newReadingScore || currentUser.reading_score;
         currentUser.reading_level = results.newReadingLevel || currentUser.reading_level;
         currentUser.keys_earned = (currentUser.keys_earned || 0) + (results.keysEarned || 0);
@@ -1183,9 +1193,9 @@ function renderTeacherDashboard() {
       <h1><img src="/public/logo.png" alt="key2read" style="height:44px;width:auto;vertical-align:middle;margin-right:10px">Dashboard</h1>
       <div class="page-header-actions" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <button class="btn btn-outline btn-sm" onclick="openModal('dashboard-help')" style="font-size:0.8rem;padding:6px 14px;border-radius:20px">&#10067; How This Dashboard Works</button>
-        <span style="font-size:0.875rem;color:var(--g500)">${currentUser?.name || 'Teacher'}'s Class</span>
+        <span style="font-size:0.875rem;color:var(--g500)">${currentUser?.name || 'Teacher'}'s ${userRole === 'parent' ? 'Family' : 'Class'}</span>
         ${currentUser?.classCode ? `<div style="display:flex;align-items:center;gap:8px;background:var(--blue-p, #EFF6FF);padding:8px 16px;border-radius:10px;border:2px dashed var(--blue)">
-          <span style="font-size:0.75rem;color:var(--g500)">Class Code:</span>
+          <span style="font-size:0.75rem;color:var(--g500)">${userRole === 'parent' ? 'Family Code:' : 'Class Code:'}</span>
           <span style="font-size:1.1rem;font-weight:800;color:var(--blue);letter-spacing:0.08em;user-select:all;cursor:text" oncontextmenu="navigator.clipboard.writeText('${currentUser.classCode}')">${currentUser.classCode}</span>
           <button class="btn btn-sm btn-ghost" style="padding:2px 8px;font-size:0.7rem" onclick="navigator.clipboard.writeText('${currentUser.classCode}'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
         </div>` : ''}
@@ -1194,8 +1204,8 @@ function renderTeacherDashboard() {
 
     <div class="stat-cards stat-cards-5">
       <div class="stat-card clickable-card" onclick="document.getElementById('dashboard-roster')?.scrollIntoView({behavior:'smooth'})">
-        <div class="stat-card-icon"><img src="/public/Student_Outline_Icon.png" alt="Students"></div>
-        <div class="stat-card-label">Students <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('Students', 'The total number of students in your class. Click to scroll to your student roster.')">?</button></div>
+        <div class="stat-card-icon"><img src="/public/Student_Outline_Icon.png" alt="${userRole === 'parent' ? 'Children' : 'Students'}"></div>
+        <div class="stat-card-label">${userRole === 'parent' ? 'Children' : 'Students'} <button class="stat-help-btn" onclick="event.stopPropagation(); showStatHelp('${userRole === 'parent' ? 'Children' : 'Students'}', 'The total number of ${userRole === 'parent' ? 'children in your family' : 'students in your class'}. Click to scroll to your ${userRole === 'parent' ? 'children' : 'student'} roster.')">?</button></div>
         <div class="stat-card-value">${students.length}</div>
       </div>
       <div class="stat-card clickable-card" onclick="navigate('reports')">
@@ -1639,11 +1649,17 @@ function showTop10BooksModal() {
 
 function renderQuizzes() {
   const classCode = currentUser?.classCode || '';
+  const isParent = userRole === 'parent';
+  const codeLabel = isParent ? 'Family Code' : 'Class Code';
+  const memberLabel = isParent ? 'children' : 'students';
+  const memberSingular = isParent ? 'child' : 'student';
+  const MemberLabel = isParent ? 'Children' : 'Students';
+  const groupLabel = isParent ? 'family' : 'class';
   const avgAcc = students.length > 0 ? Math.round(students.reduce((s, st) => s + (st.accuracy || 0), 0) / students.length) : 0;
   const totalKeys = students.reduce((s, st) => s + (st.keys_earned || st.keys || 0), 0);
   const avgScore = students.length > 0 ? Math.round(students.reduce((s, st) => s + (st.reading_score || st.score || 0), 0) / students.length) : 0;
 
-  // Class code banner (always show for teachers)
+  // Class/Family code banner
   let html = '';
   if (classCode) {
     html += `
@@ -1651,8 +1667,8 @@ function renderQuizzes() {
       <div class="class-code-banner-left">
         <div class="class-code-banner-icon">${IC.users}</div>
         <div>
-          <div class="class-code-banner-label">Your Class Code</div>
-          <div class="class-code-banner-desc">Share this code with students so they can join your class.</div>
+          <div class="class-code-banner-label">Your ${codeLabel}</div>
+          <div class="class-code-banner-desc">Share this code with ${memberLabel} so they can join your ${groupLabel}.</div>
         </div>
       </div>
       <div class="class-code-banner-right">
@@ -1662,40 +1678,40 @@ function renderQuizzes() {
     </div>`;
   }
 
-  // Empty state — no students yet
+  // Empty state — no students/children yet
   if (students.length === 0) {
     html += `
     <div class="empty-state">
       <div class="empty-state-icon">${IC.users}</div>
       <h2>Welcome to key2read!</h2>
-      <p>Your class is set up and ready to go. Here's how to get started:</p>
+      <p>Your ${groupLabel} is set up and ready to go. Here's how to get started:</p>
       <div class="getting-started-steps">
         <div class="gs-step">
           <div class="gs-step-num">1</div>
           <div>
-            <strong>Share your class code</strong>
-            <p>Give students the code <strong>${classCode}</strong> so they can join your class.</p>
+            <strong>Share your ${codeLabel.toLowerCase()}</strong>
+            <p>Give ${memberLabel} the code <strong>${classCode}</strong> so they can join your ${groupLabel}.</p>
           </div>
         </div>
         <div class="gs-step">
           <div class="gs-step-num">2</div>
           <div>
-            <strong>Students sign up</strong>
-            <p>They go to the signup page, choose "Student", and enter the class code.</p>
+            <strong>${MemberLabel} sign up</strong>
+            <p>They go to the signup page, choose "${isParent ? 'Child' : 'Student'}", and enter the ${codeLabel.toLowerCase()}.</p>
           </div>
         </div>
         <div class="gs-step">
           <div class="gs-step-num">3</div>
           <div>
-            <strong>Students read &amp; take quizzes</strong>
-            <p>Students pick books from the library, read chapters, and take quizzes after each one.</p>
+            <strong>${MemberLabel} read &amp; take quizzes</strong>
+            <p>${MemberLabel} pick books from the library, read chapters, and take quizzes after each one.</p>
           </div>
         </div>
         <div class="gs-step">
           <div class="gs-step-num">4</div>
           <div>
             <strong>Track growth</strong>
-            <p>Watch your students' reading scores, comprehension, vocabulary, and independence grow on this dashboard.</p>
+            <p>Watch your ${memberLabel}'s reading scores, comprehension, vocabulary, and independence grow on this dashboard.</p>
           </div>
         </div>
         <div class="gs-step">
@@ -1869,16 +1885,23 @@ function renderAssignmentDetail() {
 
 // ---- Page: Students ----
 function renderStudents() {
+  const isParent = userRole === 'parent';
+  const membersTitle = isParent ? 'My Children' : 'Students';
+  const memberLabel = isParent ? 'Child' : 'Student';
+  const noMembersTitle = isParent ? 'No Children Yet' : 'No Students Yet';
+  const codeLabel = isParent ? 'family code' : 'class code';
+  const groupLabel = isParent ? 'family' : 'class';
+
   if (students.length === 0) {
     const classCode = currentUser?.classCode || '';
     return `
       <div class="page-header">
-        <h1>Students <span class="badge badge-blue">0</span></h1>
+        <h1>${membersTitle} <span class="badge badge-blue">0</span></h1>
       </div>
       <div class="empty-state">
         <div class="empty-state-icon">${IC.users}</div>
-        <h2>No Students Yet</h2>
-        <p>Share your class code <strong>${classCode}</strong> with students so they can sign up and join your class.</p>
+        <h2>${noMembersTitle}</h2>
+        <p>Share your ${codeLabel} <strong>${classCode}</strong> with ${isParent ? 'children' : 'students'} so they can sign up and join your ${groupLabel}.</p>
         <button class="btn btn-primary" onclick="navigate('quizzes')">${IC.arrowLeft} Go to Dashboard</button>
       </div>`;
   }
@@ -1887,14 +1910,14 @@ function renderStudents() {
 
   return `
     <div class="page-header">
-      <h1>Students <span class="badge badge-blue">${students.length}</span></h1>
+      <h1>${membersTitle} <span class="badge badge-blue">${students.length}</span></h1>
     </div>
 
     <div class="data-table-wrap">
       <table class="data-table students-analytics-table">
         <thead>
           <tr>
-            <th>Student</th>
+            <th>${memberLabel}</th>
             <th class="th-has-tooltip">Reading Score <span class="th-info" title="Overall reading ability on a 0-1000 scale">&#9432;</span></th>
             <th class="th-has-tooltip">Comprehension <span class="th-info" title="How well the student understands what they read">&#9432;</span></th>
             <th class="th-has-tooltip">Reasoning <span class="th-info" title="Ability to make inferences, find causes, and choose best answers">&#9432;</span></th>
@@ -3181,7 +3204,7 @@ function initLibrarySearch() {
     const grid = document.getElementById('library-book-grid');
     const countEl = document.getElementById('library-book-count');
     if (!grid) return;
-    const isStudent = userRole === 'student';
+    const isStudent = userRole === 'student' || userRole === 'child';
     const base = isStudent && showFavoritesOnly ? books.filter(b => studentFavorites.some(fid => Number(fid) === Number(b.id))) : books;
     const filtered = q
       ? base.filter(b =>
@@ -3323,7 +3346,7 @@ function renderLibrary() {
       </div>`;
   }
 
-  const isStudent = userRole === 'student';
+  const isStudent = userRole === 'student' || userRole === 'child';
   const displayBooks = isStudent && showFavoritesOnly ? books.filter(b => studentFavorites.some(fid => Number(fid) === Number(b.id))) : books;
 
   return `
@@ -3437,7 +3460,7 @@ function renderBookDetail() {
   const chapCount = bookChapters.length || b.chapter_count || 0;
 
   return `
-    <button class="back-btn" onclick="navigate('${userRole === 'guest' ? 'guest-browse' : userRole === 'student' ? 'student-dashboard' : 'library'}')">${IC.arrowLeft} Back to ${userRole === 'guest' ? 'Books' : userRole === 'student' ? 'Dashboard' : 'Library'}</button>
+    <button class="back-btn" onclick="navigate('${userRole === 'guest' ? 'guest-browse' : (userRole === 'student' || userRole === 'child') ? 'student-dashboard' : 'library'}')">${IC.arrowLeft} Back to ${userRole === 'guest' ? 'Books' : (userRole === 'student' || userRole === 'child') ? 'Dashboard' : 'Library'}</button>
 
     <div style="display:flex;gap:32px;margin-top:16px;flex-wrap:wrap">
       <div style="flex-shrink:0;width:200px">
@@ -3535,7 +3558,7 @@ function renderBookDetail() {
 async function launchFullBookQuiz(bookId, sid) {
   // Find student
   let s = sid != null ? students.find(st => st.id === sid) : students[0];
-  if (!s && userRole === 'student' && currentUser) {
+  if (!s && (userRole === 'student' || userRole === 'child') && currentUser) {
     s = {
       id: currentUser.studentId,
       name: currentUser.name,
@@ -3590,7 +3613,7 @@ async function launchFullBookQuiz(bookId, sid) {
       }
       // Invalidate cached quiz results so modals fetch fresh data
       invalidateQuizResultsCache();
-      if (currentUser && userRole === 'student') {
+      if (currentUser && (userRole === 'student' || userRole === 'child')) {
         currentUser.reading_score = results.newReadingScore || currentUser.reading_score;
         currentUser.reading_level = results.newReadingLevel || currentUser.reading_level;
         currentUser.keys_earned = (currentUser.keys_earned || 0) + (results.keysEarned || 0);
@@ -3764,8 +3787,23 @@ function closeCelebration() {
 
 async function downloadCertificatePDF(params) {
   if (!window.jspdf || !window.jspdf.jsPDF) {
-    alert('PDF library not loaded. Please refresh the page and try again.');
-    return;
+    // Lazy-load jsPDF if not available
+    try {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js';
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    } catch(e) {
+      alert('Could not load PDF library. Please check your internet connection and try again.');
+      return;
+    }
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      alert('PDF library failed to initialize. Please refresh the page and try again.');
+      return;
+    }
   }
   try {
     const { jsPDF } = window.jspdf;
@@ -7195,7 +7233,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Set default page based on role
-  if (userRole === 'student') {
+  if (userRole === 'student' || userRole === 'child') {
     page = 'student-dashboard';
 
     // Fetch weekly stats and book progress for the student dashboard
@@ -7280,7 +7318,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else if (userRole === 'principal') {
     page = 'principal-dashboard';
   } else if (userRole === 'parent') {
-    page = 'students';
+    page = 'teacher-dashboard';
+
+    // Load family code for parents
+    try {
+      const codeData = await API.getClassCode();
+      if (codeData.classCode) {
+        currentUser.classCode = codeData.classCode;
+        currentUser.className = codeData.className;
+      }
+    } catch(e) { /* no class yet */ }
 
     // Load children for this parent's class
     if (currentUser.classId) {
@@ -7301,7 +7348,9 @@ document.addEventListener('DOMContentLoaded', async () => {
               if (a.readingScore) s.score = a.readingScore;
               if (s._raw) {
                 s._raw.comprehension_label = a.comprehension !== 'No Data' ? a.comprehension : null;
+                s._raw.comprehension_pct = a.comprehensionPct;
                 s._raw.reasoning_label = a.reasoning !== 'No Data' ? a.reasoning : null;
+                s._raw.reasoning_pct = a.reasoningPct;
                 s._raw.vocab_words_learned = a.vocabWordsLearned || 0;
                 s._raw.independence_label = a.independence !== 'No Data' ? a.independence : null;
                 s._raw.persistence_label = a.persistence !== 'No Data' ? a.persistence : null;
@@ -7311,6 +7360,15 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         }
       } catch(e) { console.warn('Could not load class analytics:', e); }
+
+      // Load assignments for this parent's class
+      try {
+        const rawAssignments = await API.getAssignments(currentUser.classId);
+        assignments = rawAssignments.map(mapAssignmentFromAPI);
+      } catch(e) { console.warn('Could not load assignments:', e); }
+
+      // Load store items
+      await loadStoreItems();
     }
   }
 
