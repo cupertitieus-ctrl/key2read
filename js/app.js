@@ -3843,7 +3843,7 @@ async function downloadCertificatePDF(params) {
 
     // Load the certificate background image (same-origin, no CORS needed)
     const bgDataUrl = await loadImage('/public/Certificate.png', false);
-    const margin = 5;
+    const margin = 10;
     doc.addImage(bgDataUrl, 'PNG', margin, margin, w - margin * 2, h - margin * 2);
 
     // Student name — centered, positioned below "This is to certify that"
@@ -3891,7 +3891,7 @@ function printCertificate(params) {
 
   const html = `<!DOCTYPE html><html><head><title>Certificate - ${book.title}</title>
     <style>
-      @page { size: landscape; margin: 5mm; }
+      @page { size: landscape; margin: 10mm; }
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: 'Arial', 'Helvetica', sans-serif; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
       .cert { width: 100%; max-width: 287mm; height: 200mm; position: relative; overflow: hidden; margin: auto; }
