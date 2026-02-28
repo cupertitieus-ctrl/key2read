@@ -6712,14 +6712,14 @@ function showBadgeDetail(idx) {
           <h3>${b.name}</h3>
           <button class="modal-close" onclick="closeModal()">${IC.x}</button>
         </div>
-        <div class="modal-body" style="text-align:center;padding:24px">
-          <div style="position:relative;display:inline-block;margin-bottom:16px">
+        <div class="modal-body" style="text-align:center;padding:24px;align-items:center">
+          <div style="position:relative;display:flex;justify-content:center;margin-bottom:16px">
             <img src="${b.img}" alt="${b.name}" style="width:140px;height:140px;object-fit:contain;${b.earned ? '' : 'opacity:0.4;filter:grayscale(1);'}">
             ${!b.earned ? '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"><img src="/public/Lock_Icon_.png" alt="Locked" style="width:48px;height:48px;object-fit:contain"></div>' : ''}
           </div>
           <div style="font-size:1.1rem;font-weight:800;color:var(--navy);margin-bottom:8px">${b.name}</div>
           <div style="font-size:0.9rem;color:var(--g500);margin-bottom:16px;line-height:1.5">${b.desc}</div>
-          ${b.earned ? '<div style="display:inline-block;padding:8px 20px;border-radius:999px;font-size:0.875rem;font-weight:700;background:#ECFDF5;color:#059669">✅ Badge Earned!</div>' : ''}
+          ${b.earned ? '<div style="padding:8px 20px;border-radius:999px;font-size:0.875rem;font-weight:700;background:#ECFDF5;color:#059669">✅ Badge Earned!</div>' : ''}
         </div>
       </div>
     </div>`;
