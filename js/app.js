@@ -6304,7 +6304,7 @@ function getStudentBadges() {
     { img: '/public/Quiz_Conqueror_Badge.png',  name: 'Quiz Conqueror',        desc: 'Complete 10 quizzes',              earned: s.quizzes >= 10 },
     { img: '/public/10_Quiz_Streak_Badge_.png', name: '10 Quiz Streak',        desc: 'Complete 10 quizzes in a row',     earned: s.quizzes >= 10 },
     { img: '/public/Grow_Hero_Badge.png',       name: 'Grow Hero',             desc: 'Complete 2 books and grow your reading score', earned: s.totalBooks >= 2 && s.quizzes >= 2 },
-    { img: '/public/Ultimate_Key_Badge.png',    name: 'Ultimate Key Reader',   desc: 'Earn 500 keys',                    earned: s.keys >= 500 },
+    { img: '/public/Ultimate_Key_Badge.png',    name: 'Ultimate Key Reader',   desc: 'Complete every book in the library', earned: books.length > 0 && s.totalBooks >= books.length },
   ];
 }
 
