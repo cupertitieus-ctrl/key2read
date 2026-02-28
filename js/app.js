@@ -6406,7 +6406,7 @@ function renderStudentDashboard() {
         </div>
         <div class="badges-combined" onclick="navigate('student-badges')" style="cursor:pointer">
           <div class="badges-compact-grid">
-            ${getStudentBadges().sort((a, b) => b.earned - a.earned).slice(0, 6).map(b => `
+            ${getStudentBadges().sort((a, b) => b.earned - a.earned).map(b => `
               <div class="badge-compact${b.earned ? '' : ' locked'}" title="${b.name}">
                 <img src="${b.img}" alt="${b.name}">
                 ${!b.earned ? '<div class="badge-lock-overlay"><img src="/public/Lock_Icon_.png" alt="Locked"></div>' : ''}
