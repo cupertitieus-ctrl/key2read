@@ -4617,8 +4617,9 @@ function renderAITools() {
     { img: '/public/Genre_Jumper_Badge.png',   name: 'Genre Jumper',         desc: 'Awarded for reading books from 3 different genres.' },
     { img: '/public/First_Book_Badge.png',     name: 'First Book Done',      desc: 'Awarded for finishing their very first book.' },
     { img: '/public/Quiz_Conqueror_Badge.png', name: 'Quiz Conqueror',       desc: 'Awarded for completing 10 quizzes.' },
+    { img: '/public/10_Quiz_Streak_Badge_.png', name: '10 Quiz Streak',      desc: 'Awarded for completing 10 quizzes in a row.' },
     { img: '/public/Grow_Hero_Badge.png',      name: 'Grow Hero',            desc: 'Awarded for completing 2 books and growing their reading score.' },
-    { img: '/public/Ultimate_Key_Badge.png',   name: 'Ultimate Key Reader',  desc: 'Awarded for earning 500 keys.' },
+    { img: '/public/Ultimate_Key_Badge.png',   name: 'Ultimate Key Reader',  desc: 'Awarded for completing every book in the library.' },
   ];
 
   const badgesHtml = badgeList.map(b => '<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--g50);border-radius:12px">' +
