@@ -33,6 +33,7 @@ const API = {
   cleverLogin: (code) => API.post('/api/auth/clever', { code }),
   getMe: () => API.get('/api/auth/me'),
   logout: () => API.post('/api/auth/logout', {}),
+  migrateGuestResults: (guestResults) => API.post('/api/auth/migrate-guest-results', { guestResults }),
   getClassCode: () => API.get('/api/class/code'),
   validateClassCode: (code) => API.get(`/api/class/validate/${code}`),
   getClassAnalytics: (classId) => API.get(`/api/class/${classId}/analytics`),

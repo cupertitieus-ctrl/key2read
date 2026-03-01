@@ -1,5 +1,11 @@
 /* ===== KEY2READ DASHBOARD SPA ===== */
 
+// ---- Shopify Product URLs ----
+const SHOPIFY_URLS = {
+  family: 'https://www.dianealber.com/products/key2read-family',
+  school: 'https://www.dianealber.com/products/key2read-school'
+};
+
 // ---- Utility: HTML Escaping ----
 function escapeHtml(str) {
   if (!str) return '';
@@ -796,7 +802,7 @@ function renderSidebar() {
     <div class="sidebar-footer" style="flex-direction:column;gap:8px;padding:16px">
       <a href="/index.html" style="display:flex;align-items:center;gap:6px;color:var(--g400);font-size:0.8125rem;text-decoration:none;padding:6px 0;margin-bottom:4px">${IC.arrowLeft} Back to Home</a>
       <a href="signin.html" class="btn btn-primary" style="width:100%;text-align:center;text-decoration:none">Sign In</a>
-      <a href="signup.html" class="btn btn-outline" style="width:100%;text-align:center;text-decoration:none">Create Account</a>
+      <a href="${SHOPIFY_URLS.family}" class="btn btn-outline" style="width:100%;text-align:center;text-decoration:none" target="_blank">Subscribe</a>
     </div>`;
   } else {
     html += `
@@ -3717,22 +3723,22 @@ function showPersistenceGate(action) {
     save: {
       icon: 'logo',
       title: 'Save Your Progress',
-      desc: 'You need a paid plan to save your progress, earn certificates, and track your growth.'
+      desc: 'Subscribe to save your progress, earn certificates, and track your reading growth.'
     },
     keys: {
       icon: '🔑',
       title: 'Keep Your Keys',
-      desc: 'Create a free account to collect keys and spend them in your classroom store.'
+      desc: 'Subscribe to collect keys permanently and spend them in your classroom store.'
     },
     history: {
       icon: '📚',
       title: 'View Your Reading History',
-      desc: 'Create a free account to see all your past quizzes, scores, and reading progress.'
+      desc: 'Subscribe to see all your past quizzes, scores, and reading progress over time.'
     },
     certificate: {
       icon: '🏆',
       title: 'Print Your Certificate',
-      desc: 'Create a free account to download and print certificates for your achievements.'
+      desc: 'Subscribe to download and print certificates for your reading achievements.'
     }
   };
 
@@ -3746,7 +3752,8 @@ function showPersistenceGate(action) {
           : '<div style="font-size:2.5rem;margin-bottom:12px">' + msg.icon + '</div><img src="/public/logo.png" alt="key2read" style="height:36px;width:auto;margin-bottom:20px">'}
         <h2 style="margin:0 0 10px;color:var(--navy);font-size:1.375rem">${msg.title}</h2>
         <p style="color:var(--g500);margin:0 0 28px;font-size:0.9375rem;line-height:1.6">${msg.desc}</p>
-        <a href="signup.html" class="btn btn-primary" style="width:100%;text-align:center;text-decoration:none;font-size:1rem;padding:14px 24px;margin-bottom:12px;display:block">Create Free Account</a>
+        <a href="${SHOPIFY_URLS.family}" class="btn btn-primary" style="width:100%;text-align:center;text-decoration:none;font-size:1rem;padding:14px 24px;margin-bottom:8px;display:block" target="_blank">Subscribe — $5/month</a>
+        <a href="signin.html" style="display:block;color:var(--blue);font-size:0.875rem;font-weight:600;margin-bottom:12px;text-decoration:none">Already have an account? Sign In</a>
         <button onclick="document.getElementById('modal-root-2').innerHTML=''" style="background:none;border:none;color:var(--g400);cursor:pointer;font-size:0.875rem;padding:8px">Maybe later</button>
       </div>
     </div>`;
@@ -3785,9 +3792,9 @@ function buildGuestCelebration(book) {
     <div class="celebration-modal">
       <div class="celebration-icon">🎉</div>
       <h2 class="celebration-title">You Finished ${escapeHtml(title)}!</h2>
-      <p class="celebration-message">Amazing work completing all the quizzes! Create a free account to save your progress, earn certificates, and track your reading growth.</p>
+      <p class="celebration-message">Amazing work completing all the quizzes! Subscribe to save your progress, earn certificates, and track your reading growth.</p>
       <div class="celebration-actions">
-        <a href="signup.html" class="btn btn-primary" style="text-decoration:none;flex:1;text-align:center">Create Free Account</a>
+        <a href="${SHOPIFY_URLS.family}" class="btn btn-primary" style="text-decoration:none;flex:1;text-align:center" target="_blank">Subscribe to Save Progress</a>
       </div>
       <button class="celebration-dismiss" onclick="closeCelebration()">Maybe later</button>
     </div>`;
@@ -7334,6 +7341,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     books = await API.getBooks();
     books = sortBooksForDisplay(books);
   } catch(e) { console.warn('Could not load books:', e); }
+
+  // ---- Guest-to-Account Migration ----
+  // If user is authenticated and has guest quiz results in localStorage, migrate them
+  if (currentUser && userRole !== 'guest') {
+    const guestResults = JSON.parse(localStorage.getItem('k2r_guest_results') || '[]');
+    if (guestResults.length > 0) {
+      try {
+        const migration = await API.migrateGuestResults(guestResults);
+        if (migration.migrated > 0) {
+          localStorage.removeItem('k2r_guest_results');
+          localStorage.removeItem('k2r_guest_token');
+          // Show a brief toast notification
+          setTimeout(() => {
+            const toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:var(--green,#22C55E);color:#fff;padding:14px 24px;border-radius:12px;font-weight:700;font-size:0.9rem;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.15);animation:fadeIn 0.3s ease';
+            toast.textContent = `✅ We imported ${migration.migrated} quiz result${migration.migrated > 1 ? 's' : ''} from your guest session!`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+          }, 1500);
+        } else {
+          // No new results to migrate — clear stale data
+          localStorage.removeItem('k2r_guest_results');
+          localStorage.removeItem('k2r_guest_token');
+        }
+      } catch(migErr) { console.warn('Guest migration failed:', migErr); }
+    }
+  }
 
   // Guest mode — skip teacher/student data loading
   if (userRole === 'guest') {

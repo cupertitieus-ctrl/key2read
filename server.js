@@ -7,6 +7,8 @@ const bcrypt = require('bcrypt');
 const db = require('./server/db');
 const claude = require('./server/claude');
 const { getChapterPages } = require('./server/book-pages');
+const shopify = require('./server/shopify');
+const klaviyo = require('./server/klaviyo');
 
 const app = express();
 const PORT = process.env.PORT || 3456;
@@ -17,7 +19,14 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Middleware
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => {
+    // Store raw body for Shopify webhook HMAC verification
+    if (req.originalUrl === '/api/webhooks/shopify/order-paid') {
+      req.rawBody = buf;
+    }
+  }
+}));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'key2read-dev-secret',
   resave: false,
@@ -451,6 +460,183 @@ app.post('/api/auth/signup', async (req, res) => {
   } catch (e) {
     console.error('Signup error:', e);
     res.status(500).json({ error: 'Signup failed. Please try again.' });
+  }
+});
+
+// ─── SHOPIFY WEBHOOK ───
+app.post('/api/webhooks/shopify/order-paid', async (req, res) => {
+  try {
+    // 1. Verify HMAC signature
+    const hmac = req.headers['x-shopify-hmac-sha256'];
+    if (!shopify.verifyWebhookHMAC(req.rawBody, hmac)) {
+      console.error('Shopify webhook HMAC verification failed');
+      return res.status(401).json({ error: 'Invalid signature' });
+    }
+
+    // 2. Parse order data
+    const orderData = shopify.parseOrderData(req.body);
+    if (!orderData.email) {
+      console.error('Shopify webhook: no customer email in order');
+      return res.status(400).json({ error: 'No customer email' });
+    }
+
+    console.log(`📦 Shopify order received: ${orderData.orderId} for ${orderData.email} (${orderData.plan})`);
+
+    // 3. Idempotency check
+    const { data: existing } = await db.supabase
+      .from('shopify_webhooks')
+      .select('id')
+      .eq('order_id', orderData.orderId)
+      .limit(1);
+    if (existing && existing.length > 0) {
+      console.log(`Shopify webhook already processed: ${orderData.orderId}`);
+      return res.status(200).json({ success: true, message: 'Already processed' });
+    }
+
+    // 4. Check if user already exists
+    const existingUser = await db.getUserByEmail(orderData.email);
+    if (existingUser) {
+      // Update existing user's plan
+      await db.supabase.from('users').update({
+        plan: orderData.plan,
+        shopify_order_id: orderData.orderId,
+        shopify_customer_id: orderData.customerId
+      }).eq('id', existingUser.id);
+
+      // Log webhook
+      await db.supabase.from('shopify_webhooks').insert({
+        order_id: orderData.orderId,
+        customer_email: orderData.email,
+        plan: orderData.plan
+      });
+
+      console.log(`✅ Updated existing user ${orderData.email} to plan: ${orderData.plan}`);
+      res.status(200).json({ success: true, message: 'User updated' });
+      return;
+    }
+
+    // 5. Generate password
+    const plainPassword = shopify.generateReadablePassword();
+    const passwordHash = await bcrypt.hash(plainPassword, 10);
+
+    // 6. Create user
+    const role = orderData.plan === 'school' ? 'teacher' : 'parent';
+    const user = await db.createUser({
+      email: orderData.email,
+      name: orderData.fullName,
+      role: role,
+      auth_provider: 'shopify',
+      password_hash: passwordHash,
+      plan: orderData.plan,
+      shopify_order_id: orderData.orderId,
+      shopify_customer_id: orderData.customerId
+    });
+
+    if (!user) {
+      console.error('Failed to create user for Shopify order:', orderData.orderId);
+      return res.status(500).json({ error: 'User creation failed' });
+    }
+
+    // 7. Create class/family
+    let classCode = '';
+    if (role === 'parent') {
+      const familyClass = await db.createClass(`${orderData.firstName || orderData.fullName}'s Family`, '4th', user.id);
+      if (familyClass) {
+        classCode = familyClass.class_code;
+        await db.supabase.from('users').update({ class_id: familyClass.id }).eq('id', user.id);
+      }
+    } else {
+      const teacherClass = await db.createClass(`${orderData.firstName || orderData.fullName}'s Class`, '4th', user.id);
+      if (teacherClass) {
+        classCode = teacherClass.class_code;
+      }
+    }
+
+    // 8. Log webhook for idempotency
+    await db.supabase.from('shopify_webhooks').insert({
+      order_id: orderData.orderId,
+      customer_email: orderData.email,
+      plan: orderData.plan
+    });
+
+    console.log(`✅ Created ${role} account for ${orderData.email} (${orderData.plan}) — code: ${classCode}`);
+
+    // 9. Return 200 immediately (Shopify requires <5s)
+    res.status(200).json({ success: true });
+
+    // 10. Fire-and-forget Klaviyo welcome email
+    klaviyo.sendWelcomeEmail({
+      email: orderData.email,
+      firstName: orderData.firstName,
+      lastName: orderData.lastName,
+      password: plainPassword,
+      plan: orderData.plan,
+      classCode: classCode,
+      loginUrl: 'https://key2read.com/pages/signin.html'
+    }).catch(err => console.error('Klaviyo welcome email error:', err.message));
+
+  } catch (e) {
+    console.error('Shopify webhook error:', e);
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
+});
+
+// ─── GUEST QUIZ MIGRATION ───
+app.post('/api/auth/migrate-guest-results', async (req, res) => {
+  try {
+    if (!req.session.user) return res.status(401).json({ error: 'Not authenticated' });
+
+    const { guestResults } = req.body;
+    if (!guestResults || !Array.isArray(guestResults) || guestResults.length === 0) {
+      return res.json({ migrated: 0 });
+    }
+
+    // Find the student record for this user
+    const student = await db.getStudentByUserId(req.session.user.id || req.session.userId);
+    if (!student) {
+      return res.status(400).json({ error: 'No student record found. Add a child/student first.' });
+    }
+
+    let migrated = 0;
+    for (const result of guestResults) {
+      if (!result.chapterId) continue;
+
+      // Skip if already has a result for this chapter
+      const { data: existingResult } = await db.supabase
+        .from('quiz_results')
+        .select('id')
+        .eq('student_id', student.id)
+        .eq('chapter_id', result.chapterId)
+        .limit(1);
+      if (existingResult && existingResult.length > 0) continue;
+
+      // Save the quiz result
+      await db.saveQuizResult({
+        studentId: student.id,
+        chapterId: result.chapterId,
+        answers: result.answers || [],
+        score: result.score || 0,
+        correctCount: result.correctCount || 0,
+        totalQuestions: result.totalQuestions || 5,
+        readingLevelChange: 0,
+        keysEarned: result.keysEarned || 0,
+        timeTaken: result.timeTaken || 0,
+        strategiesUsed: [],
+        hintsUsed: result.hintsUsed || 0,
+        attemptData: [],
+        vocabLookups: []
+      });
+
+      // Update student stats
+      await db.updateStudentStats(student.id, result.keysEarned || 0, result.score || 0);
+      migrated++;
+    }
+
+    console.log(`✅ Migrated ${migrated} guest quiz results for user ${req.session.user.email}`);
+    res.json({ success: true, migrated });
+  } catch (e) {
+    console.error('Guest migration error:', e);
+    res.status(500).json({ error: 'Migration failed' });
   }
 });
 

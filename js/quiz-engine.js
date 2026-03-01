@@ -944,6 +944,34 @@ const QuizEngine = (function() {
           results: currentQuiz.questions.map((q, i) => ({ isCorrect: answers[i] === q.correct_answer && !feedback[i]?.revealed, feedback: feedback[i]?.feedback || '', hintUsed: !!hintShown[i], revealed: !!feedback[i]?.revealed })),
           strategiesUsed: [...new Set(currentQuiz.questions.map(q => q.strategy_type))]
         };
+
+        // Save guest quiz results to localStorage for later migration
+        if (!currentStudent) {
+          try {
+            if (!localStorage.getItem('k2r_guest_token')) {
+              localStorage.setItem('k2r_guest_token', 'guest_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 8));
+            }
+            const guestResults = JSON.parse(localStorage.getItem('k2r_guest_results') || '[]');
+            guestResults.push({
+              chapterId: currentQuiz.chapter?.id,
+              bookId: currentQuiz.book?.id,
+              bookTitle: currentQuiz.book?.title || '',
+              chapterTitle: currentQuiz.chapter?.title || '',
+              answers: currentQuiz.questions.map((q, i) => {
+                const idx = answers[i];
+                return idx !== undefined && q?.options ? (q.options[idx] || '') : '';
+              }),
+              score: quizResults.score,
+              correctCount: quizResults.correctCount,
+              totalQuestions: quizResults.totalQuestions,
+              keysEarned: quizResults.keysEarned,
+              timeTaken,
+              hintsUsed: localHintCount,
+              completedAt: new Date().toISOString()
+            });
+            localStorage.setItem('k2r_guest_results', JSON.stringify(guestResults));
+          } catch (storageErr) { /* localStorage may be full or disabled */ }
+        }
       }
       render();
       if (onComplete) onComplete(quizResults);
