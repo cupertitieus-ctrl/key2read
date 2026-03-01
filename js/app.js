@@ -857,11 +857,12 @@ function renderSidebar() {
 
   if (userRole === 'guest') {
     html += `
-    <div class="sidebar-footer" style="flex-direction:column;gap:8px;padding:16px">
-      <a href="/index.html" style="display:flex;align-items:center;gap:6px;color:var(--g400);font-size:0.8125rem;text-decoration:none;padding:6px 0;margin-bottom:4px">${IC.arrowLeft} Back to Home</a>
+    <div style="display:flex;flex-direction:column;gap:8px;padding:16px 16px 0">
       <a href="signin.html" class="btn btn-primary" style="width:100%;text-align:center;text-decoration:none">Sign In</a>
       <button onclick="showSubscribePopup()" class="btn btn-outline" style="width:100%;text-align:center;cursor:pointer">Subscribe</button>
+      <a href="/index.html" style="display:flex;align-items:center;justify-content:center;gap:6px;color:var(--g400);font-size:0.8125rem;text-decoration:none;padding:6px 0;margin-top:4px">${IC.arrowLeft} Back to Home</a>
     </div>`;
+    html += `<div class="sidebar-footer"></div>`;
   } else {
     html += `
     <div class="sidebar-footer">
