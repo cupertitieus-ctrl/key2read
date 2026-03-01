@@ -175,3 +175,24 @@ SELECT id, '[
   }
 ]'::jsonb FROM books WHERE title LIKE '%Sprinkles%Unicorn%'
 ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
+
+-- Seed: Tryouts
+INSERT INTO warmup_quizzes (book_id, questions)
+SELECT id, '[
+  {
+    "question_text": "Go to page 19 and tell us the very LAST word.",
+    "options": ["court", "ball", "run", "that"],
+    "correct_answer": 1
+  },
+  {
+    "question_text": "On page 50, what is Kelvin thinking about in the illustration?",
+    "options": ["video games", "shoes", "homework", "food"],
+    "correct_answer": 1
+  },
+  {
+    "question_text": "Turn to page 32, how many chickens are in the illustration?",
+    "options": ["one", "two", "three", "four"],
+    "correct_answer": 1
+  }
+]'::jsonb FROM books WHERE title LIKE '%Tryout%'
+ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
