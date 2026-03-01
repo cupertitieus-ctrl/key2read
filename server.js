@@ -515,69 +515,6 @@ app.get('/api/webhooks/shopify/order-paid', (req, res) => {
   });
 });
 
-// Test endpoint — simulate webhook without HMAC (remove after testing)
-app.post('/api/test/webhook', async (req, res) => {
-  const { email, firstName, lastName, plan } = req.body;
-  if (!email) return res.status(400).json({ error: 'email is required' });
-
-  console.log(`🧪 TEST webhook for ${email}`);
-  try {
-    // Check if user exists
-    const existingUser = await db.getUserByEmail(email);
-    if (existingUser) {
-      console.log('  User already exists, skipping creation');
-      return res.json({ success: true, message: 'User already exists', userId: existingUser.id });
-    }
-
-    // Create user
-    const plainPassword = shopify.generateReadablePassword();
-    const passwordHash = await bcrypt.hash(plainPassword, 10);
-    const role = plan === 'school' ? 'teacher' : 'parent';
-    const fullName = `${firstName || 'Test'} ${lastName || 'User'}`.trim();
-
-    console.log(`  Creating ${role} account for ${email} with password ${plainPassword}`);
-    const user = await db.createUser({
-      email,
-      name: fullName,
-      role,
-      auth_provider: 'shopify',
-      password_hash: passwordHash,
-      plan: plan || 'family'
-    });
-
-    if (!user) {
-      console.error('  ❌ User creation failed');
-      return res.status(500).json({ error: 'User creation failed — check Supabase columns' });
-    }
-    console.log(`  ✅ User created: ${user.id}`);
-
-    // Create class/family
-    let classCode = '';
-    if (role === 'parent') {
-      const familyClass = await db.createClass(`${firstName || fullName}'s Family`, '4th', user.id);
-      if (familyClass) { classCode = familyClass.class_code; await db.supabase.from('users').update({ class_id: familyClass.id }).eq('id', user.id); }
-    } else {
-      const teacherClass = await db.createClass(`${firstName || fullName}'s Class`, '4th', user.id);
-      if (teacherClass) classCode = teacherClass.class_code;
-    }
-    console.log(`  ✅ Class code: ${classCode}`);
-
-    // Send Klaviyo email
-    console.log('  Sending Klaviyo email...');
-    const emailResult = await klaviyo.sendWelcomeEmail({
-      email, firstName: firstName || 'Test', lastName: lastName || 'User',
-      password: plainPassword, plan: plan || 'family', classCode,
-      loginUrl: 'https://key2read.onrender.com/pages/signin.html'
-    });
-    console.log(`  Klaviyo result: ${emailResult ? '✅ sent' : '❌ failed'}`);
-
-    res.json({ success: true, userId: user.id, classCode, password: plainPassword, klaviyoSent: !!emailResult });
-  } catch (e) {
-    console.error('  ❌ Test webhook error:', e);
-    res.status(500).json({ error: e.message });
-  }
-});
-
 app.post('/api/webhooks/shopify/order-paid', async (req, res) => {
   console.log('🔔 Shopify webhook received');
   console.log('  Headers:', JSON.stringify({
