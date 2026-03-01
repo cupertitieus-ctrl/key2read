@@ -442,26 +442,27 @@
 .feature-card:nth-child(6)::before { background: linear-gradient(90deg, var(--orange), #F59E0B); }
 
 .feature-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-md);
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 20px;
+  color: #fff;
 }
 
 .feature-icon svg {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
 }
 
-.feature-icon.blue { background: var(--blue-p); color: var(--blue); }
-.feature-icon.gold { background: var(--gold-l); color: var(--gold); }
-.feature-icon.green { background: var(--green-l); color: var(--green); }
-.feature-icon.purple { background: var(--purple-l); color: var(--purple); }
-.feature-icon.sky { background: #DBEAFE; color: #3B82F6; }
-.feature-icon.orange { background: var(--orange-l); color: var(--orange); }
+.feature-icon.blue { background: linear-gradient(135deg, #2563eb, #60a5fa); }
+.feature-icon.gold { background: linear-gradient(135deg, #e5a100, #f5c542); }
+.feature-icon.green { background: linear-gradient(135deg, #059669, #34d399); }
+.feature-icon.purple { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+.feature-icon.sky { background: linear-gradient(135deg, #0284c7, #38bdf8); }
+.feature-icon.orange { background: linear-gradient(135deg, #ea580c, #fb923c); }
 
 .feature-card h3 {
   font-family: var(--font-display);
