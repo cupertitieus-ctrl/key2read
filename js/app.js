@@ -6072,28 +6072,38 @@ async function showKeysBreakdown() {
         <p style="font-size:0.875rem">Complete quizzes with 80% or higher to earn keys!</p>
       </div>`;
     } else {
-      // Earned section
+      // Earned section — consolidated by book
       if (withKeys.length > 0) {
         listHtml += `<h4 style="margin:0 0 12px;font-size:0.85rem;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:0.5px">Keys Earned</h4>`;
-        for (const [bookTitle, quizzes] of Object.entries(byBook)) {
+        const bookEntries = Object.entries(byBook);
+        bookEntries.forEach(([bookTitle, quizzes], idx) => {
           const bookKeys = quizzes.reduce((sum, r) => sum + (r.keys_earned || 0), 0);
-          listHtml += `<div style="margin-bottom:20px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-              <h4 style="margin:0;font-size:0.9375rem;font-weight:700;color:var(--navy)">${bookTitle}</h4>
-              <span class="badge badge-gold" style="font-size:0.75rem">${bookKeys} keys</span>
-            </div>`;
+          const quizCount = quizzes.length;
+          const firstDate = quizzes[quizzes.length - 1]?.completed_at;
+          const lastDate = quizzes[0]?.completed_at;
+          const dateRange = firstDate ? new Date(firstDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + (lastDate && lastDate !== firstDate ? ' – ' + new Date(lastDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '') : '';
+
+          listHtml += `<div style="margin-bottom:8px">
+            <div onclick="document.getElementById('kb-detail-${idx}').style.display = document.getElementById('kb-detail-${idx}').style.display === 'none' ? 'block' : 'none'" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--g50);border-radius:var(--radius-md);transition:background 0.15s">
+              <div style="flex:1;min-width:0">
+                <div style="font-size:0.9375rem;font-weight:700;color:var(--navy);margin-bottom:2px">${bookTitle}</div>
+                <div style="font-size:0.75rem;color:var(--g400)">${quizCount} quiz${quizCount !== 1 ? 'zes' : ''} · ${dateRange}</div>
+              </div>
+              <span style="font-weight:800;color:var(--gold);font-size:1rem;white-space:nowrap;margin-left:12px">+${bookKeys} 🔑</span>
+            </div>
+            <div id="kb-detail-${idx}" style="display:none;padding:4px 0 0 14px">`;
           quizzes.forEach(r => {
             const date = r.completed_at ? new Date(r.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-            listHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--g50);border-radius:var(--radius-sm);margin-bottom:4px;font-size:0.8125rem">
-              <span style="color:var(--g600)">Ch. ${r.chapter_number || '?'}: ${r.chapter_title || 'Quiz'}</span>
-              <div style="display:flex;align-items:center;gap:12px">
+            listHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;font-size:0.75rem;border-left:2px solid var(--gold);margin-bottom:2px">
+              <span style="color:var(--g500)">Ch. ${r.chapter_number || '?'}: ${r.chapter_title || 'Quiz'}</span>
+              <div style="display:flex;align-items:center;gap:8px">
                 <span style="color:var(--g400)">${date}</span>
                 <span style="font-weight:700;color:var(--gold)">+${r.keys_earned}</span>
               </div>
             </div>`;
           });
-          listHtml += `</div>`;
-        }
+          listHtml += `</div></div>`;
+        });
       }
 
       // Spent section
@@ -6101,12 +6111,12 @@ async function showKeysBreakdown() {
         listHtml += `<h4 style="margin:20px 0 12px;font-size:0.85rem;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:0.5px">Keys Spent</h4>`;
         purchases.forEach(p => {
           const date = p.purchasedAt ? new Date(p.purchasedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-          listHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#FEF2F2;border-radius:var(--radius-sm);margin-bottom:4px;font-size:0.8125rem">
-            <span style="color:var(--g600)">🎁 ${escapeHtml(p.itemName || 'Reward')}</span>
-            <div style="display:flex;align-items:center;gap:12px">
-              <span style="color:var(--g400)">${date}</span>
-              <span style="font-weight:700;color:#EF4444">-${p.price}</span>
+          listHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#FEF2F2;border-radius:var(--radius-md);margin-bottom:8px;font-size:0.875rem">
+            <div>
+              <div style="font-weight:600;color:var(--g700)">🎁 ${escapeHtml(p.itemName || 'Reward')}</div>
+              <div style="font-size:0.75rem;color:var(--g400);margin-top:2px">${date}</div>
             </div>
+            <span style="font-weight:800;color:#EF4444;font-size:1rem;white-space:nowrap;margin-left:12px">-${p.price} 🔑</span>
           </div>`;
         });
       }
@@ -6130,6 +6140,7 @@ async function showKeysBreakdown() {
           <div style="font-size:0.75rem;font-weight:600;color:var(--g600)">Available</div>
         </div>
       </div>
+      <p style="text-align:center;font-size:0.75rem;color:var(--g400);margin:-12px 0 16px">Tap a book to see individual quizzes</p>
       ${listHtml}`;
   } catch(e) {
     console.error('Keys breakdown error:', e);
