@@ -1210,6 +1210,10 @@ async function launchQuiz(bookId, chapterNum, sid) {
       if (!completedChapters.includes(chapterNum)) {
         completedChapters.push(chapterNum);
       }
+      // Save guest progress locally
+      if (userRole === 'guest') {
+        sessionStorage.setItem('guest_completed_' + bookId, JSON.stringify(completedChapters));
+      }
       // Check if ALL chapters for this book are now completed
       if (completedChapters.length >= bookChapters.length && bookChapters.length > 0) {
         if (currentUser.weeklyStats) currentUser.weeklyStats.booksCompletedThisWeek = (currentUser.weeklyStats.booksCompletedThisWeek || 0) + 1;
@@ -3664,6 +3668,13 @@ async function openBook(bookId) {
     completedChapters = [...new Set([...prevCompleted, ...serverCompleted])];
     warmupData = warmupQuiz.hasWarmup ? warmupQuiz : null;
     warmupPassed = warmupStatus.passed;
+    // Guest local progress: restore warmup + completed chapters from sessionStorage
+    if (userRole === 'guest') {
+      const guestWarmup = sessionStorage.getItem('guest_warmup_' + bookId);
+      if (guestWarmup === 'true') warmupPassed = true;
+      const guestCompleted = JSON.parse(sessionStorage.getItem('guest_completed_' + bookId) || '[]');
+      completedChapters = [...new Set([...completedChapters, ...guestCompleted])];
+    }
   } catch(e) {
     if (bookChapters.length === 0) bookChapters = [];
     // Keep prevCompleted if fetch fails
@@ -3822,6 +3833,10 @@ async function submitWarmupResult(bookId, sid, answers, attempts) {
   }
 
   warmupPassed = true;
+  // Save guest warmup locally
+  if (userRole === 'guest') {
+    sessionStorage.setItem('guest_warmup_' + selectedBookId, 'true');
+  }
 
   modal.innerHTML = `
     <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px">

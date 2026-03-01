@@ -1005,6 +1005,29 @@ const QuizEngine = (function() {
   }
 
   function exit() {
+    // Show save progress popup for guest users
+    if (typeof userRole !== 'undefined' && userRole === 'guest') {
+      const overlay = document.createElement('div');
+      overlay.id = 'save-progress-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+      overlay.innerHTML = `
+        <div style="background:#fff;border-radius:20px;padding:32px;max-width:400px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+          <div style="font-size:2.5rem;margin-bottom:8px">📊</div>
+          <h3 style="font-size:1.25rem;font-weight:800;color:var(--navy,#0F2B46);margin:0 0 8px">Want to Save Your Progress?</h3>
+          <p style="color:var(--g500,#6b7280);font-size:0.9rem;line-height:1.6;margin:0 0 20px">Subscribe to save your reading score, earn keys, collect badges, and track your growth over time!</p>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            <a href="pricing.html" class="btn btn-primary" style="text-decoration:none;flex:1;text-align:center;min-width:140px">View Plans</a>
+            <button class="btn btn-outline" style="flex:1;min-width:140px" onclick="document.getElementById('save-progress-overlay').remove(); QuizEngine._doExit()">Continue Without Saving</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      return;
+    }
+    _doExit();
+  }
+
+  function _doExit() {
     const container = document.getElementById('quiz-player-root');
     if (container) container.innerHTML = '';
     // Navigate back to book detail page if we have a book
@@ -1312,7 +1335,7 @@ const QuizEngine = (function() {
 
   return {
     start, render, beginQuiz, selectAnswer, submitAnswer, nextQuestion,
-    toggleStrategy, dismissRetryModal, dismissRevealModal, exit, nextChapter, retake, showDefinition, hideDefinition, toggleDefinition,
+    toggleStrategy, dismissRetryModal, dismissRevealModal, exit, _doExit, nextChapter, retake, showDefinition, hideDefinition, toggleDefinition,
     formatReadingLevel, getLexileGrade, getReadingLevelColor,
     STRATEGY_ICONS, STRATEGY_NAMES, QUESTION_TYPE_LABELS,
     get _nextChapter() { return _nextChapter; }
