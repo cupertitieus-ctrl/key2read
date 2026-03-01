@@ -45,7 +45,7 @@ INSERT INTO warmup_quizzes (book_id, questions) VALUES (66, '[
   },
   {
     "question_text": "Turn to page 19, what is the cat doing in the illustration?",
-    "options": ["jumping up a tree", "walking on the sidewalk", "running into the bus", "chasing a pigeon"],
+    "options": ["jumping up a tree", "walking on the sidewalk", "running into the bush", "chasing a pigeon"],
     "correct_answer": 2
   }
 ]') ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
