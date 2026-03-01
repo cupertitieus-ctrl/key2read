@@ -657,12 +657,19 @@
   font-size: 1.75rem;
   font-weight: 800;
   color: var(--navy, #0F2B46);
-  margin: 0 0 40px;
+  margin: 0 0 16px;
   letter-spacing: -0.02em;
+}
+.why-physical-subtitle {
+  font-size: 0.95rem;
+  color: var(--g500, #6b7280);
+  line-height: 1.7;
+  margin: 0 auto 36px;
+  max-width: 640px;
 }
 .why-physical-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 24px;
 }
 .why-physical-card {
