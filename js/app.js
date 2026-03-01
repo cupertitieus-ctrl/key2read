@@ -3812,17 +3812,13 @@ async function submitWarmupResult(bookId, sid, answers, attempts) {
   const modal = document.getElementById('modal-root-2');
   const b = books.find(x => x.id === bookId);
 
-  let keysEarned = 5; // Always show 5 keys for passing warmup
-  try {
-    if (sid) {
-      const result = await API.submitWarmup({ studentId: sid, bookId, answers, attempts });
-      keysEarned = result.keysEarned || 0;
-      if (keysEarned > 0 && currentUser) {
-        currentUser.keys_earned = (currentUser.keys_earned || 0) + keysEarned;
+  // Save result in background (don't block UI)
+  if (sid) {
+    API.submitWarmup({ studentId: sid, bookId, answers, attempts }).then(result => {
+      if (result.keysEarned > 0 && currentUser) {
+        currentUser.keys_earned = (currentUser.keys_earned || 0) + result.keysEarned;
       }
-    }
-  } catch(e) {
-    console.error('Warmup submit error:', e);
+    }).catch(e => console.error('Warmup submit error:', e));
   }
 
   warmupPassed = true;
@@ -3832,9 +3828,9 @@ async function submitWarmupResult(bookId, sid, answers, attempts) {
       <div onclick="event.stopPropagation()" style="background:#fff;border-radius:20px;padding:36px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
         <div style="font-size:3.5rem;margin-bottom:12px">🎉</div>
         <h3 style="margin:0 0 8px;font-size:1.3rem;font-weight:800;color:var(--navy)">Great job!</h3>
-        ${keysEarned > 0 ? `<div style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border:1.5px solid #FDE68A;border-radius:99px;padding:8px 16px;margin-bottom:16px">
-          <img src="/public/Key_Circle_Icon.png" alt="" style="width:24px;height:24px"> <span style="font-weight:800;color:#92400E;font-size:1.1rem">+${keysEarned} Keys!</span>
-        </div>` : ''}
+        <div style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border:1.5px solid #FDE68A;border-radius:99px;padding:8px 16px;margin-bottom:16px">
+          <img src="/public/Key_Circle_Icon.png" alt="" style="width:24px;height:24px"> <span style="font-weight:800;color:#92400E;font-size:1.1rem">+5 Keys!</span>
+        </div>
         <p style="margin:0 0 24px;color:var(--g500);font-size:0.95rem;line-height:1.6">
           You've got your book ready! Time to take the <strong>Chapter 1 Quiz</strong>!
         </p>
