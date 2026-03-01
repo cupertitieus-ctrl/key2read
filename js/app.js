@@ -4185,6 +4185,28 @@ function renderTeacherSettings() {
     </div>
 
     <div class="card" style="padding:28px;margin-top:20px">
+      <h3 style="margin:0 0 20px;font-size:1.1rem;font-weight:600">Change Password</h3>
+      <form id="change-password-form" style="display:flex;flex-direction:column;gap:16px">
+        <div>
+          <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--g600);margin-bottom:6px">Current Password</label>
+          <input type="password" id="cp-current" class="form-input" placeholder="Enter current password" style="width:100%;padding:10px 14px;border:1px solid var(--g200);border-radius:10px;font-size:0.95rem">
+        </div>
+        <div>
+          <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--g600);margin-bottom:6px">New Password</label>
+          <input type="password" id="cp-new" class="form-input" placeholder="At least 6 characters" style="width:100%;padding:10px 14px;border:1px solid var(--g200);border-radius:10px;font-size:0.95rem">
+        </div>
+        <div>
+          <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--g600);margin-bottom:6px">Confirm New Password</label>
+          <input type="password" id="cp-confirm" class="form-input" placeholder="Re-enter new password" style="width:100%;padding:10px 14px;border:1px solid var(--g200);border-radius:10px;font-size:0.95rem">
+        </div>
+        <div style="margin-top:8px">
+          <button type="submit" class="btn btn-primary" id="cp-save-btn" style="padding:10px 28px">Update Password</button>
+          <span id="cp-msg" style="display:none;font-size:0.875rem;margin-left:12px;font-weight:500"></span>
+        </div>
+      </form>
+    </div>
+
+    <div class="card" style="padding:28px;margin-top:20px">
       <h3 style="margin:0 0 12px;font-size:1.1rem;font-weight:600;color:var(--g600)">Account</h3>
       <p style="color:var(--g500);font-size:0.875rem;margin:0 0 16px">Log out of your account on this device.</p>
       <button class="btn" style="background:var(--red-l);color:var(--red);border:1px solid var(--red);padding:8px 20px" onclick="logoutAndRedirect()">
@@ -4232,6 +4254,51 @@ function renderTeacherSettings() {
       }
       btn.disabled = false;
       btn.textContent = 'Save Changes';
+    });
+
+    // Change password form handler
+    const cpForm = document.getElementById('change-password-form');
+    cpForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const cpBtn = document.getElementById('cp-save-btn');
+      const cpMsg = document.getElementById('cp-msg');
+      const currentPw = document.getElementById('cp-current').value;
+      const newPw = document.getElementById('cp-new').value;
+      const confirmPw = document.getElementById('cp-confirm').value;
+
+      if (newPw.length < 6) { cpMsg.textContent = 'Password must be at least 6 characters'; cpMsg.style.color = 'var(--red)'; cpMsg.style.display = 'inline'; return; }
+      if (newPw !== confirmPw) { cpMsg.textContent = 'Passwords do not match'; cpMsg.style.color = 'var(--red)'; cpMsg.style.display = 'inline'; return; }
+
+      cpBtn.disabled = true;
+      cpBtn.textContent = 'Updating...';
+      cpMsg.style.display = 'none';
+      try {
+        const res = await fetch('/api/auth/password', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ currentPassword: currentPw, newPassword: newPw })
+        });
+        const data = await res.json();
+        if (data.success) {
+          cpMsg.textContent = '✅ Password updated!';
+          cpMsg.style.color = 'var(--green)';
+          cpMsg.style.display = 'inline';
+          document.getElementById('cp-current').value = '';
+          document.getElementById('cp-new').value = '';
+          document.getElementById('cp-confirm').value = '';
+          setTimeout(() => cpMsg.style.display = 'none', 4000);
+        } else {
+          cpMsg.textContent = data.error || 'Failed to update password';
+          cpMsg.style.color = 'var(--red)';
+          cpMsg.style.display = 'inline';
+        }
+      } catch(err) {
+        cpMsg.textContent = 'Failed to update. Please try again.';
+        cpMsg.style.color = 'var(--red)';
+        cpMsg.style.display = 'inline';
+      }
+      cpBtn.disabled = false;
+      cpBtn.textContent = 'Update Password';
     });
   })();
   <\/script>`;
@@ -4294,6 +4361,28 @@ function renderParentSettings() {
     </div>
 
     <div class="card" style="padding:28px;margin-top:20px">
+      <h3 style="margin:0 0 20px;font-size:1.1rem;font-weight:600">Change Password</h3>
+      <form id="parent-cp-form" style="display:flex;flex-direction:column;gap:16px">
+        <div>
+          <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--g600);margin-bottom:6px">Current Password</label>
+          <input type="password" id="parent-cp-current" class="form-input" placeholder="Enter current password" style="width:100%;padding:10px 14px;border:1px solid var(--g200);border-radius:10px;font-size:0.95rem">
+        </div>
+        <div>
+          <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--g600);margin-bottom:6px">New Password</label>
+          <input type="password" id="parent-cp-new" class="form-input" placeholder="At least 6 characters" style="width:100%;padding:10px 14px;border:1px solid var(--g200);border-radius:10px;font-size:0.95rem">
+        </div>
+        <div>
+          <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--g600);margin-bottom:6px">Confirm New Password</label>
+          <input type="password" id="parent-cp-confirm" class="form-input" placeholder="Re-enter new password" style="width:100%;padding:10px 14px;border:1px solid var(--g200);border-radius:10px;font-size:0.95rem">
+        </div>
+        <div style="margin-top:8px">
+          <button type="submit" class="btn btn-primary" id="parent-cp-save" style="padding:10px 28px">Update Password</button>
+          <span id="parent-cp-msg" style="display:none;font-size:0.875rem;margin-left:12px;font-weight:500"></span>
+        </div>
+      </form>
+    </div>
+
+    <div class="card" style="padding:28px;margin-top:20px">
       <h3 style="margin:0 0 12px;font-size:1.1rem;font-weight:600;color:var(--g600)">Account</h3>
       <p style="color:var(--g500);font-size:0.875rem;margin:0 0 16px">Log out of your account on this device.</p>
       <button class="btn" style="background:var(--red-l);color:var(--red);border:1px solid var(--red);padding:8px 20px" onclick="logoutAndRedirect()">
@@ -4332,6 +4421,51 @@ function renderParentSettings() {
       }
       btn.disabled = false;
       btn.textContent = 'Save Changes';
+    });
+
+    // Change password form handler
+    const cpForm = document.getElementById('parent-cp-form');
+    cpForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const cpBtn = document.getElementById('parent-cp-save');
+      const cpMsg = document.getElementById('parent-cp-msg');
+      const currentPw = document.getElementById('parent-cp-current').value;
+      const newPw = document.getElementById('parent-cp-new').value;
+      const confirmPw = document.getElementById('parent-cp-confirm').value;
+
+      if (newPw.length < 6) { cpMsg.textContent = 'Password must be at least 6 characters'; cpMsg.style.color = 'var(--red)'; cpMsg.style.display = 'inline'; return; }
+      if (newPw !== confirmPw) { cpMsg.textContent = 'Passwords do not match'; cpMsg.style.color = 'var(--red)'; cpMsg.style.display = 'inline'; return; }
+
+      cpBtn.disabled = true;
+      cpBtn.textContent = 'Updating...';
+      cpMsg.style.display = 'none';
+      try {
+        const res = await fetch('/api/auth/password', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ currentPassword: currentPw, newPassword: newPw })
+        });
+        const data = await res.json();
+        if (data.success) {
+          cpMsg.textContent = '✅ Password updated!';
+          cpMsg.style.color = 'var(--green)';
+          cpMsg.style.display = 'inline';
+          document.getElementById('parent-cp-current').value = '';
+          document.getElementById('parent-cp-new').value = '';
+          document.getElementById('parent-cp-confirm').value = '';
+          setTimeout(() => cpMsg.style.display = 'none', 4000);
+        } else {
+          cpMsg.textContent = data.error || 'Failed to update password';
+          cpMsg.style.color = 'var(--red)';
+          cpMsg.style.display = 'inline';
+        }
+      } catch(err) {
+        cpMsg.textContent = 'Failed to update. Please try again.';
+        cpMsg.style.color = 'var(--red)';
+        cpMsg.style.display = 'inline';
+      }
+      cpBtn.disabled = false;
+      cpBtn.textContent = 'Update Password';
     });
   })();
   <\/script>`;

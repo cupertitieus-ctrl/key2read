@@ -373,6 +373,41 @@ app.put('/api/auth/settings', async (req, res) => {
   }
 });
 
+// ── Change Password ──────────────────────────────────────────
+app.put('/api/auth/password', async (req, res) => {
+  if (!req.session.user) return res.status(401).json({ error: 'Not authenticated' });
+  const { currentPassword, newPassword } = req.body;
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ error: 'New password must be at least 6 characters' });
+  }
+
+  try {
+    const userId = req.session.userId;
+    const { data: user, error } = await db.supabase
+      .from('users').select('password_hash').eq('id', userId).single();
+    if (error || !user) return res.status(404).json({ error: 'User not found' });
+
+    // If user has an existing password, verify the current one
+    if (user.password_hash) {
+      if (!currentPassword) return res.status(400).json({ error: 'Current password is required' });
+      const valid = await bcrypt.compare(currentPassword, user.password_hash);
+      if (!valid) return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+
+    // Hash and save new password
+    const hash = await bcrypt.hash(newPassword, 10);
+    const { error: updateErr } = await db.supabase
+      .from('users').update({ password_hash: hash }).eq('id', userId);
+    if (updateErr) throw updateErr;
+
+    console.log(`[Password] Changed for userId: ${userId}`);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Password change error:', e);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+
 app.post('/api/auth/signup', async (req, res) => {
   const { name, email, password, role, school, classCode } = req.body;
   if (!name) return res.status(400).json({ error: 'Name is required' });
