@@ -167,6 +167,7 @@ const BOOK_NUMBER_MAP = {
   65: 1,  // Sprinkles and Unicorn
   66: 1,  // Diary of a Famous Cat: Now I Have A Name
   68: 1,  // Dragon Diaries
+  71: 1,  // Tiny and Mighty: Sock Rescue (Book 1)
 };
 
 async function getBooks() {
