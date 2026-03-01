@@ -1130,6 +1130,16 @@ function renderMain() {
 
 // ---- Launch Quiz Player ----
 async function launchQuiz(bookId, chapterNum, sid) {
+  // Enforce sequential chapter access (prevent skipping via console)
+  const isTeacher = userRole === 'teacher' || userRole === 'owner' || userRole === 'principal';
+  if (!isTeacher && chapterNum > 1 && !completedChapters.includes(chapterNum - 1)) {
+    alert('Please complete the previous chapter first!');
+    return;
+  }
+  if (!isTeacher && warmupData && !warmupPassed) {
+    alert('Please complete the Warm Up first!');
+    return;
+  }
   // Find student — check students array first, then fall back to currentUser for student role
   let s = sid != null ? students.find(st => st.id === sid) : students[0];
   if (!s && (userRole === 'student' || userRole === 'child') && currentUser) {
