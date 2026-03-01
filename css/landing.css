@@ -726,7 +726,7 @@
 
 /* --- How It Works --- */
 .how-section {
-  padding: 72px 32px;
+  padding: 40px 32px 72px;
   background: linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%);
   color: #fff;
   position: relative;
