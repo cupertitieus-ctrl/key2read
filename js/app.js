@@ -6,6 +6,57 @@ const SHOPIFY_URLS = {
   school: 'https://www.dianealber.com/products/key2read-school'
 };
 
+// ---- Subscribe Plan Chooser Popup ----
+function showSubscribePopup() {
+  const modal = document.getElementById('modal-root') || document.createElement('div');
+  if (!modal.id) { modal.id = 'modal-root'; document.body.appendChild(modal); }
+  modal.innerHTML = `
+    <div class="modal-overlay" onclick="this.parentElement.innerHTML=''" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999">
+      <div onclick="event.stopPropagation()" style="background:#fff;border-radius:20px;padding:32px;max-width:480px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative">
+        <button onclick="this.closest('.modal-overlay').parentElement.innerHTML=''" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#999">&times;</button>
+        <div style="text-align:center;margin-bottom:24px">
+          <div style="font-size:2rem;margin-bottom:8px">🔑</div>
+          <h3 style="margin:0 0 4px;font-size:1.25rem;font-weight:700">Choose Your Plan</h3>
+          <p style="margin:0;color:#666;font-size:0.875rem">Select the plan that's right for you</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <a href="${SHOPIFY_URLS.family}" target="_blank" style="display:flex;align-items:center;gap:16px;padding:20px;border:2px solid #E5E7EB;border-radius:14px;text-decoration:none;color:inherit;transition:border-color 0.2s,box-shadow 0.2s" onmouseover="this.style.borderColor='#3B82F6';this.style.boxShadow='0 4px 12px rgba(59,130,246,0.15)'" onmouseout="this.style.borderColor='#E5E7EB';this.style.boxShadow='none'">
+            <div style="width:48px;height:48px;background:linear-gradient(135deg,#DBEAFE,#BFDBFE);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">👨‍👩‍👧</div>
+            <div style="flex:1">
+              <div style="font-weight:700;font-size:1rem;color:#1E293B">Family Plan</div>
+              <div style="font-size:0.8rem;color:#64748B;margin-top:2px">For parents &amp; homeschool families</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-weight:800;font-size:1.1rem;color:#3B82F6">$5</div>
+              <div style="font-size:0.7rem;color:#94A3B8">/month</div>
+            </div>
+          </a>
+          <a href="${SHOPIFY_URLS.school}" target="_blank" style="display:flex;align-items:center;gap:16px;padding:20px;border:2px solid #3B82F6;border-radius:14px;text-decoration:none;color:inherit;background:linear-gradient(135deg,#F0F7FF,#EFF6FF);box-shadow:0 4px 12px rgba(59,130,246,0.1);position:relative;overflow:hidden">
+            <div style="position:absolute;top:8px;right:12px;background:#3B82F6;color:#fff;font-size:0.6rem;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:0.5px">Popular</div>
+            <div style="width:48px;height:48px;background:linear-gradient(135deg,#DBEAFE,#93C5FD);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">🏫</div>
+            <div style="flex:1">
+              <div style="font-weight:700;font-size:1rem;color:#1E293B">School Plan</div>
+              <div style="font-size:0.8rem;color:#64748B;margin-top:2px">For classrooms &amp; schools</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-weight:800;font-size:1.1rem;color:#3B82F6">$49.99</div>
+              <div style="font-size:0.7rem;color:#94A3B8">/year</div>
+            </div>
+          </a>
+          <a href="mailto:support@dianealber.com" style="display:flex;align-items:center;gap:16px;padding:16px 20px;border:2px solid #E5E7EB;border-radius:14px;text-decoration:none;color:inherit;transition:border-color 0.2s" onmouseover="this.style.borderColor='#9333EA'" onmouseout="this.style.borderColor='#E5E7EB'">
+            <div style="width:48px;height:48px;background:linear-gradient(135deg,#F3E8FF,#E9D5FF);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">🏛️</div>
+            <div style="flex:1">
+              <div style="font-weight:700;font-size:1rem;color:#1E293B">District Plan</div>
+              <div style="font-size:0.8rem;color:#64748B;margin-top:2px">Custom pricing for districts</div>
+            </div>
+            <div style="font-size:0.8rem;color:#9333EA;font-weight:600;flex-shrink:0">Contact Us</div>
+          </a>
+        </div>
+        <p style="text-align:center;margin:16px 0 0;font-size:0.8rem;color:#94A3B8">Already subscribed? <a href="/pages/signin.html" style="color:#3B82F6">Sign in here</a></p>
+      </div>
+    </div>`;
+}
+
 // ---- Utility: HTML Escaping ----
 function escapeHtml(str) {
   if (!str) return '';
@@ -807,7 +858,7 @@ function renderSidebar() {
     <div class="sidebar-footer" style="flex-direction:column;gap:8px;padding:16px">
       <a href="/index.html" style="display:flex;align-items:center;gap:6px;color:var(--g400);font-size:0.8125rem;text-decoration:none;padding:6px 0;margin-bottom:4px">${IC.arrowLeft} Back to Home</a>
       <a href="signin.html" class="btn btn-primary" style="width:100%;text-align:center;text-decoration:none">Sign In</a>
-      <a href="${SHOPIFY_URLS.family}" class="btn btn-outline" style="width:100%;text-align:center;text-decoration:none" target="_blank">Subscribe</a>
+      <button onclick="showSubscribePopup()" class="btn btn-outline" style="width:100%;text-align:center;cursor:pointer">Subscribe</button>
     </div>`;
   } else {
     html += `
@@ -3757,7 +3808,7 @@ function showPersistenceGate(action) {
           : '<div style="font-size:2.5rem;margin-bottom:12px">' + msg.icon + '</div><img src="/public/logo.png" alt="key2read" style="height:36px;width:auto;margin-bottom:20px">'}
         <h2 style="margin:0 0 10px;color:var(--navy);font-size:1.375rem">${msg.title}</h2>
         <p style="color:var(--g500);margin:0 0 28px;font-size:0.9375rem;line-height:1.6">${msg.desc}</p>
-        <a href="${SHOPIFY_URLS.family}" class="btn btn-primary" style="width:100%;text-align:center;text-decoration:none;font-size:1rem;padding:14px 24px;margin-bottom:8px;display:block" target="_blank">Subscribe — $5/month</a>
+        <button onclick="document.getElementById('modal-root-2').innerHTML='';showSubscribePopup()" class="btn btn-primary" style="width:100%;text-align:center;font-size:1rem;padding:14px 24px;margin-bottom:8px;display:block;cursor:pointer;border:none">Subscribe</button>
         <a href="signin.html" style="display:block;color:var(--blue);font-size:0.875rem;font-weight:600;margin-bottom:12px;text-decoration:none">Already have an account? Sign In</a>
         <button onclick="document.getElementById('modal-root-2').innerHTML=''" style="background:none;border:none;color:var(--g400);cursor:pointer;font-size:0.875rem;padding:8px">Maybe later</button>
       </div>
@@ -3799,7 +3850,7 @@ function buildGuestCelebration(book) {
       <h2 class="celebration-title">You Finished ${escapeHtml(title)}!</h2>
       <p class="celebration-message">Amazing work completing all the quizzes! Subscribe to save your progress, earn certificates, and track your reading growth.</p>
       <div class="celebration-actions">
-        <a href="${SHOPIFY_URLS.family}" class="btn btn-primary" style="text-decoration:none;flex:1;text-align:center" target="_blank">Subscribe to Save Progress</a>
+        <button onclick="closeCelebration();showSubscribePopup()" class="btn btn-primary" style="flex:1;text-align:center;cursor:pointer;border:none">Subscribe to Save Progress</button>
       </div>
       <button class="celebration-dismiss" onclick="closeCelebration()">Maybe later</button>
     </div>`;
