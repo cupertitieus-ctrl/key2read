@@ -91,3 +91,24 @@ SELECT id, '[
   }
 ]'::jsonb FROM books WHERE title LIKE '%Fluff and Robo%'
 ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
+
+-- Seed: The Life of Sparkly Turtle
+INSERT INTO warmup_quizzes (book_id, questions)
+SELECT id, '[
+  {
+    "question_text": "Go to page 25 and tell us the very LAST word.",
+    "options": ["enjoy", "fun", "why", "sparkly"],
+    "correct_answer": 0
+  },
+  {
+    "question_text": "On page 38, what animal is in the illustration?",
+    "options": ["hamster", "owl", "dog", "mouse"],
+    "correct_answer": 1
+  },
+  {
+    "question_text": "Turn to page 75, what is the turtle thinking of?",
+    "options": ["bears", "dogs", "cats", "food"],
+    "correct_answer": 0
+  }
+]'::jsonb FROM books WHERE title LIKE '%Sparkly Turtle%'
+ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;

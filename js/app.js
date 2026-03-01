@@ -2096,6 +2096,15 @@ function renderStudentProfile() {
           <span>Joined: ${s.joined}</span>
         </div>
       </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+        <div style="text-align:center">
+          <div style="font-size:1.5rem;font-weight:800;color:var(--gold)">${s.keys_earned || s.keys || 0}</div>
+          <div style="font-size:0.7rem;color:var(--g400);font-weight:600">Keys</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="showGiftKeysModal(${s.id}, '${escapeHtml(s.name).replace(/'/g, "\\'")}')" style="white-space:nowrap">
+          <img src="/public/Key_Circle_Icon.png" alt="" style="width:18px;height:18px;vertical-align:middle;margin-right:4px"> Gift Keys
+        </button>
+      </div>
     </div>
 
     <div id="student-perf-container">
@@ -2104,6 +2113,76 @@ function renderStudentProfile() {
         <p style="color:var(--g400);margin-top:12px">Loading performance data...</p>
       </div>
     </div>`;
+}
+
+function showGiftKeysModal(studentId, studentName) {
+  const modal = document.getElementById('modal-root-2') || document.createElement('div');
+  if (!modal.id) { modal.id = 'modal-root-2'; document.body.appendChild(modal); }
+  let selectedAmount = 0;
+
+  function renderGiftModal() {
+    modal.innerHTML = `
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)document.getElementById('modal-root-2').innerHTML=''">
+        <div onclick="event.stopPropagation()" style="background:#fff;border-radius:20px;padding:32px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative">
+          <button onclick="document.getElementById('modal-root-2').innerHTML=''" style="position:absolute;top:12px;right:12px;background:none;border:none;font-size:1.5rem;color:var(--g400);cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%" onmouseover="this.style.background='var(--g100)'" onmouseout="this.style.background='none'">✕</button>
+          <img src="/public/Key_Circle_Icon.png" alt="" style="width:56px;height:56px;margin-bottom:12px">
+          <h3 style="margin:0 0 4px;font-size:1.2rem;font-weight:800;color:var(--navy)">Gift Keys</h3>
+          <p style="margin:0 0 20px;color:var(--g500);font-size:0.9rem">Send keys to <strong>${studentName}</strong></p>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">
+            ${[5, 10, 25, 50].map(amt => `
+              <button onclick="window._giftSelectAmt(${amt})" style="padding:14px 8px;border:2px solid ${selectedAmount === amt ? 'var(--gold)' : 'var(--g200)'};border-radius:12px;background:${selectedAmount === amt ? '#FFFBEB' : '#fff'};cursor:pointer;font-size:1.1rem;font-weight:700;color:${selectedAmount === amt ? '#92400E' : 'var(--navy)'};transition:all 0.15s">
+                ${amt}
+              </button>
+            `).join('')}
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px">
+            <label style="font-size:0.8rem;color:var(--g500);font-weight:600;white-space:nowrap">Custom:</label>
+            <input id="gift-custom-amount" type="number" min="1" max="100" placeholder="1-100" value="${selectedAmount && ![5,10,25,50].includes(selectedAmount) ? selectedAmount : ''}" oninput="window._giftCustomAmt(this.value)" style="flex:1;padding:10px 12px;border:1.5px solid var(--g200);border-radius:8px;font-size:0.95rem;text-align:center">
+          </div>
+          <button onclick="window._giftSend(${studentId}, ${selectedAmount})" ${selectedAmount < 1 ? 'disabled' : ''} class="btn btn-primary" style="width:100%;font-size:1rem;padding:14px;background:${selectedAmount >= 1 ? 'linear-gradient(135deg, #F59E0B, #D97706)' : 'var(--g200)'};border:none;color:${selectedAmount >= 1 ? '#fff' : 'var(--g400)'};font-weight:700;cursor:${selectedAmount >= 1 ? 'pointer' : 'not-allowed'}">
+            ${selectedAmount >= 1 ? `Send ${selectedAmount} Key${selectedAmount !== 1 ? 's' : ''} 🔑` : 'Select an amount'}
+          </button>
+        </div>
+      </div>`;
+  }
+
+  window._giftSelectAmt = function(amt) {
+    selectedAmount = amt;
+    const customInput = document.getElementById('gift-custom-amount');
+    if (customInput) customInput.value = '';
+    renderGiftModal();
+  };
+  window._giftCustomAmt = function(val) {
+    const n = parseInt(val);
+    selectedAmount = (n >= 1 && n <= 100) ? n : 0;
+    renderGiftModal();
+  };
+  window._giftSend = async function(sid, amt) {
+    if (amt < 1) return;
+    try {
+      const result = await API.giftStudentKeys(sid, amt);
+      if (result.success) {
+        const s = students.find(x => x.id === sid);
+        if (s) { s.keys_earned = result.newBalance; s.keys = result.newBalance; }
+        modal.innerHTML = `
+          <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this){document.getElementById('modal-root-2').innerHTML='';renderMain()}">
+            <div onclick="event.stopPropagation()" style="background:#fff;border-radius:20px;padding:36px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+              <div style="font-size:3.5rem;margin-bottom:12px">🎉</div>
+              <h3 style="margin:0 0 8px;font-size:1.3rem;font-weight:800;color:var(--navy)">Keys Sent!</h3>
+              <p style="margin:0 0 8px;color:var(--g500);font-size:0.95rem">You gifted <strong>${amt} key${amt !== 1 ? 's' : ''}</strong> to <strong>${studentName}</strong>.</p>
+              <p style="margin:0 0 24px;color:var(--g400);font-size:0.85rem">New balance: <strong>${result.newBalance} keys</strong></p>
+              <button class="btn btn-primary" style="width:100%;padding:14px" onclick="document.getElementById('modal-root-2').innerHTML='';renderMain()">Done</button>
+            </div>
+          </div>`;
+      } else {
+        alert(result.error || 'Failed to gift keys.');
+      }
+    } catch(e) {
+      alert('Failed to gift keys: ' + e.message);
+    }
+  };
+
+  renderGiftModal();
 }
 
 async function loadStudentPerformance(s) {

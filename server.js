@@ -888,6 +888,26 @@ app.get('/api/students/:id/warmup-status/:bookId', async (req, res) => {
   }
 });
 
+app.post('/api/students/:studentId/gift-keys', async (req, res) => {
+  const role = req.session.user?.role;
+  if (role !== 'teacher' && role !== 'parent' && role !== 'owner') {
+    return res.status(403).json({ error: 'Only teachers and parents can gift keys' });
+  }
+  const studentId = parseInt(req.params.studentId);
+  const amount = parseInt(req.body.amount);
+  if (!amount || amount < 1 || amount > 100) {
+    return res.status(400).json({ error: 'Amount must be between 1 and 100' });
+  }
+  try {
+    const result = await db.addStudentKeys(studentId, amount);
+    if (!result.success) return res.status(400).json({ error: result.reason });
+    res.json({ success: true, newBalance: result.newBalance });
+  } catch (e) {
+    console.error('Gift keys error:', e);
+    res.status(500).json({ error: 'Failed to gift keys' });
+  }
+});
+
 app.post('/api/warmup/submit', async (req, res) => {
   const { studentId, bookId, answers, attempts } = req.body;
   try {

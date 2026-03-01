@@ -481,6 +481,23 @@ async function deductStudentKeys(studentId, amount) {
   return { success: true, newBalance };
 }
 
+async function addStudentKeys(studentId, amount) {
+  const { data: student } = await supabase
+    .from('students')
+    .select('keys_earned')
+    .eq('id', studentId)
+    .single();
+  if (!student) return { success: false, reason: 'Student not found' };
+  const current = student.keys_earned || 0;
+  const newBalance = current + amount;
+  const { error } = await supabase
+    .from('students')
+    .update({ keys_earned: newBalance })
+    .eq('id', studentId);
+  if (error) return { success: false, reason: 'Database error' };
+  return { success: true, newBalance };
+}
+
 async function recordPurchase(studentId, classId, itemName, price) {
   try {
     const { data, error } = await supabase.from('store_purchases').insert({
@@ -2081,6 +2098,7 @@ module.exports = {
   getWeeklyStats,
   getStudentBookProgress,
   deductStudentKeys,
+  addStudentKeys,
   recordPurchase,
   getRecentPurchases,
   fulfillPurchase,

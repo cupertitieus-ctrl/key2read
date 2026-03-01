@@ -56,6 +56,7 @@ const API = {
   getBookProgress: (id) => API.get(`/api/students/${id}/book-progress`),
   getFavorites: (id) => API.get(`/api/students/${id}/favorites`),
   toggleFavorite: (id, bookId) => API.post(`/api/students/${id}/favorites/toggle`, { bookId }),
+  giftStudentKeys: (studentId, amount) => API.post(`/api/students/${studentId}/gift-keys`, { amount }),
 
   // Books
   getBooks: () => API.get('/api/books'),
