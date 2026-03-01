@@ -6027,7 +6027,7 @@ async function showKeysBreakdown() {
     <div class="modal-overlay" onclick="closeModal(event)">
       <div class="modal modal-lg" onclick="event.stopPropagation()" style="max-width:540px">
         <div class="modal-header">
-          <h3>🔑 Keys Earned</h3>
+          <h3>🔑 Key History</h3>
           <button class="modal-close" onclick="closeModal()">${IC.x}</button>
         </div>
         <div class="modal-body" style="text-align:center;padding:32px">
@@ -6037,11 +6037,22 @@ async function showKeysBreakdown() {
     </div>`;
 
   try {
+    // Fetch quiz results (earnings) and purchases (spendings)
     const results = await getCachedQuizResults(currentUser.studentId);
     const withKeys = results.filter(r => r.keys_earned > 0);
-    const totalKeys = withKeys.reduce((sum, r) => sum + (r.keys_earned || 0), 0);
+    const totalEarned = withKeys.reduce((sum, r) => sum + (r.keys_earned || 0), 0);
 
-    // Group by book
+    let purchases = [];
+    if (currentUser.classId) {
+      try {
+        const allPurchases = await API.getRecentPurchases(currentUser.classId);
+        purchases = (allPurchases || []).filter(p => p.studentName === currentUser?.name);
+      } catch(e) {}
+    }
+    const totalSpent = purchases.reduce((sum, p) => sum + (p.price || 0), 0);
+    const available = totalEarned - totalSpent;
+
+    // Group quiz results by book
     const byBook = {};
     withKeys.forEach(r => {
       const title = r.book_title || 'Unknown Book';
@@ -6050,30 +6061,49 @@ async function showKeysBreakdown() {
     });
 
     let listHtml = '';
-    if (withKeys.length === 0) {
+    if (withKeys.length === 0 && purchases.length === 0) {
       listHtml = `<div style="text-align:center;padding:24px;color:var(--g400)">
         <p style="font-size:1.125rem;margin-bottom:4px">No keys earned yet</p>
         <p style="font-size:0.875rem">Complete quizzes with 80% or higher to earn keys!</p>
       </div>`;
     } else {
-      for (const [bookTitle, quizzes] of Object.entries(byBook)) {
-        const bookKeys = quizzes.reduce((sum, r) => sum + (r.keys_earned || 0), 0);
-        listHtml += `<div style="margin-bottom:20px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <h4 style="margin:0;font-size:0.9375rem;font-weight:700;color:var(--navy)">${bookTitle}</h4>
-            <span class="badge badge-gold" style="font-size:0.75rem">${bookKeys} keys</span>
-          </div>`;
-        quizzes.forEach(r => {
-          const date = r.completed_at ? new Date(r.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-          listHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--g50);border-radius:var(--radius-sm);margin-bottom:4px;font-size:0.8125rem">
-            <span style="color:var(--g600)">Ch. ${r.chapter_number || '?'}: ${r.chapter_title || 'Quiz'}</span>
+      // Earned section
+      if (withKeys.length > 0) {
+        listHtml += `<h4 style="margin:0 0 12px;font-size:0.85rem;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:0.5px">Keys Earned</h4>`;
+        for (const [bookTitle, quizzes] of Object.entries(byBook)) {
+          const bookKeys = quizzes.reduce((sum, r) => sum + (r.keys_earned || 0), 0);
+          listHtml += `<div style="margin-bottom:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <h4 style="margin:0;font-size:0.9375rem;font-weight:700;color:var(--navy)">${bookTitle}</h4>
+              <span class="badge badge-gold" style="font-size:0.75rem">${bookKeys} keys</span>
+            </div>`;
+          quizzes.forEach(r => {
+            const date = r.completed_at ? new Date(r.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+            listHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--g50);border-radius:var(--radius-sm);margin-bottom:4px;font-size:0.8125rem">
+              <span style="color:var(--g600)">Ch. ${r.chapter_number || '?'}: ${r.chapter_title || 'Quiz'}</span>
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="color:var(--g400)">${date}</span>
+                <span style="font-weight:700;color:var(--gold)">+${r.keys_earned}</span>
+              </div>
+            </div>`;
+          });
+          listHtml += `</div>`;
+        }
+      }
+
+      // Spent section
+      if (purchases.length > 0) {
+        listHtml += `<h4 style="margin:20px 0 12px;font-size:0.85rem;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:0.5px">Keys Spent</h4>`;
+        purchases.forEach(p => {
+          const date = p.purchasedAt ? new Date(p.purchasedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+          listHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#FEF2F2;border-radius:var(--radius-sm);margin-bottom:4px;font-size:0.8125rem">
+            <span style="color:var(--g600)">🎁 ${escapeHtml(p.itemName || 'Reward')}</span>
             <div style="display:flex;align-items:center;gap:12px">
               <span style="color:var(--g400)">${date}</span>
-              <span style="font-weight:700;color:var(--gold)">+${r.keys_earned}</span>
+              <span style="font-weight:700;color:#EF4444">-${p.price}</span>
             </div>
           </div>`;
         });
-        listHtml += `</div>`;
       }
     }
 
@@ -6081,10 +6111,19 @@ async function showKeysBreakdown() {
     body.style.textAlign = '';
     body.style.padding = '';
     body.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px 20px;background:linear-gradient(135deg,#FEF3C7,#FDE68A);border-radius:var(--radius-md);margin-bottom:20px">
-        <span style="font-size:1.5rem">🔑</span>
-        <span style="font-family:var(--font-display);font-size:1.75rem;font-weight:800;color:var(--g900)">${totalKeys}</span>
-        <span style="font-size:0.875rem;font-weight:600;color:var(--g600)">Total Keys</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px">
+        <div style="text-align:center;padding:14px;background:linear-gradient(135deg,#FEF3C7,#FDE68A);border-radius:var(--radius-md)">
+          <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:800;color:var(--g900)">${totalEarned}</div>
+          <div style="font-size:0.75rem;font-weight:600;color:var(--g600)">Total Earned</div>
+        </div>
+        <div style="text-align:center;padding:14px;background:#FEF2F2;border-radius:var(--radius-md)">
+          <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:800;color:#EF4444">${totalSpent}</div>
+          <div style="font-size:0.75rem;font-weight:600;color:var(--g600)">Spent</div>
+        </div>
+        <div style="text-align:center;padding:14px;background:#ECFDF5;border-radius:var(--radius-md)">
+          <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:800;color:#10B981">${available}</div>
+          <div style="font-size:0.75rem;font-weight:600;color:var(--g600)">Available</div>
+        </div>
       </div>
       ${listHtml}`;
   } catch(e) {
