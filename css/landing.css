@@ -636,6 +636,14 @@
   margin: 0 auto;
   text-align: center;
 }
+.why-physical-img {
+  max-width: 360px;
+  width: 100%;
+  height: auto;
+  border-radius: 16px;
+  margin-bottom: 28px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.10);
+}
 .why-physical-inner h2 {
   font-family: var(--font-display);
   font-size: 1.75rem;
