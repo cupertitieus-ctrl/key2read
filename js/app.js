@@ -3742,10 +3742,10 @@ async function submitWarmupResult(bookId, sid, answers, attempts) {
         <div style="font-size:3.5rem;margin-bottom:12px">🎉</div>
         <h3 style="margin:0 0 8px;font-size:1.3rem;font-weight:800;color:var(--navy)">Great job!</h3>
         <p style="margin:0 0 24px;color:var(--g500);font-size:0.95rem;line-height:1.6">
-          You've got your book ready! Now let's start reading <strong>${b ? escapeHtml(b.title) : 'your book'}</strong>.
+          You've got your book ready! Time to take the <strong>Chapter 1 Quiz</strong>!
         </p>
-        <button class="btn btn-primary" style="width:100%;font-size:1.05rem;padding:14px 24px" onclick="document.getElementById('modal-root-2').innerHTML='';renderMain()">
-          Start Reading! 📚
+        <button class="btn btn-primary" style="width:100%;font-size:1.05rem;padding:14px 24px" onclick="document.getElementById('modal-root-2').innerHTML='';renderMain();launchQuiz(${bookId}, 1, ${sid || 'null'})">
+          Chapter 1 Quiz 📝
         </button>
       </div>
     </div>`;
