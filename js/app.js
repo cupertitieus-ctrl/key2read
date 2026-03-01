@@ -887,7 +887,10 @@ function renderHeader() {
         <img src="/public/logo.png" alt="key2read" style="height:52px;width:auto;cursor:pointer" onclick="navigate('guest-browse')">
       </div>
       <div></div>
-      <div></div>`;
+      <div style="display:flex;align-items:center;gap:10px;padding-right:8px">
+        <a href="/index.html" style="color:var(--g500);font-size:0.8125rem;text-decoration:none;font-weight:500;white-space:nowrap">Home</a>
+        <a href="signin.html" class="btn btn-primary btn-sm" style="text-decoration:none;white-space:nowrap;font-size:0.8125rem;padding:8px 16px">Sign In</a>
+      </div>`;
     return;
   }
   header.style.display = '';
