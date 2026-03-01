@@ -4361,11 +4361,13 @@ function renderTeacherSettings() {
 }
 
 function logoutAndRedirect() {
-  // Clear student/child auto-login data
+  // Clear ALL auto-login data so user doesn't get auto-signed back in
   localStorage.removeItem('k2r_student_name');
   localStorage.removeItem('k2r_student_classcode');
   localStorage.removeItem('k2r_child_name');
   localStorage.removeItem('k2r_child_familycode');
+  localStorage.removeItem('k2r_remember_creds');
+  localStorage.removeItem('k2r_remember_email');
   fetch('/api/auth/logout', { method: 'POST' })
     .then(() => window.location.href = '/pages/signin.html');
 }
