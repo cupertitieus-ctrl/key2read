@@ -638,14 +638,12 @@
 .why-physical-layout {
   display: flex;
   align-items: center;
-  gap: 48px;
+  gap: 56px;
 }
 .why-physical-img {
-  width: 340px;
+  width: 420px;
   flex-shrink: 0;
   height: auto;
-  border-radius: 16px;
-  box-shadow: 0 8px 28px rgba(0,0,0,.10);
 }
 .why-physical-content {
   flex: 1;
@@ -653,10 +651,10 @@
 }
 .why-physical-content h2 {
   font-family: var(--font-display);
-  font-size: 1.75rem;
+  font-size: 1.85rem;
   font-weight: 800;
   color: var(--navy, #0F2B46);
-  margin: 0 0 12px;
+  margin: 0 0 14px;
   letter-spacing: -0.02em;
 }
 .why-physical-subtitle {
@@ -665,42 +663,31 @@
   line-height: 1.7;
   margin: 0 0 28px;
 }
-.why-physical-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
-.why-physical-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 24px 20px;
-  text-align: center;
-  box-shadow: 0 4px 16px rgba(0,0,0,.06);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-.why-physical-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0,0,0,.10);
-}
-.why-physical-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
+.why-physical-points {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  margin: 0 auto 14px;
+  flex-direction: column;
+  gap: 20px;
 }
-.why-physical-card h3 {
+.why-physical-point {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.why-physical-point-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.why-physical-point strong {
   font-family: var(--font-display);
   font-size: 1rem;
   font-weight: 700;
   color: var(--g900, #111827);
-  margin: 0 0 8px;
+  display: block;
+  margin-bottom: 4px;
 }
-.why-physical-card p {
-  font-size: 0.85rem;
+.why-physical-point p {
+  font-size: 0.875rem;
   color: var(--g500, #6b7280);
   line-height: 1.6;
   margin: 0;
@@ -714,7 +701,7 @@
     gap: 28px;
   }
   .why-physical-img {
-    width: 280px;
+    width: 300px;
     margin: 0 auto;
   }
   .why-physical-content {
@@ -723,12 +710,11 @@
   .why-physical-content h2 {
     font-size: 1.35rem;
   }
-  .why-physical-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  .why-physical-card {
-    padding: 20px 16px;
+  .why-physical-point {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
   }
 }
 
