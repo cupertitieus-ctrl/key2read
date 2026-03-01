@@ -217,3 +217,24 @@ SELECT id, '[
   }
 ]'::jsonb FROM books WHERE title LIKE '%Nacho Hamster%'
 ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
+
+-- Seed: Purple Space Chicken
+INSERT INTO warmup_quizzes (book_id, questions)
+SELECT id, '[
+  {
+    "question_text": "Go to page 29 and tell us the very LAST word on the page.",
+    "options": ["home", "again", "day", "right"],
+    "correct_answer": 2
+  },
+  {
+    "question_text": "On page 15, how many bees are flying in the illustration?",
+    "options": ["one", "two", "three", "four"],
+    "correct_answer": 1
+  },
+  {
+    "question_text": "Turn to page 55, what is bear thinking of in the illustration?",
+    "options": ["ice cream", "his dog", "flowers", "hamburger"],
+    "correct_answer": 3
+  }
+]'::jsonb FROM books WHERE title LIKE '%Purple Space Chicken%'
+ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
