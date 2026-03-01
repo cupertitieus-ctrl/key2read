@@ -27,8 +27,8 @@ function showSubscribePopup() {
               <div style="font-size:0.8rem;color:#64748B;margin-top:2px">For parents &amp; homeschool families</div>
             </div>
             <div style="text-align:right;flex-shrink:0">
-              <div style="font-weight:800;font-size:1.1rem;color:#3B82F6">$5</div>
-              <div style="font-size:0.7rem;color:#94A3B8">/month</div>
+              <div style="font-weight:800;font-size:1.1rem;color:#3B82F6">$19.99</div>
+              <div style="font-size:0.7rem;color:#94A3B8">/year</div>
             </div>
           </a>
           <a href="${SHOPIFY_URLS.school}" target="_blank" style="display:flex;align-items:center;gap:16px;padding:20px;border:2px solid #3B82F6;border-radius:14px;text-decoration:none;color:inherit;background:linear-gradient(135deg,#F0F7FF,#EFF6FF);box-shadow:0 4px 12px rgba(59,130,246,0.1);position:relative;overflow:hidden">
