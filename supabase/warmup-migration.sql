@@ -133,3 +133,24 @@ SELECT id, '[
   }
 ]'::jsonb FROM books WHERE title LIKE '%Dragon Diaries%'
 ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
+
+-- Seed: Charlie Picasso: And The Magic Pencil
+INSERT INTO warmup_quizzes (book_id, questions)
+SELECT id, '[
+  {
+    "question_text": "Go to page 7 and tell us the very LAST word.",
+    "options": ["real", "now", "week", "old"],
+    "correct_answer": 2
+  },
+  {
+    "question_text": "On page 29, what is the illustration of?",
+    "options": ["money", "candy", "chicken", "watermelon"],
+    "correct_answer": 0
+  },
+  {
+    "question_text": "Turn to page 44, what drawing came to life?",
+    "options": ["mouse", "cat", "hamster", "dog"],
+    "correct_answer": 2
+  }
+]'::jsonb FROM books WHERE title LIKE '%Magic Pencil%'
+ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
