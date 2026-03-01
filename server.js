@@ -504,14 +504,34 @@ app.post('/api/auth/signup', async (req, res) => {
 });
 
 // ─── SHOPIFY WEBHOOK ───
+// Health check endpoint — verify webhook URL is reachable
+app.get('/api/webhooks/shopify/order-paid', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'Shopify webhook endpoint is reachable',
+    hasSecret: !!process.env.SHOPIFY_WEBHOOK_SECRET,
+    hasKlaviyoKey: !!process.env.KLAVIYO_API_KEY
+  });
+});
+
 app.post('/api/webhooks/shopify/order-paid', async (req, res) => {
+  console.log('🔔 Shopify webhook received');
+  console.log('  Headers:', JSON.stringify({
+    'x-shopify-hmac-sha256': req.headers['x-shopify-hmac-sha256'] ? 'present' : 'MISSING',
+    'content-type': req.headers['content-type']
+  }));
+  console.log('  Raw body:', req.rawBody ? `${req.rawBody.length} bytes` : 'MISSING');
+  console.log('  Body keys:', req.body ? Object.keys(req.body).join(', ') : 'EMPTY');
+
   try {
     // 1. Verify HMAC signature
     const hmac = req.headers['x-shopify-hmac-sha256'];
     if (!shopify.verifyWebhookHMAC(req.rawBody, hmac)) {
-      console.error('Shopify webhook HMAC verification failed');
+      console.error('❌ Shopify webhook HMAC verification failed');
+      console.error('  SHOPIFY_WEBHOOK_SECRET set:', !!process.env.SHOPIFY_WEBHOOK_SECRET);
       return res.status(401).json({ error: 'Invalid signature' });
     }
+    console.log('  ✅ HMAC verified');
 
     // 2. Parse order data
     const orderData = shopify.parseOrderData(req.body);
