@@ -564,6 +564,12 @@
   font-weight: 700;
   color: var(--g700, #374151);
 }
+.dashboard-icon-desc {
+  font-size: 0.75rem;
+  color: var(--g500, #6b7280);
+  line-height: 1.5;
+  max-width: 160px;
+}
 @media (max-width: 768px) {
   .dashboard-icons-row {
     gap: 20px;
