@@ -196,3 +196,24 @@ SELECT id, '[
   }
 ]'::jsonb FROM books WHERE title LIKE '%Tryout%'
 ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
+
+-- Seed: Don't Trust the Nacho Hamster
+INSERT INTO warmup_quizzes (book_id, questions)
+SELECT id, '[
+  {
+    "question_text": "Go to page 66 and tell us the very LAST word.",
+    "options": ["on", "again", "happy", "joke"],
+    "correct_answer": 3
+  },
+  {
+    "question_text": "On page 74, what is the hamster doing in the illustration?",
+    "options": ["sleeping", "eating", "running", "sitting"],
+    "correct_answer": 2
+  },
+  {
+    "question_text": "Turn to page 42, who is in the illustration?",
+    "options": ["Mrs. Fairy", "James", "the hamster", "the mom"],
+    "correct_answer": 0
+  }
+]'::jsonb FROM books WHERE title LIKE '%Nacho Hamster%'
+ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
