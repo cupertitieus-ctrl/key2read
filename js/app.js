@@ -5792,22 +5792,6 @@ async function saveOnboarding() {
   }, 600);
 }
 
-// ---- Dismiss onboarding (X button or overlay click) ----
-// Marks the student as onboarded in localStorage so it NEVER shows again
-async function dismissOnboarding(e) {
-  if (e && e.target !== e.currentTarget) return;
-  const sid = onboardingStudent || currentUser?.studentId;
-  // Save to localStorage — no API calls needed
-  if (sid) localStorage.setItem('k2r_onboarded_' + sid, '1');
-  if (currentUser) currentUser.onboarded = 1;
-  const s = students.find(x => x.id === sid);
-  if (s) { s.onboarded = 1; if (s.interests) s.interests.onboarded = true; }
-  onboardingStep = 0;
-  onboardingStudent = null;
-  closeModal();
-  await refreshStudentData();
-  renderMain();
-}
 
 // ---- Onboarding Body Content (extracted so modal shell doesn't re-render) ----
 function getOnboardingBodyHtml(s) {
@@ -5975,11 +5959,10 @@ function openModal(type, prefill) {
     if (!s) return;
 
     html = `
-      <div class="modal-overlay" onclick="dismissOnboarding(event)">
+      <div class="modal-overlay">
         <div class="modal modal-lg" onclick="event.stopPropagation()">
           <div class="modal-header">
             <h3>Student Interest Setup</h3>
-            <button class="modal-close" onclick="dismissOnboarding()">${IC.x}</button>
           </div>
           <div class="modal-body">
             ${getOnboardingBodyHtml(s)}
