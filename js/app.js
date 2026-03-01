@@ -3812,7 +3812,7 @@ async function submitWarmupResult(bookId, sid, answers, attempts) {
   const modal = document.getElementById('modal-root-2');
   const b = books.find(x => x.id === bookId);
 
-  let keysEarned = 0;
+  let keysEarned = 5; // Always show 5 keys for passing warmup
   try {
     if (sid) {
       const result = await API.submitWarmup({ studentId: sid, bookId, answers, attempts });
