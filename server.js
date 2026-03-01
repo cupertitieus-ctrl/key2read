@@ -412,6 +412,11 @@ app.post('/api/auth/signup', async (req, res) => {
   const { name, email, password, role, school, classCode } = req.body;
   if (!name) return res.status(400).json({ error: 'Name is required' });
 
+  // Block direct teacher/parent signup — must go through Shopify
+  if (role === 'teacher' || role === 'parent') {
+    return res.status(403).json({ error: 'Teacher and parent accounts require a subscription. Please visit our pricing page to subscribe.' });
+  }
+
   try {
     // Check if email already exists (for teacher/principal)
     if (email) {

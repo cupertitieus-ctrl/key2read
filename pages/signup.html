@@ -21,7 +21,7 @@
   <div class="auth-right">
     <div class="auth-form-container">
       <h1>Create your account</h1>
-      <p>Get started with key2read for free. No credit card required.</p>
+      <p>Join key2read and start building stronger readers today.</p>
 
       <!-- Role Selector -->
       <div class="role-selector" style="grid-template-columns: 1fr 1fr 1fr 1fr">
@@ -51,8 +51,17 @@
         </div>
       </div>
 
-      <!-- Sign Up Form -->
-      <form class="auth-form" id="signup-form">
+      <!-- Subscribe prompt for Teacher/Parent (shown by default since Teacher is selected) -->
+      <div id="subscribe-prompt" style="text-align:center;padding:32px 20px">
+        <div style="font-size:2.5rem;margin-bottom:12px">🔑</div>
+        <h3 style="margin:0 0 8px;font-size:1.2rem;font-weight:600" id="subscribe-title">Subscribe to get started</h3>
+        <p style="color:var(--g500);font-size:0.9rem;margin:0 0 24px" id="subscribe-desc">Teacher and parent accounts require a subscription. Choose your plan to create your account.</p>
+        <a href="https://www.dianealber.com/products/key2read-school" id="subscribe-link" class="btn btn-primary btn-lg" style="display:inline-block;text-decoration:none;margin-bottom:12px;width:100%">Subscribe Now</a>
+        <p style="color:var(--g400);font-size:0.8rem;margin:12px 0 0">Already subscribed? <a href="signin.html" style="color:var(--blue)">Sign in here</a></p>
+      </div>
+
+      <!-- Sign Up Form (Student/Child only — hidden by default since Teacher is selected) -->
+      <form class="auth-form" id="signup-form" style="display:none">
         <!-- Name row (always visible) -->
         <div class="form-row">
           <div class="form-group">
@@ -148,12 +157,12 @@
         <button type="submit" class="btn btn-primary btn-lg w-full">Create Account</button>
       </form>
 
-      <div class="auth-divider">
+      <div class="auth-divider" style="display:none">
         <span>or continue with</span>
       </div>
 
       <!-- Social Auth -->
-      <div class="auth-social">
+      <div class="auth-social" style="display:none">
         <button type="button" class="btn-social" onclick="handleGoogleLogin()">
           <svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
           Continue with Google
@@ -166,7 +175,7 @@
 
       <div id="auth-error" style="display:none;color:#EF4444;text-align:center;margin-top:12px;font-size:0.875rem"></div>
 
-      <div class="auth-footer">
+      <div class="auth-footer" style="text-align:center;margin:16px 0">
         Already have an account? <a href="signin.html">Sign in</a>
       </div>
 
@@ -213,6 +222,10 @@ function selectRole(el) {
   const fieldStudentGrade = document.getElementById('field-student-grade');
   const fieldTerms        = document.getElementById('field-terms');
   const passwordHint      = document.getElementById('password-optional');
+  const subscribePrompt   = document.getElementById('subscribe-prompt');
+  const signupForm        = document.getElementById('signup-form');
+  const authDivider       = document.querySelector('.auth-divider');
+  const authSocial        = document.querySelector('.auth-social');
 
   // Hide all role-specific fields first
   fieldEmail.style.display        = 'none';
@@ -230,20 +243,34 @@ function selectRole(el) {
   const emailInput = document.getElementById('email');
 
   if (role === 'teacher') {
-    fieldEmail.style.display  = '';
-    fieldSchool.style.display = '';
-    fieldGrade.style.display  = '';
-    fieldTerms.style.display  = '';
-    fieldPassword.style.display = '';
-    emailLabel.textContent = 'School Email';
-    emailInput.placeholder = 'you@school.edu';
+    // Redirect to Shopify
+    signupForm.style.display = 'none';
+    authDivider.style.display = 'none';
+    authSocial.style.display = 'none';
+    subscribePrompt.style.display = '';
+    document.getElementById('subscribe-title').textContent = 'Subscribe to get started';
+    document.getElementById('subscribe-desc').textContent = 'Teacher accounts require a subscription. Subscribe to create your account and get your class code.';
+    document.getElementById('subscribe-link').href = 'https://www.dianealber.com/products/key2read-school';
+    return;
   } else if (role === 'parent') {
-    fieldEmail.style.display    = '';
-    fieldTerms.style.display    = '';
-    fieldPassword.style.display = '';
-    emailLabel.textContent = 'Email';
-    emailInput.placeholder = 'you@email.com';
-  } else if (role === 'student') {
+    // Redirect to Shopify
+    signupForm.style.display = 'none';
+    authDivider.style.display = 'none';
+    authSocial.style.display = 'none';
+    subscribePrompt.style.display = '';
+    document.getElementById('subscribe-title').textContent = 'Subscribe to get started';
+    document.getElementById('subscribe-desc').textContent = 'Parent accounts require a subscription. Subscribe to create your account and get your family code.';
+    document.getElementById('subscribe-link').href = 'https://www.dianealber.com/products/key2read-family';
+    return;
+  }
+
+  // Student/Child — show the form
+  signupForm.style.display = '';
+  authDivider.style.display = '';
+  authSocial.style.display = '';
+  subscribePrompt.style.display = 'none';
+
+  if (role === 'student') {
     // School student: Class Code (required) + Grade
     fieldClasscode.style.display    = '';
     fieldStudentGrade.style.display = '';
