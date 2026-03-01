@@ -238,3 +238,24 @@ SELECT id, '[
   }
 ]'::jsonb FROM books WHERE title LIKE '%Purple Space Chicken%'
 ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
+
+-- Seed: Diary of a Famous Cat Lost and Found
+INSERT INTO warmup_quizzes (book_id, questions)
+SELECT id, '[
+  {
+    "question_text": "Go to page 51 and tell us the very LAST word on the page.",
+    "options": ["playground", "music", "that", "store"],
+    "correct_answer": 0
+  },
+  {
+    "question_text": "On page 34, how many sunglasses are in the illustration?",
+    "options": ["one", "three", "five", "seven"],
+    "correct_answer": 2
+  },
+  {
+    "question_text": "Turn to page 80, what does the boy put on the cat in the illustration?",
+    "options": ["sweater", "beanie", "collar", "shoes"],
+    "correct_answer": 1
+  }
+]'::jsonb FROM books WHERE title LIKE '%Famous Cat%Lost%Found%'
+ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
