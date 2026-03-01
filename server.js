@@ -745,6 +745,22 @@ app.put('/api/students/:id/survey', async (req, res) => {
   res.json({ success: true, student });
 });
 
+// Mark student as onboarded (so the welcome wizard never shows again)
+app.put('/api/students/:id/onboarded', async (req, res) => {
+  const id = parseInt(req.params.id);
+  try {
+    await db.supabase.from('students').update({ onboarded: 1 }).eq('id', id);
+    // Update session too so /api/auth/me returns correct value
+    if (req.session.user && req.session.user.studentId === id) {
+      req.session.user.onboarded = 1;
+    }
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Mark onboarded error:', e);
+    res.status(500).json({ error: 'Failed to update onboarded status' });
+  }
+});
+
 app.get('/api/students/:id/reading-history', async (req, res) => {
   const history = await db.getReadingHistory(parseInt(req.params.id));
   res.json(history);
@@ -1150,6 +1166,14 @@ app.post('/api/quiz/submit', async (req, res) => {
   const updatedStudent = await db.getStudent(studentId);
   const syncedScore = updatedStudent?.reading_score || newScore;
 
+  // Keep session in sync with DB so /api/auth/me returns correct values
+  if (req.session.user && updatedStudent) {
+    req.session.user.keys_earned = updatedStudent.keys_earned || 0;
+    req.session.user.quizzes_completed = updatedStudent.quizzes_completed || 0;
+    req.session.user.reading_score = syncedScore;
+    req.session.user.accuracy = updatedStudent.accuracy || 0;
+  }
+
   res.json({
     score, correctCount, totalQuestions: questions.length,
     readingLevelChange: levelChange, newReadingScore: syncedScore,
@@ -1308,6 +1332,10 @@ app.post('/api/store/purchase', async (req, res) => {
     // Record purchase history
     if (classId) {
       await db.recordPurchase(studentId, classId, itemName || 'Item', price);
+    }
+    // Keep session in sync after key deduction
+    if (req.session.user) {
+      req.session.user.keys_earned = result.newBalance;
     }
     // Clear cached purchase data so dashboard refreshes
     res.json({ success: true, newBalance: result.newBalance, itemName });

@@ -5790,6 +5790,26 @@ async function saveOnboarding() {
   }, 600);
 }
 
+// ---- Dismiss onboarding (X button or overlay click) ----
+// Marks the student as onboarded so it NEVER shows again, then reloads dashboard data
+async function dismissOnboarding(e) {
+  if (e && e.target !== e.currentTarget) return;
+  // Mark as onboarded in the DB so it never shows again
+  const sid = onboardingStudent || currentUser?.studentId;
+  if (sid) {
+    try { await fetch(`/api/students/${sid}/onboarded`, { method: 'PUT' }); } catch(err) { console.warn('Failed to mark onboarded:', err); }
+  }
+  if (currentUser) currentUser.onboarded = 1;
+  const s = students.find(x => x.id === sid);
+  if (s) { s.onboarded = 1; if (s.interests) s.interests.onboarded = true; }
+  onboardingStep = 0;
+  onboardingStudent = null;
+  closeModal();
+  // Refresh student data from server so keys/stats are accurate
+  await refreshStudentData();
+  renderMain();
+}
+
 // ---- Onboarding Body Content (extracted so modal shell doesn't re-render) ----
 function getOnboardingBodyHtml(s) {
   const totalSteps = 6;
@@ -5956,11 +5976,11 @@ function openModal(type, prefill) {
     if (!s) return;
 
     html = `
-      <div class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal-overlay" onclick="dismissOnboarding(event)">
         <div class="modal modal-lg" onclick="event.stopPropagation()">
           <div class="modal-header">
             <h3>Student Interest Setup</h3>
-            <button class="modal-close" onclick="closeModal()">${IC.x}</button>
+            <button class="modal-close" onclick="dismissOnboarding()">${IC.x}</button>
           </div>
           <div class="modal-body">
             ${getOnboardingBodyHtml(s)}
@@ -6605,7 +6625,7 @@ function renderStudentDashboard() {
       <img src="/public/Dashboard_Banner_Update.png" alt="The KEY to growing your reading SKILLS!" style="width:100%;display:block">
     </div>
 
-    ${!s.onboarded ? `<script>setTimeout(function(){ onboardingStudent=${s.id}; onboardingStep=0; openModal('onboarding'); }, 500);</script>` : ''}
+    ${(!s.onboarded && (s.quizzes_completed || 0) === 0 && (s.keys_earned || s.keys || 0) === 0) ? `<script>setTimeout(function(){ onboardingStudent=${s.id}; onboardingStep=0; openModal('onboarding'); }, 500);</script>` : ''}
 
     <div class="wins-badges-row">
       <div class="weekly-wins-combined">
@@ -7726,8 +7746,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Mark all existing badges as "already shown" so we only popup truly new ones
     initShownBadges();
 
-    // Auto-launch onboarding wizard for new students (onboarded === 0)
-    if (currentUser && currentUser.onboarded === 0) {
+    // Auto-launch onboarding wizard for truly new students only
+    // Skip if student has any quiz history (they've already been using the app)
+    const isNewStudent = currentUser && currentUser.onboarded === 0
+      && (currentUser.quizzes_completed || 0) === 0
+      && (currentUser.keys_earned || 0) === 0;
+    if (isNewStudent) {
       // Push current student into students array so the onboarding modal can find them
       students = [{
         id: currentUser.studentId,
@@ -7749,6 +7773,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderMain();
       openModal('onboarding', currentUser.studentId);
       return;
+    } else if (currentUser && currentUser.onboarded === 0) {
+      // Student has quiz data but onboarded flag is stale — fix it silently
+      currentUser.onboarded = 1;
+      if (currentUser.studentId) {
+        fetch(`/api/students/${currentUser.studentId}/onboarded`, { method: 'PUT' }).catch(() => {});
+      }
     }
   } else if (userRole === 'owner') {
     page = 'owner-dashboard';
