@@ -745,22 +745,6 @@ app.put('/api/students/:id/survey', async (req, res) => {
   res.json({ success: true, student });
 });
 
-// Mark student as onboarded (so the welcome wizard never shows again)
-app.put('/api/students/:id/onboarded', async (req, res) => {
-  const id = parseInt(req.params.id);
-  try {
-    await db.supabase.from('students').update({ onboarded: 1 }).eq('id', id);
-    // Update session too so /api/auth/me returns correct value
-    if (req.session.user && req.session.user.studentId === id) {
-      req.session.user.onboarded = 1;
-    }
-    res.json({ success: true });
-  } catch (e) {
-    console.error('Mark onboarded error:', e);
-    res.status(500).json({ error: 'Failed to update onboarded status' });
-  }
-});
-
 app.get('/api/students/:id/reading-history', async (req, res) => {
   const history = await db.getReadingHistory(parseInt(req.params.id));
   res.json(history);
