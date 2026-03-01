@@ -70,3 +70,24 @@ SELECT id, '[
   }
 ]'::jsonb FROM books WHERE title LIKE '%Don''t Draw Robots%'
 ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
+
+-- Seed: Fluff and Robo Dog
+INSERT INTO warmup_quizzes (book_id, questions)
+SELECT id, '[
+  {
+    "question_text": "Go to page 14 and tell us the very LAST word.",
+    "options": ["now", "apple", "fork", "plate"],
+    "correct_answer": 2
+  },
+  {
+    "question_text": "On page 39, how many boxes do you see?",
+    "options": ["one", "two", "three", "four"],
+    "correct_answer": 0
+  },
+  {
+    "question_text": "Turn to page 64, what is robo dog doing?",
+    "options": ["balancing on his nose", "doing a cartwheel", "sleeping", "running"],
+    "correct_answer": 0
+  }
+]'::jsonb FROM books WHERE title LIKE '%Fluff and Robo%'
+ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
