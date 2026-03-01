@@ -927,7 +927,22 @@ app.post('/api/warmup/submit', async (req, res) => {
       totalQuestions: questions.length, attempts: attempts || 1
     });
 
-    res.json({ passed, score, correctCount, totalQuestions: questions.length });
+    // Award 5 keys for passing the warmup (one-time per book)
+    let keysEarned = 0;
+    if (passed && studentId) {
+      const { data: allPasses } = await db.supabase
+        .from('warmup_results')
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('book_id', bookId)
+        .eq('passed', true);
+      if (allPasses && allPasses.length <= 1) {
+        keysEarned = 5;
+        await db.addStudentKeys(studentId, 5);
+      }
+    }
+
+    res.json({ passed, score, correctCount, totalQuestions: questions.length, keysEarned });
   } catch (e) {
     console.error('Warmup submit error:', e);
     res.status(500).json({ error: 'Failed to submit warmup' });
