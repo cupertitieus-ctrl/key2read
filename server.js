@@ -59,7 +59,7 @@ async function buildSessionUser(user) {
       // Get class info for the student (only if they have a class)
       let cls = null;
       if (studentRecord.class_id) {
-        const { data } = await db.supabase.from('classes').select('*, users!teacher_id (name)').eq('id', studentRecord.class_id).single();
+        const { data } = await db.supabase.from('classes').select('*, users!teacher_id (name, email)').eq('id', studentRecord.class_id).single();
         cls = data;
       }
       sessionUser = {
@@ -68,6 +68,7 @@ async function buildSessionUser(user) {
         classId: studentRecord.class_id || null,
         className: cls?.name || '',
         teacherName: cls?.users?.name || '',
+        parentEmail: cls?.users?.email || '',
         grade: studentRecord.grade || cls?.grade || '4th',
         reading_level: studentRecord.reading_level || 3.0,
         reading_score: studentRecord.reading_score || 500,

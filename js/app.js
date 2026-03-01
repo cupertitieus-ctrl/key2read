@@ -794,6 +794,11 @@ function renderSidebar() {
         <div style="color:#FFD700;font-size:2rem;font-weight:800;margin-top:4px">${tp.keys}</div>
         <div style="color:rgba(255,255,255,0.6);font-size:0.75rem;font-weight:600">Keys to Spend</div>
       </div>
+      ${currentUser.parentEmail ? `
+      <div style="margin-top:14px;padding:10px 12px;background:rgba(255,255,255,0.08);border-radius:8px">
+        <div style="color:rgba(255,255,255,0.5);font-size:0.7rem;font-weight:600;margin-bottom:3px">Parent Account</div>
+        <div style="color:rgba(255,255,255,0.9);font-size:0.8rem;word-break:break-all">${currentUser.parentEmail}</div>
+      </div>` : ''}
     </div>` + html;
   }
 
