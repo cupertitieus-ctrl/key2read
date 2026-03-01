@@ -3619,6 +3619,7 @@ function startWarmupQuiz(bookId, sid) {
   let warmupAttempts = 0;
   let warmupAnswers = new Array(questions.length).fill(null);
   let showingHint = false;
+  let showingCorrect = false;
   const letterLabels = ['A', 'B', 'C', 'D'];
 
   function renderWarmupQuestion() {
@@ -3636,31 +3637,53 @@ function startWarmupQuiz(bookId, sid) {
           </div>
           <h3 style="margin:0 0 20px;font-size:1.1rem;font-weight:700;color:var(--navy);line-height:1.5">${q.question_text}</h3>
           <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px" id="warmup-options">
-            ${q.options.map((opt, i) => `
+            ${q.options.map((opt, i) => {
+              const isSelected = selectedAnswer === i;
+              const isCorrectAnswer = showingCorrect && isSelected;
+              const borderColor = isCorrectAnswer ? '#16a34a' : isSelected ? '#F59E0B' : 'var(--g200)';
+              const bgColor = isCorrectAnswer ? '#DCFCE7' : isSelected ? '#FFFBEB' : '#fff';
+              const circleColor = isCorrectAnswer ? '#16a34a' : isSelected ? '#F59E0B' : 'var(--g100)';
+              const circleTxt = isCorrectAnswer ? '#fff' : isSelected ? '#fff' : 'var(--g500)';
+              return `
               <button onclick="window._warmupSelectAnswer(${i})"
-                style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid ${selectedAnswer === i ? '#F59E0B' : 'var(--g200)'};border-radius:12px;background:${selectedAnswer === i ? '#FFFBEB' : '#fff'};cursor:pointer;text-align:left;font-size:0.95rem;color:var(--navy);transition:all 0.15s;font-weight:${selectedAnswer === i ? '600' : '400'}">
-                <span style="width:32px;height:32px;border-radius:50%;background:${selectedAnswer === i ? '#F59E0B' : 'var(--g100)'};color:${selectedAnswer === i ? '#fff' : 'var(--g500)'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0">${letterLabels[i]}</span>
+                style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid ${borderColor};border-radius:12px;background:${bgColor};cursor:${showingCorrect ? 'default' : 'pointer'};text-align:left;font-size:0.95rem;color:var(--navy);transition:all 0.15s;font-weight:${isSelected ? '600' : '400'}">
+                <span style="width:32px;height:32px;border-radius:50%;background:${circleColor};color:${circleTxt};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0">${isCorrectAnswer ? '✓' : letterLabels[i]}</span>
                 ${opt}
-              </button>
-            `).join('')}
+              </button>`;
+            }).join('')}
           </div>
+          ${showingCorrect ? `
+            <div style="background:#DCFCE7;border:1px solid #86EFAC;border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+              <span style="font-size:1.5rem">✅</span>
+              <span style="font-weight:700;color:#16a34a;font-size:1rem">Correct!</span>
+            </div>
+          ` : ''}
           ${showingHint ? `
             <div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:12px;padding:14px 16px;margin-bottom:16px">
               <span style="font-weight:700;color:#92400E">📖 Hint:</span>
               <p style="margin:6px 0 0;color:#78350F;font-size:0.9rem">Are you sure you're reading <strong>${bookTitle}</strong>? Check that you have the right book!</p>
             </div>
           ` : ''}
+          ${showingCorrect ? `
+          <button onclick="window._warmupNextQuestion()"
+            class="btn btn-primary"
+            style="width:100%;font-size:1rem;padding:14px;background:linear-gradient(135deg, #16a34a, #15803d);border:none;color:#fff;font-weight:700;cursor:pointer">
+            ${currentQ + 1 >= questions.length ? 'Finish! 🎉' : 'Next Question →'}
+          </button>
+          ` : `
           <button onclick="window._warmupSubmitAnswer()"
             ${selectedAnswer === null ? 'disabled' : ''}
             class="btn btn-primary"
             style="width:100%;font-size:1rem;padding:14px;background:${selectedAnswer !== null ? 'linear-gradient(135deg, #F59E0B, #D97706)' : 'var(--g200)'};border:none;color:${selectedAnswer !== null ? '#fff' : 'var(--g400)'};font-weight:700;cursor:${selectedAnswer !== null ? 'pointer' : 'not-allowed'}">
             Submit Answer
           </button>
+          `}
         </div>
       </div>`;
   }
 
   window._warmupSelectAnswer = function(idx) {
+    if (showingCorrect) return; // Don't allow changing answer after correct
     selectedAnswer = idx;
     showingHint = false;
     renderWarmupQuestion();
@@ -3673,18 +3696,25 @@ function startWarmupQuiz(bookId, sid) {
 
     if (selectedAnswer === q.correct_answer) {
       warmupAnswers[currentQ] = selectedAnswer;
-      currentQ++;
-      selectedAnswer = null;
+      showingCorrect = true;
       showingHint = false;
-
-      if (currentQ >= questions.length) {
-        submitWarmupResult(bookId, sid, warmupAnswers, warmupAttempts);
-      } else {
-        renderWarmupQuestion();
-      }
+      renderWarmupQuestion();
     } else {
       showingHint = true;
       selectedAnswer = null;
+      renderWarmupQuestion();
+    }
+  };
+
+  window._warmupNextQuestion = function() {
+    currentQ++;
+    selectedAnswer = null;
+    showingCorrect = false;
+    showingHint = false;
+
+    if (currentQ >= questions.length) {
+      submitWarmupResult(bookId, sid, warmupAnswers, warmupAttempts);
+    } else {
       renderWarmupQuestion();
     }
   };
