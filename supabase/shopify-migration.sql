@@ -4,6 +4,7 @@
 -- Add Shopify columns to users table
 ALTER TABLE users ADD COLUMN IF NOT EXISTS shopify_order_id TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS shopify_customer_id TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS plan TEXT;
 
 -- Create table for tracking processed webhooks (idempotency)
 CREATE TABLE IF NOT EXISTS shopify_webhooks (
