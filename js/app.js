@@ -3832,10 +3832,10 @@ async function submitWarmupResult(bookId, sid, answers, attempts) {
           <img src="/public/Key_Circle_Icon.png" alt="" style="width:24px;height:24px"> <span style="font-weight:800;color:#92400E;font-size:1.1rem">+5 Keys!</span>
         </div>
         <p style="margin:0 0 24px;color:var(--g500);font-size:0.95rem;line-height:1.6">
-          You've got your book ready! Time to take the <strong>Chapter 1 Quiz</strong>!
+          You've got your book ready! Head to <strong>Chapter 1</strong> when you're ready to start!
         </p>
-        <button class="btn btn-primary" style="width:100%;font-size:1.05rem;padding:14px 24px" onclick="document.getElementById('modal-root-2').innerHTML='';renderMain();launchQuiz(${bookId}, 1, ${sid || 'null'})">
-          Chapter 1 Quiz 📝
+        <button class="btn btn-primary" style="width:100%;font-size:1.05rem;padding:14px 24px" onclick="document.getElementById('modal-root-2').innerHTML='';renderMain()">
+          Let's Go! 📚
         </button>
       </div>
     </div>`;
