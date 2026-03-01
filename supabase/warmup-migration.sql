@@ -164,7 +164,7 @@ SELECT id, '[
     "correct_answer": 1
   },
   {
-    "question_text": "On page 78, what is the unicorn <span class='vocab-hint' onclick='event.stopPropagation();this.classList.toggle(\"show\")' style='color:#2563EB;text-decoration:underline dotted #2563EB;cursor:pointer;position:relative;font-weight:700'>prancing<span style='display:none;position:absolute;bottom:120%;left:50%;transform:translateX(-50%);background:#1E293B;color:#fff;font-size:0.75rem;font-weight:500;padding:8px 12px;border-radius:8px;white-space:nowrap;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,0.2)'>🐴 Prancing means walking or moving in a happy, bouncy way!</span></span> on?",
+    "question_text": "On page 78, what is the unicorn [vocab:prancing:walking or moving in a happy, bouncy way] on?",
     "options": ["a sink", "the grass", "a rainbow", "a chair"],
     "correct_answer": 0
   },

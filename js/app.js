@@ -3720,8 +3720,8 @@ function startWarmupQuiz(bookId, sid) {
           <div style="width:100%;height:6px;background:var(--g100);border-radius:99px;margin-bottom:24px;overflow:hidden">
             <div style="width:${((currentQ) / questions.length) * 100}%;height:100%;background:linear-gradient(90deg,#F59E0B,#D97706);border-radius:99px;transition:width 0.3s"></div>
           </div>
-          <style>.vocab-hint:hover>span,.vocab-hint.show>span{display:block!important}</style>
-          <h3 style="margin:0 0 20px;font-size:1.1rem;font-weight:700;color:var(--navy);line-height:1.5">${q.question_text}</h3>
+          <style>.vocab-tip:hover .vocab-pop,.vocab-tip.show .vocab-pop{display:block!important}</style>
+          <h3 style="margin:0 0 20px;font-size:1.1rem;font-weight:700;color:var(--navy);line-height:1.5">${q.question_text.replace(/\[vocab:([^:]+):([^\]]+)\]/g, '<span class="vocab-tip" onclick="event.stopPropagation();this.classList.toggle(\'show\')" style="color:#2563EB;text-decoration:underline dotted #2563EB;text-underline-offset:3px;cursor:pointer;position:relative;font-weight:800">$1<span class="vocab-pop" style="display:none;position:absolute;bottom:130%;left:50%;transform:translateX(-50%);background:#1E293B;color:#fff;font-size:0.8rem;font-weight:500;padding:10px 14px;border-radius:10px;white-space:nowrap;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,0.25)">📖 $2</span></span>')}</h3>
           <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px" id="warmup-options">
             ${q.options.map((opt, i) => {
               const isSelected = selectedAnswer === i;
