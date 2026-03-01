@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Certificate Preview</title>
+  <style>
+    @page { size: landscape; margin: 0; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: Georgia, 'Times New Roman', serif; background: #e5e7eb; }
+    .cert { width: 270mm; height: 185mm; background: #FFFCF0; text-align: center; position: relative; padding: 20px 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
+    .border-outer { position: absolute; inset: 8px; border: 3px solid #1E3A8A; border-radius: 4px; }
+    .border-gold { position: absolute; inset: 14px; border: 1.5px solid #D9A72C; border-radius: 2px; }
+    .border-inner { position: absolute; inset: 18px; border: 0.5px solid #1E3A8A; }
+    .corner { position: absolute; width: 12px; height: 12px; background: #D9A72C; border-radius: 50%; }
+    .corner-tl { top: 20px; left: 20px; }
+    .corner-tr { top: 20px; right: 20px; }
+    .corner-bl { bottom: 20px; left: 20px; }
+    .corner-br { bottom: 20px; right: 20px; }
+    .gold-line { width: 200px; height: 2px; background: linear-gradient(90deg, transparent, #D9A72C, transparent); margin: 0 auto; }
+    h1 { font-size: 34px; color: #1E3A8A; font-weight: 700; letter-spacing: 1px; margin: 8px 0; }
+    .stars { font-size: 16px; color: #D9A72C; letter-spacing: 8px; margin: 8px 0; }
+    .subtitle { color: #777; font-size: 14px; margin: 10px 0 4px; }
+    .name { font-size: 32px; color: #1E3A8A; font-weight: 700; margin: 4px 0; padding-bottom: 4px; border-bottom: 2px solid #D9A72C; display: inline-block; }
+    .book-title { font-size: 24px; color: #7C3AED; font-style: italic; font-weight: 600; margin: 6px 0; }
+    .author { font-size: 13px; color: #999; font-style: italic; margin: 2px 0; }
+    .meta { font-size: 11px; color: #999; margin-top: 14px; }
+    .brand { margin-top: 12px; font-size: 13px; color: #1E3A8A; font-weight: 700; letter-spacing: 2px; }
+    .brand-sub { font-size: 9px; color: #bbb; letter-spacing: 0.5px; }
+  </style>
+</head>
+<body>
+  <div class="cert">
+    <div class="border-outer"></div>
+    <div class="border-gold"></div>
+    <div class="border-inner"></div>
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+
+    <div class="gold-line"></div>
+    <h1>Certificate of Achievement</h1>
+    <div class="gold-line"></div>
+
+    <div class="stars">&#9733; &#9733; &#9733;</div>
+
+    <p class="subtitle">This certifies that</p>
+    <p class="name">Emma Johnson</p>
+    <p class="subtitle">has successfully completed all chapters and quizzes for</p>
+    <p class="book-title">"The Tryouts"</p>
+    <p class="author">by Christina Soontornvat</p>
+    <div class="meta">February 26, 2026</div>
+    <div class="brand">KEY2READ</div>
+    <div class="brand-sub">Building Critical Thinking Skills Through Reading</div>
+  </div>
+</body>
+</html>
