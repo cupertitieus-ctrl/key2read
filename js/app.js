@@ -3597,7 +3597,8 @@ function launchWarmup(bookId, sid) {
   if (!modal.id) { modal.id = 'modal-root-2'; document.body.appendChild(modal); }
   modal.innerHTML = `
     <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px">
-      <div onclick="event.stopPropagation()" style="background:#fff;border-radius:20px;padding:36px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+      <div onclick="event.stopPropagation()" style="background:#fff;border-radius:20px;padding:36px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative">
+        <button onclick="document.getElementById('modal-root-2').innerHTML=''" style="position:absolute;top:12px;right:12px;background:none;border:none;font-size:1.5rem;color:var(--g400);cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:background 0.15s" onmouseover="this.style.background='var(--g100)'" onmouseout="this.style.background='none'">✕</button>
         <div style="font-size:3rem;margin-bottom:12px">📖</div>
         <h3 style="margin:0 0 12px;font-size:1.25rem;font-weight:800;color:var(--navy)">Warm Up Quiz</h3>
         <p style="margin:0 0 24px;color:var(--g500);font-size:0.95rem;line-height:1.6">
@@ -3627,7 +3628,8 @@ function startWarmupQuiz(bookId, sid) {
     const modal = document.getElementById('modal-root-2');
     modal.innerHTML = `
       <div style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px">
-        <div onclick="event.stopPropagation()" style="background:#fff;border-radius:20px;padding:32px;max-width:520px;width:95%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+        <div onclick="event.stopPropagation()" style="background:#fff;border-radius:20px;padding:32px;max-width:520px;width:95%;box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative">
+          <button onclick="document.getElementById('modal-root-2').innerHTML=''" style="position:absolute;top:12px;right:12px;background:none;border:none;font-size:1.5rem;color:var(--g400);cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:background 0.15s" onmouseover="this.style.background='var(--g100)'" onmouseout="this.style.background='none'">✕</button>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
             <span style="font-size:0.8rem;color:var(--g400);font-weight:600">WARM UP</span>
             <span style="font-size:0.8rem;color:var(--g400)">Question ${currentQ + 1} of ${questions.length}</span>
