@@ -619,12 +619,24 @@ app.post('/api/webhooks/shopify/order-paid', async (req, res) => {
     // 4. Check if user already exists
     const existingUser = await db.getUserByEmail(orderData.email);
     if (existingUser) {
-      // Update existing user's plan
+      // Generate new password for existing user
+      const plainPassword = shopify.generateReadablePassword();
+      const passwordHash = await bcrypt.hash(plainPassword, 10);
+
+      // Update existing user's plan and password
       await db.supabase.from('users').update({
         plan: orderData.plan,
+        password_hash: passwordHash,
         shopify_order_id: orderData.orderId,
         shopify_customer_id: orderData.customerId
       }).eq('id', existingUser.id);
+
+      // Get their class/family code
+      let classCode = '';
+      if (existingUser.class_id) {
+        const { data: cls } = await db.supabase.from('classes').select('class_code').eq('id', existingUser.class_id).single();
+        if (cls) classCode = cls.class_code;
+      }
 
       // Log webhook
       await db.supabase.from('shopify_webhooks').insert({
@@ -635,6 +647,17 @@ app.post('/api/webhooks/shopify/order-paid', async (req, res) => {
 
       console.log(`✅ Updated existing user ${orderData.email} to plan: ${orderData.plan}`);
       res.status(200).json({ success: true, message: 'User updated' });
+
+      // Send Klaviyo welcome email with new password
+      klaviyo.sendWelcomeEmail({
+        email: orderData.email,
+        firstName: orderData.firstName || existingUser.name?.split(' ')[0] || '',
+        lastName: orderData.lastName || '',
+        password: plainPassword,
+        plan: orderData.plan,
+        classCode: classCode,
+        loginUrl: 'https://key2read.onrender.com/pages/signin.html'
+      }).catch(err => console.error('Klaviyo welcome email error:', err.message));
       return;
     }
 
@@ -695,7 +718,7 @@ app.post('/api/webhooks/shopify/order-paid', async (req, res) => {
       password: plainPassword,
       plan: orderData.plan,
       classCode: classCode,
-      loginUrl: 'https://key2read.com/pages/signin.html'
+      loginUrl: 'https://key2read.onrender.com/pages/signin.html'
     }).catch(err => console.error('Klaviyo welcome email error:', err.message));
 
   } catch (e) {
