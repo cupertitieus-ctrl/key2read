@@ -49,3 +49,24 @@ INSERT INTO warmup_quizzes (book_id, questions) VALUES (66, '[
     "correct_answer": 2
   }
 ]') ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
+
+-- Seed: Charlie Picasso: Don't Draw Robots
+INSERT INTO warmup_quizzes (book_id, questions)
+SELECT id, '[
+  {
+    "question_text": "Go to page 11 and tell us the very LAST word.",
+    "options": ["enjoy", "landed", "why", "angry"],
+    "correct_answer": 2
+  },
+  {
+    "question_text": "On page 43, what is the illustration a drawing of?",
+    "options": ["balloon", "cheese", "lamp", "apple"],
+    "correct_answer": 0
+  },
+  {
+    "question_text": "Turn to page 55, what is the illustration drawing of?",
+    "options": ["cat", "dog", "superhero", "plant"],
+    "correct_answer": 2
+  }
+]'::jsonb FROM books WHERE title LIKE '%Don''t Draw Robots%'
+ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
