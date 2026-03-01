@@ -651,6 +651,7 @@ const QuizEngine = (function() {
           <div class="quiz-retry-modal quiz-reveal-modal">
             <div style="font-size:2rem;margin-bottom:4px">❌</div>
             <h3 style="color:#EF4444;font-size:1.25rem;font-weight:800;margin:0 0 12px">Incorrect</h3>
+            <p style="color:var(--g500);font-size:0.9rem;margin:0 0 4px"><strong style="color:#EF4444">"${escapeHtml(q.options[studentPicks[currentQuestion]] || '')}"</strong> was incorrect.</p>
             <p style="color:var(--g500);font-size:0.9rem;margin:0 0 8px">The correct answer is:</p>
             <div class="quiz-reveal-answer">
               <p>"${escapeHtml(q.options[q.correct_answer] || '')}"</p>

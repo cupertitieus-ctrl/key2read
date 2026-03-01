@@ -3895,9 +3895,11 @@ function renderBookDetail() {
           ` : ''}
           ${bookChapters.map((ch, i) => {
             const isTeacher = userRole === 'teacher' || userRole === 'owner' || userRole === 'principal';
+            const isGuest = userRole === 'guest';
             const isCompleted = completedChapters.includes(ch.chapter_number);
             const warmupRequired = warmupData && !warmupPassed;
-            const isUnlocked = isTeacher || (!warmupRequired && (ch.chapter_number === 1 || completedChapters.includes(ch.chapter_number - 1)));
+            const guestLocked = isGuest && ch.chapter_number > 1;
+            const isUnlocked = isTeacher || (!guestLocked && !warmupRequired && (ch.chapter_number === 1 || completedChapters.includes(ch.chapter_number - 1)));
             const isLocked = !isUnlocked && !isCompleted;
 
             if (isLocked) {
@@ -3909,11 +3911,11 @@ function renderBookDetail() {
                   </div>
                   <div>
                     <span class="list-item-name" style="color:var(--g400)">${/diary|diaries/i.test(b.title) ? 'Entry' : 'Chapter'} ${ch.chapter_number}: ${ch.title}</span>
-                    <span class="list-item-sub">${warmupRequired ? 'Complete the Warm Up first!' : `Complete ${/diary|diaries/i.test(b.title) ? 'Entry' : 'Chapter'} ${ch.chapter_number - 1} first!`}</span>
+                    <span class="list-item-sub">${warmupRequired ? 'Complete the Warm Up first!' : guestLocked ? 'Subscribe to unlock all chapters!' : `Complete ${/diary|diaries/i.test(b.title) ? 'Entry' : 'Chapter'} ${ch.chapter_number - 1} first!`}</span>
                   </div>
                 </div>
                 <div class="list-item-right">
-                  <span class="btn btn-sm btn-outline" style="opacity:0.4;pointer-events:none">🔒 Locked</span>
+                  ${guestLocked ? `<a href="pricing.html" class="btn btn-sm btn-primary" style="text-decoration:none;font-size:0.75rem" onclick="event.stopPropagation()">Upgrade</a>` : `<span class="btn btn-sm btn-outline" style="opacity:0.4;pointer-events:none">🔒 Locked</span>`}
                 </div>
               </div>`;
             }
