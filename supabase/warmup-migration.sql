@@ -154,3 +154,24 @@ SELECT id, '[
   }
 ]'::jsonb FROM books WHERE title LIKE '%Magic Pencil%'
 ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
+
+-- Seed: Sprinkles and Unicorn Surprise Visit
+INSERT INTO warmup_quizzes (book_id, questions)
+SELECT id, '[
+  {
+    "question_text": "Go to page 65 and tell us the very LAST word.",
+    "options": ["time", "done", "desk", "toy"],
+    "correct_answer": 1
+  },
+  {
+    "question_text": "On page 78, what is the unicorn prancing on?",
+    "options": ["a sink", "the grass", "a rainbow", "a chair"],
+    "correct_answer": 0
+  },
+  {
+    "question_text": "Turn to page 63, what made a CLANG in the illustration?",
+    "options": ["vase", "coins", "books", "water bottle"],
+    "correct_answer": 3
+  }
+]'::jsonb FROM books WHERE title LIKE '%Sprinkles%Unicorn%'
+ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
