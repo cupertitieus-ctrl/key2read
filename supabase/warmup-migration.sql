@@ -112,3 +112,24 @@ SELECT id, '[
   }
 ]'::jsonb FROM books WHERE title LIKE '%Sparkly Turtle%'
 ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
+
+-- Seed: Dragon Diaries Big Time
+INSERT INTO warmup_quizzes (book_id, questions)
+SELECT id, '[
+  {
+    "question_text": "Go to page 27 and tell us the very LAST word.",
+    "options": ["frozen", "crayon", "scissors", "meeting"],
+    "correct_answer": 3
+  },
+  {
+    "question_text": "On page 50, what is the dragon doing?",
+    "options": ["flying", "sleeping", "eating", "sitting"],
+    "correct_answer": 0
+  },
+  {
+    "question_text": "Turn to page 66, what did the boy give the dragon?",
+    "options": ["a present", "flowers", "toys", "water"],
+    "correct_answer": 1
+  }
+]'::jsonb FROM books WHERE title LIKE '%Dragon Diaries%'
+ON CONFLICT (book_id) DO UPDATE SET questions = EXCLUDED.questions;
