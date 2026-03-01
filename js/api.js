@@ -64,6 +64,11 @@ const API = {
   getFullBookQuiz: (bookId) => API.get(`/api/books/${bookId}/full-quiz`),
   getCompletedChapters: (studentId, bookId) => API.get(`/api/students/${studentId}/completed-chapters/${bookId}`),
 
+  // Warm Up
+  getWarmupQuiz: (bookId) => API.get(`/api/books/${bookId}/warmup`),
+  getWarmupStatus: (studentId, bookId) => API.get(`/api/students/${studentId}/warmup-status/${bookId}`),
+  submitWarmup: (data) => API.post('/api/warmup/submit', data),
+
   // Quiz
   personalizeAll: (chapterId, studentId) => API.post('/api/quiz/personalize-all', { chapterId, studentId }),
   submitQuiz: (data) => API.post('/api/quiz/submit', data),

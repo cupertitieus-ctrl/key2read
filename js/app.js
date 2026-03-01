@@ -145,6 +145,8 @@ let books = [];
 let selectedBookId = null; // For book detail view
 let bookChapters = []; // Chapters for selected book
 let completedChapters = []; // Chapter numbers the student has completed for current book
+let warmupPassed = false; // Whether warm up is passed for current book
+let warmupData = null; // Warm up quiz questions for current book (null if no warm up)
 let studentFavorites = []; // Array of favorite book IDs (student only)
 let showFavoritesOnly = false; // Filter toggle state
 
@@ -3559,26 +3561,164 @@ async function openBook(bookId) {
   selectedBookId = bookId;
   bookChapters = [];
   completedChapters = prevCompleted;
+  warmupPassed = false;
+  warmupData = null;
   page = 'book-detail';
   renderSidebar();
   renderMain();
-  // Load chapters and completed progress in parallel
+  // Load chapters, completed progress, and warm up data in parallel
   try {
     const sid = currentUser?.studentId || 0;
-    const [chapters, progress] = await Promise.all([
+    const [chapters, progress, warmupQuiz, warmupStatus] = await Promise.all([
       API.getChapters(bookId),
-      sid ? API.getCompletedChapters(sid, bookId).catch(() => ({ completed: [] })) : Promise.resolve({ completed: [] })
+      sid ? API.getCompletedChapters(sid, bookId).catch(() => ({ completed: [] })) : Promise.resolve({ completed: [] }),
+      API.getWarmupQuiz(bookId).catch(() => ({ hasWarmup: false })),
+      sid ? API.getWarmupStatus(sid, bookId).catch(() => ({ passed: false })) : Promise.resolve({ passed: false })
     ]);
     bookChapters = chapters;
     // Merge server-side completed with in-memory completed (in case submit was slow)
     const serverCompleted = progress.completed || [];
     completedChapters = [...new Set([...prevCompleted, ...serverCompleted])];
+    warmupData = warmupQuiz.hasWarmup ? warmupQuiz : null;
+    warmupPassed = warmupStatus.passed;
   } catch(e) {
     if (bookChapters.length === 0) bookChapters = [];
     // Keep prevCompleted if fetch fails
     if (prevCompleted.length > 0) completedChapters = prevCompleted;
   }
   renderMain();
+}
+
+// ─── WARM UP QUIZ ───
+function launchWarmup(bookId, sid) {
+  const b = books.find(x => x.id === bookId);
+  const bookTitle = b ? b.title : 'your book';
+  const modal = document.getElementById('modal-root-2') || document.createElement('div');
+  if (!modal.id) { modal.id = 'modal-root-2'; document.body.appendChild(modal); }
+  modal.innerHTML = `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px">
+      <div onclick="event.stopPropagation()" style="background:#fff;border-radius:20px;padding:36px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+        <div style="font-size:3rem;margin-bottom:12px">📖</div>
+        <h3 style="margin:0 0 12px;font-size:1.25rem;font-weight:800;color:var(--navy)">Warm Up Quiz</h3>
+        <p style="margin:0 0 24px;color:var(--g500);font-size:0.95rem;line-height:1.6">
+          Let's do a warm up quiz to see if you have your book in your hand!
+        </p>
+        <button class="btn btn-primary" style="width:100%;font-size:1.1rem;padding:14px 24px;background:linear-gradient(135deg, #F59E0B, #D97706);border:none;font-weight:700" onclick="startWarmupQuiz(${bookId}, ${sid})">
+          I'm ready!
+        </button>
+      </div>
+    </div>`;
+}
+
+function startWarmupQuiz(bookId, sid) {
+  const b = books.find(x => x.id === bookId);
+  const bookTitle = b ? b.title : 'your book';
+  const questions = warmupData.questions;
+  let currentQ = 0;
+  let selectedAnswer = null;
+  let warmupAttempts = 0;
+  let warmupAnswers = new Array(questions.length).fill(null);
+  let showingHint = false;
+  const letterLabels = ['A', 'B', 'C', 'D'];
+
+  function renderWarmupQuestion() {
+    const q = questions[currentQ];
+    const modal = document.getElementById('modal-root-2');
+    modal.innerHTML = `
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px">
+        <div onclick="event.stopPropagation()" style="background:#fff;border-radius:20px;padding:32px;max-width:520px;width:95%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+            <span style="font-size:0.8rem;color:var(--g400);font-weight:600">WARM UP</span>
+            <span style="font-size:0.8rem;color:var(--g400)">Question ${currentQ + 1} of ${questions.length}</span>
+          </div>
+          <div style="width:100%;height:6px;background:var(--g100);border-radius:99px;margin-bottom:24px;overflow:hidden">
+            <div style="width:${((currentQ) / questions.length) * 100}%;height:100%;background:linear-gradient(90deg,#F59E0B,#D97706);border-radius:99px;transition:width 0.3s"></div>
+          </div>
+          <h3 style="margin:0 0 20px;font-size:1.1rem;font-weight:700;color:var(--navy);line-height:1.5">${q.question_text}</h3>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px" id="warmup-options">
+            ${q.options.map((opt, i) => `
+              <button onclick="window._warmupSelectAnswer(${i})"
+                style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid ${selectedAnswer === i ? '#F59E0B' : 'var(--g200)'};border-radius:12px;background:${selectedAnswer === i ? '#FFFBEB' : '#fff'};cursor:pointer;text-align:left;font-size:0.95rem;color:var(--navy);transition:all 0.15s;font-weight:${selectedAnswer === i ? '600' : '400'}">
+                <span style="width:32px;height:32px;border-radius:50%;background:${selectedAnswer === i ? '#F59E0B' : 'var(--g100)'};color:${selectedAnswer === i ? '#fff' : 'var(--g500)'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0">${letterLabels[i]}</span>
+                ${opt}
+              </button>
+            `).join('')}
+          </div>
+          ${showingHint ? `
+            <div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:12px;padding:14px 16px;margin-bottom:16px">
+              <span style="font-weight:700;color:#92400E">📖 Hint:</span>
+              <p style="margin:6px 0 0;color:#78350F;font-size:0.9rem">Are you sure you're reading <strong>${bookTitle}</strong>? Check that you have the right book!</p>
+            </div>
+          ` : ''}
+          <button onclick="window._warmupSubmitAnswer()"
+            ${selectedAnswer === null ? 'disabled' : ''}
+            class="btn btn-primary"
+            style="width:100%;font-size:1rem;padding:14px;background:${selectedAnswer !== null ? 'linear-gradient(135deg, #F59E0B, #D97706)' : 'var(--g200)'};border:none;color:${selectedAnswer !== null ? '#fff' : 'var(--g400)'};font-weight:700;cursor:${selectedAnswer !== null ? 'pointer' : 'not-allowed'}">
+            Submit Answer
+          </button>
+        </div>
+      </div>`;
+  }
+
+  window._warmupSelectAnswer = function(idx) {
+    selectedAnswer = idx;
+    showingHint = false;
+    renderWarmupQuestion();
+  };
+
+  window._warmupSubmitAnswer = function() {
+    if (selectedAnswer === null) return;
+    const q = questions[currentQ];
+    warmupAttempts++;
+
+    if (selectedAnswer === q.correct_answer) {
+      warmupAnswers[currentQ] = selectedAnswer;
+      currentQ++;
+      selectedAnswer = null;
+      showingHint = false;
+
+      if (currentQ >= questions.length) {
+        submitWarmupResult(bookId, sid, warmupAnswers, warmupAttempts);
+      } else {
+        renderWarmupQuestion();
+      }
+    } else {
+      showingHint = true;
+      selectedAnswer = null;
+      renderWarmupQuestion();
+    }
+  };
+
+  renderWarmupQuestion();
+}
+
+async function submitWarmupResult(bookId, sid, answers, attempts) {
+  const modal = document.getElementById('modal-root-2');
+  const b = books.find(x => x.id === bookId);
+
+  try {
+    if (sid) {
+      await API.submitWarmup({ studentId: sid, bookId, answers, attempts });
+    }
+  } catch(e) {
+    console.error('Warmup submit error:', e);
+  }
+
+  warmupPassed = true;
+
+  modal.innerHTML = `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px">
+      <div onclick="event.stopPropagation()" style="background:#fff;border-radius:20px;padding:36px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+        <div style="font-size:3.5rem;margin-bottom:12px">🎉</div>
+        <h3 style="margin:0 0 8px;font-size:1.3rem;font-weight:800;color:var(--navy)">Great job!</h3>
+        <p style="margin:0 0 24px;color:var(--g500);font-size:0.95rem;line-height:1.6">
+          You've got your book ready! Now let's start reading <strong>${b ? escapeHtml(b.title) : 'your book'}</strong>.
+        </p>
+        <button class="btn btn-primary" style="width:100%;font-size:1.05rem;padding:14px 24px" onclick="document.getElementById('modal-root-2').innerHTML='';renderMain()">
+          Start Reading! 📚
+        </button>
+      </div>
+    </div>`;
 }
 
 function renderBookDetail() {
@@ -3617,10 +3757,27 @@ function renderBookDetail() {
         </div>
       ` : `
         <div class="list-card">
+          ${warmupData ? `
+          <div class="list-item" style="cursor:${warmupPassed ? 'default' : 'pointer'};${warmupPassed ? '' : 'background:linear-gradient(135deg, #FFF7ED 0%, #FFFBEB 100%);border-left:4px solid #F59E0B'}" ${warmupPassed ? '' : `onclick="launchWarmup(${b.id}, ${sid})"`}>
+            <div class="list-item-info" style="display:flex;align-items:center;gap:12px;flex-direction:row">
+              <div style="width:44px;height:44px;border-radius:50%;background:${warmupPassed ? 'var(--green-p, #dcfce7)' : 'linear-gradient(135deg, #FDE68A, #FBBF24)'};color:${warmupPassed ? 'var(--green, #16a34a)' : '#92400E'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;flex-shrink:0">
+                ${warmupPassed ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : '📖'}
+              </div>
+              <div>
+                <span class="list-item-name" style="color:${warmupPassed ? 'var(--g500)' : 'var(--navy)'}">Warm Up</span>
+                <span class="list-item-sub">${warmupPassed ? '✅ Completed! Your book is ready.' : 'Make sure you have your book in hand!'}</span>
+              </div>
+            </div>
+            <div class="list-item-right">
+              <span class="btn btn-sm ${warmupPassed ? 'btn-outline' : 'btn-primary'}" style="${warmupPassed ? 'opacity:0.6' : 'background:linear-gradient(135deg, #F59E0B, #D97706);border:none'}">${warmupPassed ? '✅ Done' : "Let's Go!"}</span>
+            </div>
+          </div>
+          ` : ''}
           ${bookChapters.map((ch, i) => {
             const isTeacher = userRole === 'teacher' || userRole === 'owner' || userRole === 'principal';
             const isCompleted = completedChapters.includes(ch.chapter_number);
-            const isUnlocked = isTeacher || ch.chapter_number === 1 || completedChapters.includes(ch.chapter_number - 1);
+            const warmupRequired = warmupData && !warmupPassed;
+            const isUnlocked = isTeacher || (!warmupRequired && (ch.chapter_number === 1 || completedChapters.includes(ch.chapter_number - 1)));
             const isLocked = !isUnlocked && !isCompleted;
 
             if (isLocked) {
@@ -3632,7 +3789,7 @@ function renderBookDetail() {
                   </div>
                   <div>
                     <span class="list-item-name" style="color:var(--g400)">${/diary|diaries/i.test(b.title) ? 'Entry' : 'Chapter'} ${ch.chapter_number}: ${ch.title}</span>
-                    <span class="list-item-sub">Complete ${/diary|diaries/i.test(b.title) ? 'Entry' : 'Chapter'} ${ch.chapter_number - 1} first!</span>
+                    <span class="list-item-sub">${warmupRequired ? 'Complete the Warm Up first!' : `Complete ${/diary|diaries/i.test(b.title) ? 'Entry' : 'Chapter'} ${ch.chapter_number - 1} first!`}</span>
                   </div>
                 </div>
                 <div class="list-item-right">

@@ -2003,6 +2003,47 @@ async function deleteClassGoal(goalId) {
   } catch (e) { console.error('deleteClassGoal error:', e.message); return false; }
 }
 
+// ─── WARM UP QUIZZES ───
+
+async function getWarmupQuiz(bookId) {
+  const { data } = await supabase
+    .from('warmup_quizzes')
+    .select('*')
+    .eq('book_id', bookId)
+    .single();
+  return data || null;
+}
+
+async function getWarmupResult(studentId, bookId) {
+  const { data } = await supabase
+    .from('warmup_results')
+    .select('*')
+    .eq('student_id', studentId)
+    .eq('book_id', bookId)
+    .eq('passed', true)
+    .order('completed_at', { ascending: false })
+    .limit(1);
+  return (data && data.length > 0) ? data[0] : null;
+}
+
+async function saveWarmupResult(resultData) {
+  const { data, error } = await supabase
+    .from('warmup_results')
+    .insert({
+      student_id: resultData.studentId,
+      book_id: resultData.bookId,
+      passed: resultData.passed,
+      score: resultData.score,
+      correct_count: resultData.correctCount,
+      total_questions: resultData.totalQuestions,
+      attempts: resultData.attempts
+    })
+    .select()
+    .single();
+  if (error) console.error('saveWarmupResult error:', error);
+  return data;
+}
+
 module.exports = {
   supabase,
   initDB,
@@ -2059,7 +2100,10 @@ module.exports = {
   deleteRewardGalleryItem,
   getPopularBooks,
   getRecentActivity,
-  getWeeklyGrowthData
+  getWeeklyGrowthData,
+  getWarmupQuiz,
+  getWarmupResult,
+  saveWarmupResult
 };
 
 async function getFullBookQuiz(bookId) {

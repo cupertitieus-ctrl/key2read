@@ -863,6 +863,57 @@ app.get('/api/students/:id/completed-chapters/:bookId', async (req, res) => {
   }
 });
 
+// ─── WARM UP ROUTES ───
+app.get('/api/books/:bookId/warmup', async (req, res) => {
+  const bookId = parseInt(req.params.bookId);
+  try {
+    const warmup = await db.getWarmupQuiz(bookId);
+    if (!warmup) return res.json({ hasWarmup: false });
+    res.json({ hasWarmup: true, questions: warmup.questions });
+  } catch (e) {
+    console.error('Warmup quiz error:', e);
+    res.status(500).json({ error: 'Failed to load warmup quiz' });
+  }
+});
+
+app.get('/api/students/:id/warmup-status/:bookId', async (req, res) => {
+  const studentId = parseInt(req.params.id);
+  const bookId = parseInt(req.params.bookId);
+  try {
+    const result = await db.getWarmupResult(studentId, bookId);
+    res.json({ passed: !!result });
+  } catch (e) {
+    console.error('Warmup status error:', e);
+    res.status(500).json({ error: 'Failed to check warmup status' });
+  }
+});
+
+app.post('/api/warmup/submit', async (req, res) => {
+  const { studentId, bookId, answers, attempts } = req.body;
+  try {
+    const warmup = await db.getWarmupQuiz(bookId);
+    if (!warmup) return res.status(404).json({ error: 'No warmup for this book' });
+
+    const questions = warmup.questions;
+    let correctCount = 0;
+    for (let i = 0; i < questions.length; i++) {
+      if (answers[i] === questions[i].correct_answer) correctCount++;
+    }
+    const score = (correctCount / questions.length) * 100;
+    const passed = correctCount === questions.length;
+
+    await db.saveWarmupResult({
+      studentId, bookId, passed, score, correctCount,
+      totalQuestions: questions.length, attempts: attempts || 1
+    });
+
+    res.json({ passed, score, correctCount, totalQuestions: questions.length });
+  } catch (e) {
+    console.error('Warmup submit error:', e);
+    res.status(500).json({ error: 'Failed to submit warmup' });
+  }
+});
+
 // ─── BOOK ROUTES ───
 app.get('/api/books', async (req, res) => {
   const books = await db.getBooks();
