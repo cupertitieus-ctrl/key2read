@@ -2348,6 +2348,86 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
       ${componentCards}
     </div>
 
+    ${(() => {
+      const warmups = perf.warmups || [];
+      const byBook = {};
+      warmups.forEach(w => {
+        if (!byBook[w.book_id]) byBook[w.book_id] = [];
+        byBook[w.book_id].push(w);
+      });
+      const bookEntries = Object.entries(byBook);
+      const passedCount = bookEntries.filter(([, attempts]) => attempts.some(a => a.passed)).length;
+      const totalBooks = bookEntries.length;
+      const totalAttempts = warmups.length;
+      const avgScore = warmups.length > 0 ? Math.round(warmups.reduce((sum, w) => sum + w.score, 0) / warmups.length) : 0;
+
+      // Warmup score: 0-1000 based on pass rate and efficiency
+      let warmupScore = 0;
+      if (totalBooks > 0) {
+        const passRate = passedCount / totalBooks;
+        const avgAttempts = totalAttempts / totalBooks;
+        const efficiencyBonus = avgAttempts <= 1.5 ? 1.0 : avgAttempts <= 3 ? 0.85 : 0.7;
+        warmupScore = Math.round(passRate * 1000 * efficiencyBonus);
+      }
+      const warmupLabel = warmups.length === 0 ? null : warmupScore >= 750 ? 'Strong' : warmupScore >= 450 ? 'Developing' : 'Needs Support';
+      const warmupInsight = warmups.length === 0
+        ? 'No warm-ups completed yet. Warm-ups verify the student has the physical book.'
+        : passedCount === totalBooks
+          ? 'All books verified — student is using physical books!'
+          : `${passedCount} of ${totalBooks} books verified so far.`;
+
+      const warmupRows = bookEntries.map(([bookId, attempts]) => {
+        const b = books.find(bk => bk.id === parseInt(bookId));
+        const bookName = b ? b.title : 'Unknown Book';
+        const passed = attempts.some(a => a.passed);
+        const best = attempts.reduce((best, a) => a.score > best.score ? a : best, attempts[0]);
+        const attCount = attempts.length;
+        const date = best.completed_at ? new Date(best.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+        return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:${passed ? '#F0FDF4' : '#FFF7ED'};border-radius:8px">
+          <span style="font-size:1.1rem">${passed ? '✅' : '⏳'}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;color:var(--navy);font-size:0.8rem">${escapeHtml(bookName)}</div>
+            <div style="color:var(--g400);font-size:0.7rem">${passed ? 'Passed' : 'Not passed'} · ${attCount} attempt${attCount !== 1 ? 's' : ''} · Best: ${Math.round(best.score)}%</div>
+          </div>
+          <div style="font-size:0.7rem;color:var(--g400)">${date}</div>
+        </div>`;
+      }).join('');
+
+      return `
+      <div class="section-header" style="margin-top:24px"><h3>📖 Warm-Up Performance</h3></div>
+      <div style="margin-bottom:4px;font-size:0.8rem;color:var(--g500)">Warm-ups are tracked separately — they verify the student has the physical book before starting quizzes.</div>
+      <div class="component-card" style="border-top:3px solid #F59E0B;margin-top:8px">
+        <div class="component-card-header">
+          <span class="component-icon" style="color:#F59E0B">📖</span>
+          <span class="component-name">Book Verification</span>
+          <span class="component-weight" style="font-size:0.7rem;color:var(--g400)">Separate</span>
+        </div>
+        <div class="component-score-row">
+          <span class="component-score">${warmups.length > 0 ? warmupScore : '—'}</span>
+        </div>
+        ${warmupLabel ? `<div style="margin:6px 0">${skillPill(warmupLabel)}</div>` : ''}
+        <div class="component-insight">${warmupInsight}</div>
+        ${bookEntries.length > 0 ? `
+        <div style="margin-top:12px;display:flex;flex-direction:column;gap:6px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+            <div style="text-align:center;padding:8px;background:var(--g50);border-radius:8px">
+              <div style="font-size:1.1rem;font-weight:800;color:var(--navy)">${passedCount}/${totalBooks}</div>
+              <div style="font-size:0.65rem;color:var(--g400)">Books Verified</div>
+            </div>
+            <div style="text-align:center;padding:8px;background:var(--g50);border-radius:8px">
+              <div style="font-size:1.1rem;font-weight:800;color:var(--navy)">${totalAttempts}</div>
+              <div style="font-size:0.65rem;color:var(--g400)">Total Attempts</div>
+            </div>
+            <div style="text-align:center;padding:8px;background:var(--g50);border-radius:8px">
+              <div style="font-size:1.1rem;font-weight:800;color:var(--navy)">${avgScore}%</div>
+              <div style="font-size:0.65rem;color:var(--g400)">Avg Score</div>
+            </div>
+          </div>
+          ${warmupRows}
+        </div>` : ''}
+      </div>`;
+    })()}
+
     <div class="student-quick-stats" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:20px 0">
       <div style="background:linear-gradient(135deg,#FB923C,#C2410C);border-radius:14px;padding:18px 16px;text-align:center;color:#fff;display:flex;flex-direction:column;align-items:center">
         <img src="/public/Single_Book_Outline_White.png" alt="" style="width:32px;height:32px;margin-bottom:6px;display:block">
@@ -2365,48 +2445,6 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
         <div style="font-size:0.75rem;font-weight:600;opacity:0.85">Keys Earned</div>
       </div>
     </div>
-
-    ${(() => {
-      const warmups = perf.warmups || [];
-      if (warmups.length === 0) {
-        return `
-          <div class="section-header" style="margin-top:24px"><h3>📖 Warm-Ups (Book Verification)</h3></div>
-          <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:14px;padding:20px;text-align:center">
-            <p style="color:#92400E;margin:0;font-size:0.9rem">No warm-ups completed yet. Warm-ups verify the student has the physical book.</p>
-          </div>`;
-      }
-      // Group warmups by book — show best attempt per book
-      const byBook = {};
-      warmups.forEach(w => {
-        if (!byBook[w.book_id]) byBook[w.book_id] = [];
-        byBook[w.book_id].push(w);
-      });
-      const warmupRows = Object.entries(byBook).map(([bookId, attempts]) => {
-        const b = books.find(bk => bk.id === parseInt(bookId));
-        const bookName = b ? b.title : 'Unknown Book';
-        const passed = attempts.some(a => a.passed);
-        const totalAttempts = attempts.length;
-        const best = attempts.reduce((best, a) => a.score > best.score ? a : best, attempts[0]);
-        const date = best.completed_at ? new Date(best.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-        return `
-          <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:${passed ? '#F0FDF4' : '#FFF7ED'};border:1px solid ${passed ? '#BBF7D0' : '#FED7AA'};border-radius:12px">
-            <span style="font-size:1.3rem">${passed ? '✅' : '⏳'}</span>
-            <div style="flex:1;min-width:0">
-              <div style="font-weight:700;color:var(--navy);font-size:0.9rem">${escapeHtml(bookName)}</div>
-              <div style="color:var(--g500);font-size:0.8rem;margin-top:2px">${passed ? 'Passed' : 'Not yet passed'} · ${totalAttempts} attempt${totalAttempts !== 1 ? 's' : ''} · Best: ${Math.round(best.score)}%</div>
-            </div>
-            <div style="text-align:right;flex-shrink:0">
-              <div style="font-size:0.75rem;color:var(--g400)">${date}</div>
-            </div>
-          </div>`;
-      }).join('');
-      const passedCount = Object.values(byBook).filter(attempts => attempts.some(a => a.passed)).length;
-      const totalBooks = Object.keys(byBook).length;
-      return `
-        <div class="section-header" style="margin-top:24px"><h3>📖 Warm-Ups (Book Verification)</h3></div>
-        <div style="margin-bottom:8px;font-size:0.85rem;color:var(--g500)">Warm-ups confirm the student has the physical book. <strong>${passedCount}/${totalBooks}</strong> books verified.</div>
-        <div style="display:flex;flex-direction:column;gap:8px">${warmupRows}</div>`;
-    })()}
 
     <div class="section-header" style="margin-top:24px"><h3>Key Activity</h3></div>
     <div class="key-activity-section">
