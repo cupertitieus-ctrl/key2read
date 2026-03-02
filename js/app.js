@@ -2242,6 +2242,25 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
     return score >= 750 ? 'Strong' : score >= 450 ? 'Developing' : 'Needs Support';
   }
 
+  // Quiz consistency — how often the student scores 70%+ on recent quizzes
+  const quizHist = perf.quizHistory || [];
+  let consistencyLabel = '', consistencyColor = '', consistencyBg = '';
+  if (quizHist.length >= 3) {
+    const recent10 = quizHist.slice(0, 10);
+    const goodCount = recent10.filter(q => q.score >= 70).length;
+    const pct = goodCount / recent10.length;
+    if (pct >= 0.8) {
+      consistencyLabel = 'Consistently Scoring Well';
+      consistencyColor = '#15803d'; consistencyBg = '#dcfce7';
+    } else if (pct >= 0.5) {
+      consistencyLabel = 'Mixed Results';
+      consistencyColor = '#C2410C'; consistencyBg = '#FFEDD5';
+    } else {
+      consistencyLabel = 'Needs Improvement';
+      consistencyColor = '#DC2626'; consistencyBg = '#FEE2E2';
+    }
+  }
+
   // Component cards
   const componentCards = Object.entries(perf.components).map(([key, comp]) => {
     const cfg = compConfig[key];
@@ -2249,6 +2268,24 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
                   comp.trend === 'down' ? `<span class="trend-down">&#9660;</span>` :
                   `<span class="trend-stable">&#9472;</span>`;
     const label = key !== 'vocabulary' ? scoreToPill(comp.score, key) : null;
+
+    // Extra content for the effort card: fail streak alert + quiz consistency
+    let effortExtra = '';
+    if (key === 'effort') {
+      if (isStruggling) {
+        effortExtra += `<div style="margin-top:8px;padding:8px 10px;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;display:flex;align-items:center;gap:6px">
+          <span style="font-size:1rem">⚠️</span>
+          <span style="font-size:0.75rem;font-weight:700;color:#991B1B">Failed 3 quizzes in a row</span>
+        </div>`;
+      }
+      if (consistencyLabel) {
+        effortExtra += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--g150,#e5e7eb)">
+          <div style="font-size:0.7rem;color:var(--g400);font-weight:600;margin-bottom:4px">Quiz Consistency</div>
+          <span style="display:inline-block;padding:3px 10px;border-radius:99px;font-size:0.7rem;font-weight:700;background:${consistencyBg};color:${consistencyColor}">${consistencyLabel}</span>
+        </div>`;
+      }
+    }
+
     return `
       <div class="component-card" onclick="toggleComponentDetail('${key}')" style="border-top:3px solid ${cfg.borderColor}">
         <div class="component-card-header">
@@ -2262,6 +2299,7 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
         </div>
         ${label ? `<div style="margin:6px 0">${skillPill(label)}</div>` : ''}
         <div class="component-insight">${comp.insight}</div>
+        ${effortExtra}
         <div class="component-detail" id="detail-${key}" style="display:none">
           ${renderComponentDetail(key, comp)}
         </div>
@@ -2656,6 +2694,7 @@ function showWarmupDetail(dataStr) {
   const rows = data.map(d => {
     const icon = d.passed ? (d.attempts === 1 ? '📖' : d.attempts <= 3 ? '🤔' : '🎲') : '⏳';
     const label = d.passed && d.attempts === 1 ? 'First try' : d.passed ? d.attempts + ' tries' : 'In progress';
+    const desc = d.passed ? (d.attempts === 1 ? 'reading the book' : d.attempts <= 3 ? 'mostly guessing' : 'always guessing') : '';
     const color = d.passed && d.attempts === 1 ? '#15803d' : d.passed && d.attempts <= 3 ? '#C2410C' : d.passed ? '#DC2626' : 'var(--g400)';
     const bg = d.passed ? (d.attempts === 1 ? '#F0FDF4' : d.attempts <= 3 ? '#FFF7ED' : '#FEF2F2') : '#F9FAFB';
     return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:${bg};border-radius:10px">
@@ -2663,7 +2702,10 @@ function showWarmupDetail(dataStr) {
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;color:var(--navy);font-size:0.9rem">${escapeHtml(d.name)}</div>
       </div>
-      <span style="color:${color};font-weight:700;font-size:0.85rem">${label}</span>
+      <div style="text-align:right">
+        <span style="color:${color};font-weight:700;font-size:0.85rem">${label}</span>
+        ${desc ? `<div style="color:${color};font-size:0.7rem;opacity:0.8">${desc}</div>` : ''}
+      </div>
     </div>`;
   }).join('');
 
@@ -2702,6 +2744,7 @@ async function refreshStudentList() {
           const a = analyticsMap[s.id];
           if (a) {
             if (a.readingScore) s.score = a.readingScore;
+            s.recentFailStreak = !!a.recentFailStreak;
             if (s._raw) {
               s._raw.comprehension_label = a.comprehension !== 'No Data' ? a.comprehension : null;
               s._raw.reasoning_label = a.reasoning !== 'No Data' ? a.reasoning : null;
@@ -8048,6 +8091,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (a) {
               // Sync the reading score from live analytics
               if (a.readingScore) s.score = a.readingScore;
+              s.recentFailStreak = !!a.recentFailStreak;
               if (s._raw) {
                 s._raw.comprehension_label = a.comprehension !== 'No Data' ? a.comprehension : null;
                 s._raw.comprehension_pct = a.comprehensionPct;
@@ -8201,6 +8245,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const a = analyticsMap[s.id];
             if (a) {
               if (a.readingScore) s.score = a.readingScore;
+              s.recentFailStreak = !!a.recentFailStreak;
               if (s._raw) {
                 s._raw.comprehension_label = a.comprehension !== 'No Data' ? a.comprehension : null;
                 s._raw.comprehension_pct = a.comprehensionPct;

@@ -978,9 +978,9 @@ async function getStudentPerformance(studentId) {
   const persistence = calcPersistence(recent, thisWeekResults, lastWeekResults);
 
   // ─── RECENT FAILURE PENALTY ───
-  // "Struggling" = last 3 quizzes in a row all scored below 60%
+  // "Struggling" = last 3 quizzes in a row all scored below 70% (rated "Poor")
   const last3 = results.slice(-3);
-  const recentFailStreak = last3.length >= 3 && last3.every(r => r.score < 60);
+  const recentFailStreak = last3.length >= 3 && last3.every(r => r.score < 70);
 
   // ─── COMPOSITE READING SCORE ───
   const compositeScore = Math.round(
@@ -1121,11 +1121,11 @@ function calcEffort(recent, thisWeek, lastWeek) {
     const total = r.total_questions || 5;
     return sum + correct / total;
   }, 0) / recent.length;
-  const accuracyMultiplier = avgAccuracy >= 0.7 ? 1.0 : avgAccuracy >= 0.5 ? 0.85 : avgAccuracy >= 0.3 ? 0.7 : 0.55;
+  const accuracyMultiplier = avgAccuracy >= 0.8 ? 1.0 : avgAccuracy >= 0.7 ? 0.9 : avgAccuracy >= 0.5 ? 0.75 : avgAccuracy >= 0.3 ? 0.6 : 0.45;
 
   // Recent failure streak penalty — if last 3 quizzes in a row failed, effort cannot be "Strong"
   const last3 = recent.slice(-3);
-  const recentFailStreak = last3.length >= 3 && last3.every(r => r.score < 60);
+  const recentFailStreak = last3.length >= 3 && last3.every(r => r.score < 70);
   const failStreakCap = recentFailStreak ? 700 : 1000; // 700 = below "Strong" threshold of 750
 
   const score = Math.round(Math.min(failStreakCap, Math.max(0, timeScore * accuracyMultiplier)));
@@ -1381,7 +1381,8 @@ async function getClassAnalytics(classId) {
         reasoningPct: null,
         vocabWordsLearned,
         independence: struggling ? 'Struggling' : (indScore > 0 ? indToLabel(indScore) : 'No Data'),
-        persistence: struggling ? 'Struggling' : (persScore > 0 ? persToLabel(persScore) : 'No Data')
+        persistence: struggling ? 'Struggling' : (persScore > 0 ? persToLabel(persScore) : 'No Data'),
+        recentFailStreak: !!struggling
       };
 
       // Backfill: sync the computed data to the students table
