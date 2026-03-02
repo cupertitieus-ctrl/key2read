@@ -2402,6 +2402,7 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
           <div class="component-card-header">
             <span class="component-icon" style="color:#F59E0B">📖</span>
             <span class="component-name">Warm-Ups</span>
+            <span class="th-info" title="Warm-ups are easy questions that check if the student has the physical book. Students can retry until they pass. Fewer attempts means they are actually reading the book." style="cursor:help;color:var(--g400);font-size:0.8rem">&#9432;</span>
           </div>
           <div style="margin:8px 0"><span style="display:inline-block;padding:4px 12px;border-radius:99px;font-size:0.75rem;font-weight:700;background:${warmupBg};color:${warmupColor}">${warmupLabel}</span></div>
           <div class="component-insight">${warmupInsight}</div>
