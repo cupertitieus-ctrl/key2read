@@ -946,33 +946,7 @@ const QuizEngine = (function() {
           strategiesUsed: [...new Set(currentQuiz.questions.map(q => q.strategy_type))]
         };
 
-        // Save guest quiz results to localStorage for later migration
-        if (!currentStudent) {
-          try {
-            if (!localStorage.getItem('k2r_guest_token')) {
-              localStorage.setItem('k2r_guest_token', 'guest_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 8));
-            }
-            const guestResults = JSON.parse(localStorage.getItem('k2r_guest_results') || '[]');
-            guestResults.push({
-              chapterId: currentQuiz.chapter?.id,
-              bookId: currentQuiz.book?.id,
-              bookTitle: currentQuiz.book?.title || '',
-              chapterTitle: currentQuiz.chapter?.title || '',
-              answers: currentQuiz.questions.map((q, i) => {
-                const idx = answers[i];
-                return idx !== undefined && q?.options ? (q.options[idx] || '') : '';
-              }),
-              score: quizResults.score,
-              correctCount: quizResults.correctCount,
-              totalQuestions: quizResults.totalQuestions,
-              keysEarned: quizResults.keysEarned,
-              timeTaken,
-              hintsUsed: localHintCount,
-              completedAt: new Date().toISOString()
-            });
-            localStorage.setItem('k2r_guest_results', JSON.stringify(guestResults));
-          } catch (storageErr) { /* localStorage may be full or disabled */ }
-        }
+        // Guest mode: do NOT save progress (subscribe to save)
       }
       render();
       if (onComplete) onComplete(quizResults);
@@ -1015,9 +989,9 @@ const QuizEngine = (function() {
           <div style="font-size:2.5rem;margin-bottom:8px">📊</div>
           <h3 style="font-size:1.25rem;font-weight:800;color:var(--navy,#0F2B46);margin:0 0 8px">Want to Save Your Progress?</h3>
           <p style="color:var(--g500,#6b7280);font-size:0.9rem;line-height:1.6;margin:0 0 20px">Subscribe to save your reading score, earn keys, collect badges, and track your growth over time!</p>
-          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-            <a href="pricing.html" class="btn btn-primary" style="text-decoration:none;flex:1;text-align:center;min-width:140px">View Plans</a>
-            <button class="btn btn-outline" style="flex:1;min-width:140px" onclick="document.getElementById('save-progress-overlay').remove(); QuizEngine._doExit()">Continue Without Saving</button>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+            <a href="pricing.html" class="btn btn-primary" style="text-decoration:none;width:100%;text-align:center">View Plans</a>
+            <button class="btn btn-outline" style="width:100%;white-space:nowrap" onclick="document.getElementById('save-progress-overlay').remove(); QuizEngine._doExit()">Continue Without Saving</button>
           </div>
         </div>
       `;
@@ -1229,9 +1203,20 @@ const QuizEngine = (function() {
     return html;
   }
 
+  // Words that are character names in specific books — never underline these
+  const BOOK_CHARACTER_NAMES = {
+    'tiny and mighty': ['tiny', 'mighty']
+  };
+
   function markContextualVocab(html, skipWords = []) {
+    // Skip character names for the current book
+    const bookTitle = (currentQuiz?.book?.title || '').toLowerCase();
+    const charNames = Object.entries(BOOK_CHARACTER_NAMES)
+      .filter(([key]) => bookTitle.includes(key))
+      .flatMap(([, names]) => names);
+    const allSkip = [...skipWords, ...charNames];
     const contextualWords = Object.keys(CONTEXTUAL_VOCAB)
-      .filter(w => !skipWords.includes(w.toLowerCase()));
+      .filter(w => !allSkip.includes(w.toLowerCase()));
     if (contextualWords.length === 0) return html;
     // Split by existing vocab-word spans to avoid double-wrapping
     const parts = html.split(/(<span class="vocab-word[^"]*"[^>]*>.*?<\/span>)/g);

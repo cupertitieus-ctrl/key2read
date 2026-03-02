@@ -124,7 +124,7 @@ app.post('/api/auth/login', async (req, res) => {
 
   try {
     if (role === 'student') {
-      // School student login: find by name + class code
+      // School student login: find by name + class code (auto-create if not found)
       if (!name) return res.status(400).json({ error: 'Please enter your name.' });
       if (!classCode) return res.status(400).json({ error: 'Please enter your class code.' });
 
@@ -132,19 +132,36 @@ app.post('/api/auth/login', async (req, res) => {
       if (!cls) return res.status(400).json({ error: 'Invalid class code. Ask your teacher for the correct code.' });
 
       // Find student by name in this class
-      const { data: studentRecords } = await db.supabase
+      let { data: studentRecords } = await db.supabase
         .from('students')
         .select('*, users!user_id (id, email, name, role)')
         .eq('class_id', cls.id)
         .ilike('name', name.trim());
 
+      let user;
       if (!studentRecords || studentRecords.length === 0) {
-        return res.status(400).json({ error: `No student named "${name}" found in this class. Did you sign up first?` });
-      }
+        // Auto-create student account with valid class code
+        const trimmedName = name.trim();
+        const stubEmail = `student_${Date.now()}_${Math.random().toString(36).slice(2, 8)}@student.key2read.com`;
+        const { data: newUser, error: userErr } = await db.supabase
+          .from('users')
+          .insert({ name: trimmedName, email: stubEmail, role: 'student' })
+          .select()
+          .single();
+        if (userErr || !newUser) return res.status(500).json({ error: 'Could not create student account.' });
 
-      const studentRecord = studentRecords[0];
-      const user = studentRecord.users || await db.getUserById(studentRecord.user_id);
-      if (!user) return res.status(400).json({ error: 'Student account not found.' });
+        const { error: studentErr } = await db.supabase
+          .from('students')
+          .insert({ user_id: newUser.id, class_id: cls.id, name: trimmedName });
+        if (studentErr) console.error('Error creating student record:', studentErr);
+
+        user = newUser;
+        console.log(`✅ Auto-created student "${trimmedName}" in class ${cls.name} (${cls.class_code})`);
+      } else {
+        const studentRecord = studentRecords[0];
+        user = studentRecord.users || await db.getUserById(studentRecord.user_id);
+        if (!user) return res.status(400).json({ error: 'Student account not found.' });
+      }
 
       const sessionUser = await buildSessionUser(user);
       req.session.userId = user.id;
@@ -152,26 +169,43 @@ app.post('/api/auth/login', async (req, res) => {
       return res.json({ success: true, user: sessionUser });
 
     } else if (role === 'child') {
-      // Homeschool child login: find by name + family code
+      // Homeschool child login: find by name + family code (auto-create if not found)
       if (!name) return res.status(400).json({ error: 'Please enter your name.' });
       if (!classCode) return res.status(400).json({ error: 'Please enter your family code.' });
 
       const cls = await db.getClassByCode(classCode);
       if (!cls) return res.status(400).json({ error: 'Invalid family code. Ask your parent for the correct code.' });
 
-      const { data: studentRecords } = await db.supabase
+      let { data: studentRecords } = await db.supabase
         .from('students')
         .select('*, users!user_id (id, email, name, role)')
         .eq('class_id', cls.id)
         .ilike('name', name.trim());
 
+      let user;
       if (!studentRecords || studentRecords.length === 0) {
-        return res.status(400).json({ error: `No child named "${name}" found. Did you sign up first?` });
-      }
+        // Auto-create child account with valid family code
+        const trimmedName = name.trim();
+        const stubEmail = `child_${Date.now()}_${Math.random().toString(36).slice(2, 8)}@family.key2read.com`;
+        const { data: newUser, error: userErr } = await db.supabase
+          .from('users')
+          .insert({ name: trimmedName, email: stubEmail, role: 'child' })
+          .select()
+          .single();
+        if (userErr || !newUser) return res.status(500).json({ error: 'Could not create child account.' });
 
-      const studentRecord = studentRecords[0];
-      const user = studentRecord.users || await db.getUserById(studentRecord.user_id);
-      if (!user) return res.status(400).json({ error: 'Account not found.' });
+        const { error: studentErr } = await db.supabase
+          .from('students')
+          .insert({ user_id: newUser.id, class_id: cls.id, name: trimmedName });
+        if (studentErr) console.error('Error creating child record:', studentErr);
+
+        user = newUser;
+        console.log(`✅ Auto-created child "${trimmedName}" in family ${cls.name} (${cls.class_code})`);
+      } else {
+        const studentRecord = studentRecords[0];
+        user = studentRecord.users || await db.getUserById(studentRecord.user_id);
+        if (!user) return res.status(400).json({ error: 'Account not found.' });
+      }
 
       const sessionUser = await buildSessionUser(user);
       req.session.userId = user.id;
