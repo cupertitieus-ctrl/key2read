@@ -2346,60 +2346,45 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
     <div class="section-header"><h3>Score Breakdown</h3></div>
     <div class="score-breakdown-grid">
       ${componentCards}
-    </div>
+      ${(() => {
+        const warmups = perf.warmups || [];
+        const byBook = {};
+        warmups.forEach(w => {
+          if (!byBook[w.book_id]) byBook[w.book_id] = [];
+          byBook[w.book_id].push(w);
+        });
+        const bookEntries = Object.entries(byBook);
+        const passedCount = bookEntries.filter(([, attempts]) => attempts.some(a => a.passed)).length;
+        const totalBooks = bookEntries.length;
 
-    ${(() => {
-      const warmups = perf.warmups || [];
-      const byBook = {};
-      warmups.forEach(w => {
-        if (!byBook[w.book_id]) byBook[w.book_id] = [];
-        byBook[w.book_id].push(w);
-      });
-      const bookEntries = Object.entries(byBook);
-      const passedCount = bookEntries.filter(([, attempts]) => attempts.some(a => a.passed)).length;
-      const totalBooks = bookEntries.length;
+        const warmupRows = bookEntries.map(([bookId, attempts]) => {
+          const b = books.find(bk => bk.id === parseInt(bookId));
+          const bookName = b ? b.title : 'Unknown Book';
+          const passed = attempts.some(a => a.passed);
+          const attCount = attempts.length;
+          const attNote = passed && attCount === 1 ? 'First try' : passed ? `${attCount} attempts` : 'In progress';
+          return `<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:${passed ? '#F0FDF4' : '#FFF7ED'};border-radius:6px;font-size:0.75rem">
+            <span>${passed ? '✅' : '⏳'}</span>
+            <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--navy);font-weight:600">${escapeHtml(bookName)}</span>
+            <span style="color:var(--g400);flex-shrink:0">${attNote}</span>
+          </div>`;
+        }).join('');
 
-      if (warmups.length === 0) {
         return `
-        <div class="section-header" style="margin-top:24px"><h3>📖 Warm-Ups</h3></div>
-        <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:14px;padding:20px;text-align:center">
-          <p style="color:#92400E;margin:0;font-size:0.9rem">No warm-ups completed yet. Warm-ups confirm the student has the physical book before quizzes.</p>
-        </div>`;
-      }
-
-      const warmupRows = bookEntries.map(([bookId, attempts]) => {
-        const b = books.find(bk => bk.id === parseInt(bookId));
-        const bookName = b ? b.title : 'Unknown Book';
-        const passed = attempts.some(a => a.passed);
-        const attCount = attempts.length;
-        const date = attempts[0].completed_at ? new Date(attempts[0].completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-        const attNote = passed && attCount === 1 ? 'Verified on first try' : passed ? `Verified after ${attCount} attempt${attCount !== 1 ? 's' : ''}` : 'In progress';
-        return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:${passed ? '#F0FDF4' : '#FFF7ED'};border:1px solid ${passed ? '#BBF7D0' : '#FED7AA'};border-radius:10px">
-          <span style="font-size:1.1rem">${passed ? '✅' : '⏳'}</span>
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:600;color:var(--navy);font-size:0.85rem">${escapeHtml(bookName)}</div>
-            <div style="color:var(--g500);font-size:0.75rem">${attNote}</div>
+        <div class="component-card" style="border-top:3px solid #F59E0B">
+          <div class="component-card-header">
+            <span class="component-icon" style="color:#F59E0B">📖</span>
+            <span class="component-name">Warm-Ups</span>
           </div>
-          <div style="font-size:0.7rem;color:var(--g400)">${date}</div>
+          <div class="component-score-row">
+            <span class="component-score">${warmups.length > 0 ? passedCount + '/' + totalBooks : '—'}</span>
+          </div>
+          <div style="margin:4px 0;font-size:0.7rem;color:var(--g400)">Books Verified</div>
+          <div class="component-insight">${warmups.length === 0 ? 'No warm-ups yet. Confirms student has the physical book.' : passedCount === totalBooks ? 'All books verified!' : passedCount + ' of ' + totalBooks + ' books verified.'}</div>
+          ${bookEntries.length > 0 ? `<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">${warmupRows}</div>` : ''}
         </div>`;
-      }).join('');
-
-      return `
-      <div class="section-header" style="margin-top:24px"><h3>📖 Warm-Ups</h3></div>
-      <div style="margin-bottom:8px;font-size:0.8rem;color:var(--g500)">Warm-ups confirm the student has the physical book. Students can retry until they pass.</div>
-      <div style="display:flex;align-items:center;gap:16px;padding:14px 16px;background:var(--g50);border-radius:12px;margin-bottom:10px">
-        <div style="text-align:center;flex:1">
-          <div style="font-size:1.5rem;font-weight:800;color:var(--navy)">${passedCount}</div>
-          <div style="font-size:0.7rem;color:var(--g400)">Books Verified</div>
-        </div>
-        <div style="width:1px;height:32px;background:var(--g200)"></div>
-        <div style="text-align:center;flex:1">
-          <div style="font-size:1.5rem;font-weight:800;color:var(--navy)">${totalBooks}</div>
-          <div style="font-size:0.7rem;color:var(--g400)">Books Attempted</div>
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px">${warmupRows}</div>`;
-    })()}
+      })()}
+    </div>
 
     <div class="student-quick-stats" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:20px 0">
       <div style="background:linear-gradient(135deg,#FB923C,#C2410C);border-radius:14px;padding:18px 16px;text-align:center;color:#fff;display:flex;flex-direction:column;align-items:center">
