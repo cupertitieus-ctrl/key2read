@@ -1425,6 +1425,7 @@
 .skill-pill--strong { background: #dcfce7; color: #15803d; }
 .skill-pill--developing { background: #fef9c3; color: #a16207; }
 .skill-pill--needs-support { background: #fee2e2; color: #dc2626; }
+.skill-pill--struggling { background: #FFEDD5; color: #C2410C; font-weight: 700; }
 .skill-pill--nodata { background: var(--g100); color: var(--g400); }
 .skill-pill--loading { background: var(--g100); color: var(--g300); min-width: 48px; text-align: center; }
 

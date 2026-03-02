@@ -942,6 +942,16 @@ app.post('/api/students/:studentId/gift-keys', async (req, res) => {
   }
 });
 
+app.get('/api/warmup/student/:studentId', async (req, res) => {
+  try {
+    const warmups = await db.getStudentWarmups(parseInt(req.params.studentId));
+    res.json(warmups);
+  } catch (e) {
+    console.error('Get student warmups error:', e);
+    res.status(500).json({ error: 'Failed to fetch warmups' });
+  }
+});
+
 app.post('/api/warmup/submit', async (req, res) => {
   const { studentId, bookId, answers, attempts } = req.body;
   try {

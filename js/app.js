@@ -847,11 +847,6 @@ function renderSidebar() {
         <div style="color:#FFD700;font-size:2rem;font-weight:800;margin-top:4px">${tp.keys}</div>
         <div style="color:rgba(255,255,255,0.6);font-size:0.75rem;font-weight:600">Keys to Spend</div>
       </div>
-      ${currentUser.parentEmail ? `
-      <div style="margin-top:14px;padding:10px 12px;background:rgba(255,255,255,0.08);border-radius:8px">
-        <div style="color:rgba(255,255,255,0.5);font-size:0.7rem;font-weight:600;margin-bottom:3px">Parent Account</div>
-        <div style="color:rgba(255,255,255,0.9);font-size:0.8rem;word-break:break-all">${currentUser.parentEmail}</div>
-      </div>` : ''}
     </div>` + html;
   }
 
@@ -2082,6 +2077,7 @@ function skillPill(label) {
   if (!label) return '<span class="skill-pill skill-pill--nodata">No Data</span>';
   const cls = label === 'Strong' || label === 'High' ? 'strong' :
               label === 'Developing' || label === 'Improving' || label === 'Moderate' ? 'developing' :
+              label === 'Struggling' ? 'struggling' :
               'needs-support';
   return '<span class="skill-pill skill-pill--' + cls + '">' + label + '</span>';
 }
@@ -2237,7 +2233,10 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
     : '<span style="color:var(--g400);font-size:0.8125rem">Not enough data yet</span>';
 
   // Derive labels directly from component scores so they always match
+  // If last 3 quizzes all failed, override to "Struggling"
+  const isStruggling = perf.recentFailStreak;
   function scoreToPill(score, key) {
+    if (isStruggling) return 'Struggling';
     if (key === 'independence') return score >= 750 ? 'High' : score >= 450 ? 'Improving' : 'Needs Support';
     if (key === 'persistence') return score >= 750 ? 'High' : score >= 450 ? 'Moderate' : 'Low';
     return score >= 750 ? 'Strong' : score >= 450 ? 'Developing' : 'Needs Support';
@@ -2366,6 +2365,48 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
         <div style="font-size:0.75rem;font-weight:600;opacity:0.85">Keys Earned</div>
       </div>
     </div>
+
+    ${(() => {
+      const warmups = perf.warmups || [];
+      if (warmups.length === 0) {
+        return `
+          <div class="section-header" style="margin-top:24px"><h3>📖 Warm-Ups (Book Verification)</h3></div>
+          <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:14px;padding:20px;text-align:center">
+            <p style="color:#92400E;margin:0;font-size:0.9rem">No warm-ups completed yet. Warm-ups verify the student has the physical book.</p>
+          </div>`;
+      }
+      // Group warmups by book — show best attempt per book
+      const byBook = {};
+      warmups.forEach(w => {
+        if (!byBook[w.book_id]) byBook[w.book_id] = [];
+        byBook[w.book_id].push(w);
+      });
+      const warmupRows = Object.entries(byBook).map(([bookId, attempts]) => {
+        const b = books.find(bk => bk.id === parseInt(bookId));
+        const bookName = b ? b.title : 'Unknown Book';
+        const passed = attempts.some(a => a.passed);
+        const totalAttempts = attempts.length;
+        const best = attempts.reduce((best, a) => a.score > best.score ? a : best, attempts[0]);
+        const date = best.completed_at ? new Date(best.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+        return `
+          <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:${passed ? '#F0FDF4' : '#FFF7ED'};border:1px solid ${passed ? '#BBF7D0' : '#FED7AA'};border-radius:12px">
+            <span style="font-size:1.3rem">${passed ? '✅' : '⏳'}</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:700;color:var(--navy);font-size:0.9rem">${escapeHtml(bookName)}</div>
+              <div style="color:var(--g500);font-size:0.8rem;margin-top:2px">${passed ? 'Passed' : 'Not yet passed'} · ${totalAttempts} attempt${totalAttempts !== 1 ? 's' : ''} · Best: ${Math.round(best.score)}%</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:0.75rem;color:var(--g400)">${date}</div>
+            </div>
+          </div>`;
+      }).join('');
+      const passedCount = Object.values(byBook).filter(attempts => attempts.some(a => a.passed)).length;
+      const totalBooks = Object.keys(byBook).length;
+      return `
+        <div class="section-header" style="margin-top:24px"><h3>📖 Warm-Ups (Book Verification)</h3></div>
+        <div style="margin-bottom:8px;font-size:0.85rem;color:var(--g500)">Warm-ups confirm the student has the physical book. <strong>${passedCount}/${totalBooks}</strong> books verified.</div>
+        <div style="display:flex;flex-direction:column;gap:8px">${warmupRows}</div>`;
+    })()}
 
     <div class="section-header" style="margin-top:24px"><h3>Key Activity</h3></div>
     <div class="key-activity-section">
@@ -3836,20 +3877,24 @@ async function submitWarmupResult(bookId, sid, answers, attempts) {
   warmupPassed = true;
   // Guest mode: do NOT save warmup progress
 
+  const isGuest = typeof userRole !== 'undefined' && userRole === 'guest';
   modal.innerHTML = `
     <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px">
       <div onclick="event.stopPropagation()" style="background:#fff;border-radius:20px;padding:36px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
         <div style="font-size:3.5rem;margin-bottom:12px">🎉</div>
         <h3 style="margin:0 0 8px;font-size:1.3rem;font-weight:800;color:var(--navy)">Great job!</h3>
-        <div style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border:1.5px solid #FDE68A;border-radius:99px;padding:8px 16px;margin-bottom:16px">
+        ${!isGuest ? `<div style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border:1.5px solid #FDE68A;border-radius:99px;padding:8px 16px;margin-bottom:16px">
           <img src="/public/Key_Circle_Icon.png" alt="" style="width:24px;height:24px"> <span style="font-weight:800;color:#92400E;font-size:1.1rem">+5 Keys!</span>
-        </div>
+        </div>` : ''}
         <p style="margin:0 0 24px;color:var(--g500);font-size:0.95rem;line-height:1.6">
           You've got your book ready! Head to <strong>Chapter 1</strong> when you're ready to start!
         </p>
-        <button class="btn btn-primary" style="width:100%;font-size:1.05rem;padding:14px 24px" onclick="document.getElementById('modal-root-2').innerHTML='';renderMain()">
+        ${isGuest ? `<div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+          <a href="pricing.html" class="btn btn-primary" style="text-decoration:none;width:100%;text-align:center;font-size:1.05rem;padding:14px 24px">Subscribe to Save Progress</a>
+          <button class="btn btn-outline" style="width:100%;white-space:nowrap" onclick="document.getElementById('modal-root-2').innerHTML='';renderMain()">Continue Without Saving</button>
+        </div>` : `<button class="btn btn-primary" style="width:100%;font-size:1.05rem;padding:14px 24px" onclick="document.getElementById('modal-root-2').innerHTML='';renderMain()">
           Let's Go! 📚
-        </button>
+        </button>`}
       </div>
     </div>`;
 }
@@ -5194,25 +5239,31 @@ function printStudentProgressReport(studentId) {
   const teacherName = currentUser?.name || 'Teacher';
   const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
+  const isStruggling = comp === 'Struggling' || reason === 'Struggling' || indep === 'Struggling' || persist === 'Struggling';
+
   let overallStatus, statusColor;
-  if (score >= 700 && accuracy >= 70) { overallStatus = 'On Track'; statusColor = '#059669'; }
+  if (isStruggling) { overallStatus = 'Struggling'; statusColor = '#EA580C'; }
+  else if (score >= 700 && accuracy >= 70) { overallStatus = 'On Track'; statusColor = '#059669'; }
   else if (score >= 500 && accuracy >= 50) { overallStatus = 'Developing'; statusColor = '#B45309'; }
   else { overallStatus = 'Needs Support'; statusColor = '#DC2626'; }
 
   const strengths = [];
-  if (comp === 'Strong') strengths.push('Excellent reading comprehension — understands key ideas and details');
-  if (reason === 'Strong') strengths.push('Strong reasoning skills — can make inferences and connections');
-  if (indep === 'Strong') strengths.push('Great independence — answers questions without needing hints');
-  if (persist === 'Strong') strengths.push('Wonderful persistence — doesn\'t give up on challenging questions');
-  if (accuracy >= 80) strengths.push('High quiz accuracy — consistently answers correctly');
-  if (quizzes >= 10) strengths.push('Strong engagement — completed many quizzes');
+  if (!isStruggling) {
+    if (comp === 'Strong') strengths.push('Excellent reading comprehension — understands key ideas and details');
+    if (reason === 'Strong') strengths.push('Strong reasoning skills — can make inferences and connections');
+    if (indep === 'Strong') strengths.push('Great independence — answers questions without needing hints');
+    if (persist === 'Strong') strengths.push('Wonderful persistence — doesn\'t give up on challenging questions');
+    if (accuracy >= 80) strengths.push('High quiz accuracy — consistently answers correctly');
+    if (quizzes >= 10) strengths.push('Strong engagement — completed many quizzes');
+  }
   if (strengths.length === 0) strengths.push('Still building foundational reading skills');
 
   const suggestions = [];
-  if (comp === 'Needs Support' || comp === 'Developing') suggestions.push('Read aloud together and pause to ask "What just happened?" and "What do you think will happen next?" to build comprehension.');
-  if (reason === 'Needs Support' || reason === 'Developing') suggestions.push('Practice making connections by asking "Why do you think the character did that?" and "How is this similar to something you know?"');
-  if (indep === 'Needs Support' || indep === 'Developing') suggestions.push('Encourage answering questions before looking at hints. Try saying "What do you think the answer is first?" to build confidence.');
-  if (persist === 'Needs Support' || persist === 'Developing') suggestions.push('Celebrate effort, not just correct answers. If the student gets stuck, say "Let\'s try re-reading that part together" instead of giving the answer.');
+  if (isStruggling) suggestions.push('This student\'s scores have dropped — they were doing well but have struggled on their last 3 quizzes. Consider reading together, reviewing chapters before quizzes, and offering encouragement.');
+  if (comp === 'Needs Support' || comp === 'Developing' || comp === 'Struggling') suggestions.push('Read aloud together and pause to ask "What just happened?" and "What do you think will happen next?" to build comprehension.');
+  if (reason === 'Needs Support' || reason === 'Developing' || reason === 'Struggling') suggestions.push('Practice making connections by asking "Why do you think the character did that?" and "How is this similar to something you know?"');
+  if (indep === 'Needs Support' || indep === 'Developing' || indep === 'Struggling') suggestions.push('Encourage answering questions before looking at hints. Try saying "What do you think the answer is first?" to build confidence.');
+  if (persist === 'Needs Support' || persist === 'Developing' || persist === 'Struggling') suggestions.push('Celebrate effort, not just correct answers. If the student gets stuck, say "Let\'s try re-reading that part together" instead of giving the answer.');
   if (accuracy < 60) suggestions.push('Focus on re-reading chapters before taking quizzes. Understanding the story first leads to better quiz results.');
   if (quizzes < 3) suggestions.push('Encourage completing more quizzes to build reading stamina and track progress over time.');
   if (suggestions.length === 0) suggestions.push('Keep up the great work! Continue reading regularly and challenging themselves with new books.');
@@ -5221,6 +5272,7 @@ function printStudentProgressReport(studentId) {
     let pct = 0, color = '#D1D5DB';
     if (value === 'Strong') { pct = 100; color = '#059669'; }
     else if (value === 'Developing') { pct = 60; color = '#F59E0B'; }
+    else if (value === 'Struggling') { pct = 40; color = '#EA580C'; }
     else if (value === 'Needs Support') { pct = 25; color = '#EF4444'; }
     return '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>' + label + '</span><span style="color:' + color + ';font-weight:600">' + value + '</span></div><div style="height:8px;background:#E5E7EB;border-radius:4px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:4px"></div></div></div>';
   };
@@ -5370,6 +5422,7 @@ function renderSkillPill(label, value) {
   let bg, color;
   if (value === 'Strong') { bg = '#DCFCE7'; color = '#166534'; }
   else if (value === 'Developing') { bg = '#FEF9C3'; color = '#92400E'; }
+  else if (value === 'Struggling') { bg = '#FFEDD5'; color = '#C2410C'; }
   else if (value === 'Needs Support') { bg = '#FEE2E2'; color = '#991B1B'; }
   else { bg = 'var(--g100)'; color = 'var(--g500)'; }
   return `<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:600;background:${bg};color:${color}">${label}: ${value}</span>`;

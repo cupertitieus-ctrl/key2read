@@ -910,6 +910,14 @@ async function getStudentPerformance(studentId) {
   // 3. Fetch student info
   const student = await getStudent(studentId);
 
+  // 3b. Fetch warmup results (included with performance — no separate API call)
+  const { data: warmupData } = await supabase
+    .from('warmup_results')
+    .select('id, book_id, passed, score, correct_count, total_questions, attempts, completed_at')
+    .eq('student_id', studentId)
+    .order('completed_at', { ascending: false });
+  const warmupResults = warmupData || [];
+
   // 4. Fetch weekly stats
   const weeklyStats = await getWeeklyStats(studentId);
 
@@ -928,7 +936,8 @@ async function getStudentPerformance(studentId) {
         spentThisWeek: 0
       },
       weeklyStats,
-      quizHistory: []
+      quizHistory: [],
+      warmups: warmupResults
     };
   }
 
@@ -967,6 +976,11 @@ async function getStudentPerformance(studentId) {
 
   // ─── 5) MASTERY & PERSISTENCE (15%) ───
   const persistence = calcPersistence(recent, thisWeekResults, lastWeekResults);
+
+  // ─── RECENT FAILURE PENALTY ───
+  // "Struggling" = last 3 quizzes in a row all scored below 60%
+  const last3 = results.slice(-3);
+  const recentFailStreak = last3.length >= 3 && last3.every(r => r.score < 60);
 
   // ─── COMPOSITE READING SCORE ───
   const compositeScore = Math.round(
@@ -1023,7 +1037,9 @@ async function getStudentPerformance(studentId) {
       spentThisWeek: 0
     },
     weeklyStats,
-    quizHistory
+    quizHistory,
+    warmups: warmupResults,
+    recentFailStreak
   };
 }
 
@@ -1099,7 +1115,20 @@ function calcEffort(recent, thisWeek, lastWeek) {
   const completionRate = 100;
   const rushingRate = Math.round(timesPerQ.filter(t => t < 8).length / timesPerQ.length * 100);
 
-  const score = Math.round(Math.min(1000, Math.max(0, timeScore)));
+  // Factor in quiz accuracy — good pacing without results indicates disengagement
+  const avgAccuracy = recent.reduce((sum, r) => {
+    const correct = r.correct_count || 0;
+    const total = r.total_questions || 5;
+    return sum + correct / total;
+  }, 0) / recent.length;
+  const accuracyMultiplier = avgAccuracy >= 0.7 ? 1.0 : avgAccuracy >= 0.5 ? 0.85 : avgAccuracy >= 0.3 ? 0.7 : 0.55;
+
+  // Recent failure streak penalty — if last 3 quizzes in a row failed, effort cannot be "Strong"
+  const last3 = recent.slice(-3);
+  const recentFailStreak = last3.length >= 3 && last3.every(r => r.score < 60);
+  const failStreakCap = recentFailStreak ? 700 : 1000; // 700 = below "Strong" threshold of 750
+
+  const score = Math.round(Math.min(failStreakCap, Math.max(0, timeScore * accuracyMultiplier)));
 
   const thisWeekTPQ = thisWeek.map(r => (r.time_taken_seconds || 0) / (r.total_questions || 5));
   const lastWeekTPQ = lastWeek.map(r => (r.time_taken_seconds || 0) / (r.total_questions || 5));
@@ -1112,7 +1141,8 @@ function calcEffort(recent, thisWeek, lastWeek) {
     lastAvg !== null ? -Math.abs(lastAvg - 30) : null
   );
 
-  let insight = score >= 800 ? 'Great pacing — thoughtful and steady.' :
+  let insight = recentFailStreak ? 'Recent quizzes suggest more engagement is needed.' :
+                score >= 800 ? 'Great pacing — thoughtful and steady.' :
                 score >= 600 ? 'Good effort with solid pacing.' :
                 score >= 400 ? 'Could benefit from slowing down a bit.' : 'Try spending more time on each question.';
 
@@ -1335,6 +1365,9 @@ async function getClassAnalytics(classId) {
       // Derive vocab words from vocabulary details
       const vocabWordsLearned = comp.vocabulary?.details?.uniqueWordsLooked || 0;
 
+      // If last 3 quizzes all failed, override all labels to "Struggling"
+      const struggling = perf.recentFailStreak;
+
       const result = {
         id: s.id,
         name: s.name,
@@ -1342,13 +1375,13 @@ async function getClassAnalytics(classId) {
         color: s.color,
         readingScore: perf.readingScore,
         scoreTrend: perf.trend === 'improving' ? 'up' : perf.trend === 'declining' ? 'down' : 'stable',
-        comprehension: compScore > 0 ? scoreToLabel(compScore) : 'No Data',
+        comprehension: struggling ? 'Struggling' : (compScore > 0 ? scoreToLabel(compScore) : 'No Data'),
         comprehensionPct: comp.comprehension?.details?.avgQuizScore || null,
-        reasoning: effortScore > 0 ? scoreToLabel(effortScore) : 'No Data',
+        reasoning: struggling ? 'Struggling' : (effortScore > 0 ? scoreToLabel(effortScore) : 'No Data'),
         reasoningPct: null,
         vocabWordsLearned,
-        independence: indScore > 0 ? indToLabel(indScore) : 'No Data',
-        persistence: persScore > 0 ? persToLabel(persScore) : 'No Data'
+        independence: struggling ? 'Struggling' : (indScore > 0 ? indToLabel(indScore) : 'No Data'),
+        persistence: struggling ? 'Struggling' : (persScore > 0 ? persToLabel(persScore) : 'No Data')
       };
 
       // Backfill: sync the computed data to the students table
@@ -1487,15 +1520,16 @@ async function updateStudentAnalytics(studentId) {
     try {
       const perf = await getStudentPerformance(studentId);
       compositeScore = perf.readingScore;
-      // Derive labels from component scores (not question-type accuracy)
+      // If last 3 quizzes all failed, override all labels to "Struggling"
+      const struggling = perf.recentFailStreak;
       const scoreToLabel = (s) => s >= 750 ? 'Strong' : s >= 450 ? 'Developing' : 'Needs Support';
       const indToLabel = (s) => s >= 750 ? 'High' : s >= 450 ? 'Improving' : 'Needs Support';
       const persToLabel = (s) => s >= 750 ? 'High' : s >= 450 ? 'Moderate' : 'Low';
       syncedLabels = {
-        comprehension_label: scoreToLabel(perf.components.comprehension.score),
-        reasoning_label: scoreToLabel(perf.components.effort.score),
-        independence_label: indToLabel(perf.components.independence.score),
-        persistence_label: persToLabel(perf.components.persistence.score)
+        comprehension_label: struggling ? 'Struggling' : scoreToLabel(perf.components.comprehension.score),
+        reasoning_label: struggling ? 'Struggling' : scoreToLabel(perf.components.effort.score),
+        independence_label: struggling ? 'Struggling' : indToLabel(perf.components.independence.score),
+        persistence_label: struggling ? 'Struggling' : persToLabel(perf.components.persistence.score)
       };
     } catch(e2) {
       console.warn('Could not compute composite score:', e2.message);
@@ -2062,6 +2096,16 @@ async function saveWarmupResult(resultData) {
   return data;
 }
 
+async function getStudentWarmups(studentId) {
+  const { data, error } = await supabase
+    .from('warmup_results')
+    .select('id, book_id, passed, score, correct_count, total_questions, attempts, completed_at')
+    .eq('student_id', studentId)
+    .order('completed_at', { ascending: false });
+  if (error) { console.error('getStudentWarmups error:', error.message); return []; }
+  return data || [];
+}
+
 module.exports = {
   supabase,
   initDB,
@@ -2122,7 +2166,8 @@ module.exports = {
   getWeeklyGrowthData,
   getWarmupQuiz,
   getWarmupResult,
-  saveWarmupResult
+  saveWarmupResult,
+  getStudentWarmups
 };
 
 async function getFullBookQuiz(bookId) {

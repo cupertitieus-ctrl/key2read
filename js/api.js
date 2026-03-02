@@ -69,6 +69,7 @@ const API = {
   getWarmupQuiz: (bookId) => API.get(`/api/books/${bookId}/warmup`),
   getWarmupStatus: (studentId, bookId) => API.get(`/api/students/${studentId}/warmup-status/${bookId}`),
   submitWarmup: (data) => API.post('/api/warmup/submit', data),
+  getStudentWarmups: (studentId) => API.get(`/api/warmup/student/${studentId}`),
 
   // Quiz
   personalizeAll: (chapterId, studentId) => API.post('/api/quiz/personalize-all', { chapterId, studentId }),
