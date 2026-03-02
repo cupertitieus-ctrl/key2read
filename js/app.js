@@ -2354,19 +2354,46 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
           byBook[w.book_id].push(w);
         });
         const bookEntries = Object.entries(byBook);
-        const passedCount = bookEntries.filter(([, attempts]) => attempts.some(a => a.passed)).length;
-        const totalBooks = bookEntries.length;
+        const passedBooks = bookEntries.filter(([, attempts]) => attempts.some(a => a.passed));
+
+        // Average attempts per book to determine reading behavior
+        let warmupLabel, warmupColor, warmupBg, warmupInsight;
+        if (warmups.length === 0) {
+          warmupLabel = 'No Data';
+          warmupColor = 'var(--g400)'; warmupBg = 'var(--g100)';
+          warmupInsight = 'No warm-ups yet. Warm-ups confirm the student has the physical book.';
+        } else {
+          const source = passedBooks.length > 0 ? passedBooks : bookEntries;
+          let totalAtt = 0;
+          for (const entry of source) { totalAtt += entry[1].length; }
+          const avg = totalAtt / source.length;
+
+          if (avg <= 1.5) {
+            warmupLabel = 'Reads the Book';
+            warmupColor = '#15803d'; warmupBg = '#dcfce7';
+            warmupInsight = 'Passes warm-ups quickly — has the book and is reading it.';
+          } else if (avg <= 3) {
+            warmupLabel = 'Mostly Guessing';
+            warmupColor = '#C2410C'; warmupBg = '#FFEDD5';
+            warmupInsight = 'Takes a few tries — may not be reading carefully before quizzes.';
+          } else {
+            warmupLabel = 'Always Guessing';
+            warmupColor = '#DC2626'; warmupBg = '#FEE2E2';
+            warmupInsight = 'Needs many attempts — likely does not have the book or is not reading it.';
+          }
+        }
 
         const warmupRows = bookEntries.map(([bookId, attempts]) => {
           const b = books.find(bk => bk.id === parseInt(bookId));
           const bookName = b ? b.title : 'Unknown Book';
           const passed = attempts.some(a => a.passed);
           const attCount = attempts.length;
-          const attNote = passed && attCount === 1 ? 'First try' : passed ? `${attCount} attempts` : 'In progress';
-          return `<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:${passed ? '#F0FDF4' : '#FFF7ED'};border-radius:6px;font-size:0.75rem">
-            <span>${passed ? '✅' : '⏳'}</span>
+          const attNote = passed && attCount === 1 ? 'First try ✓' : passed ? `${attCount} tries` : 'In progress';
+          const rowColor = passed && attCount === 1 ? '#15803d' : passed && attCount <= 3 ? '#C2410C' : passed ? '#DC2626' : 'var(--g400)';
+          return `<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:${passed ? (attCount === 1 ? '#F0FDF4' : attCount <= 3 ? '#FFF7ED' : '#FEF2F2') : '#F9FAFB'};border-radius:6px;font-size:0.75rem">
+            <span>${passed ? (attCount === 1 ? '📖' : attCount <= 3 ? '🤔' : '🎲') : '⏳'}</span>
             <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--navy);font-weight:600">${escapeHtml(bookName)}</span>
-            <span style="color:var(--g400);flex-shrink:0">${attNote}</span>
+            <span style="color:${rowColor};font-weight:600;flex-shrink:0">${attNote}</span>
           </div>`;
         }).join('');
 
@@ -2376,11 +2403,8 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
             <span class="component-icon" style="color:#F59E0B">📖</span>
             <span class="component-name">Warm-Ups</span>
           </div>
-          <div class="component-score-row">
-            <span class="component-score">${warmups.length > 0 ? passedCount + '/' + totalBooks : '—'}</span>
-          </div>
-          <div style="margin:4px 0;font-size:0.7rem;color:var(--g400)">Books Verified</div>
-          <div class="component-insight">${warmups.length === 0 ? 'No warm-ups yet. Confirms student has the physical book.' : passedCount === totalBooks ? 'All books verified!' : passedCount + ' of ' + totalBooks + ' books verified.'}</div>
+          <div style="margin:8px 0"><span style="display:inline-block;padding:4px 12px;border-radius:99px;font-size:0.75rem;font-weight:700;background:${warmupBg};color:${warmupColor}">${warmupLabel}</span></div>
+          <div class="component-insight">${warmupInsight}</div>
           ${bookEntries.length > 0 ? `<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">${warmupRows}</div>` : ''}
         </div>`;
       })()}
