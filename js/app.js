@@ -2383,30 +2383,22 @@ function renderPerformanceDashboard(s, perf, bookProgress) {
           }
         }
 
-        const warmupRows = bookEntries.map(([bookId, attempts]) => {
+        // Build book detail rows for the popup
+        const warmupRowsData = JSON.stringify(bookEntries.map(([bookId, attempts]) => {
           const b = books.find(bk => bk.id === parseInt(bookId));
-          const bookName = b ? b.title : 'Unknown Book';
-          const passed = attempts.some(a => a.passed);
-          const attCount = attempts.length;
-          const attNote = passed && attCount === 1 ? 'First try ✓' : passed ? `${attCount} tries` : 'In progress';
-          const rowColor = passed && attCount === 1 ? '#15803d' : passed && attCount <= 3 ? '#C2410C' : passed ? '#DC2626' : 'var(--g400)';
-          return `<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:${passed ? (attCount === 1 ? '#F0FDF4' : attCount <= 3 ? '#FFF7ED' : '#FEF2F2') : '#F9FAFB'};border-radius:6px;font-size:0.75rem">
-            <span>${passed ? (attCount === 1 ? '📖' : attCount <= 3 ? '🤔' : '🎲') : '⏳'}</span>
-            <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--navy);font-weight:600">${escapeHtml(bookName)}</span>
-            <span style="color:${rowColor};font-weight:600;flex-shrink:0">${attNote}</span>
-          </div>`;
-        }).join('');
+          return { name: b ? b.title : 'Unknown Book', passed: attempts.some(a => a.passed), attempts: attempts.length };
+        })).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
 
         return `
-        <div class="component-card" style="border-top:3px solid #F59E0B">
+        <div class="component-card" style="border-top:3px solid #F59E0B;cursor:${bookEntries.length > 0 ? 'pointer' : 'default'}" ${bookEntries.length > 0 ? `onclick="showWarmupDetail(this.getAttribute('data-warmups'))" data-warmups="${warmupRowsData}"` : ''}>
           <div class="component-card-header">
             <span class="component-icon" style="color:#F59E0B">📖</span>
             <span class="component-name">Warm-Ups</span>
-            <span class="th-info" title="Warm-ups are easy questions that check if the student has the physical book. Students can retry until they pass. Fewer attempts means they are actually reading the book." style="cursor:help;color:var(--g400);font-size:0.8rem">&#9432;</span>
+            <span class="th-info" title="Warm-ups are easy questions that check if the student has the physical book. Students can retry until they pass. Fewer attempts means they are actually reading the book." style="cursor:help;color:var(--g400);font-size:0.8rem" onclick="event.stopPropagation()">&#9432;</span>
           </div>
           <div style="margin:8px 0"><span style="display:inline-block;padding:4px 12px;border-radius:99px;font-size:0.75rem;font-weight:700;background:${warmupBg};color:${warmupColor}">${warmupLabel}</span></div>
           <div class="component-insight">${warmupInsight}</div>
-          ${bookEntries.length > 0 ? `<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">${warmupRows}</div>` : ''}
+          ${bookEntries.length > 0 ? `<div style="margin-top:8px;text-align:center;font-size:0.75rem;color:var(--blue);font-weight:600">View Details →</div>` : ''}
         </div>`;
       })()}
     </div>
@@ -2656,6 +2648,38 @@ function toggleComponentDetail(key) {
   const el = document.getElementById('detail-' + key);
   if (!el) return;
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function showWarmupDetail(dataStr) {
+  const data = JSON.parse(dataStr);
+  const modal = document.getElementById('modal-root');
+  const rows = data.map(d => {
+    const icon = d.passed ? (d.attempts === 1 ? '📖' : d.attempts <= 3 ? '🤔' : '🎲') : '⏳';
+    const label = d.passed && d.attempts === 1 ? 'First try' : d.passed ? d.attempts + ' tries' : 'In progress';
+    const color = d.passed && d.attempts === 1 ? '#15803d' : d.passed && d.attempts <= 3 ? '#C2410C' : d.passed ? '#DC2626' : 'var(--g400)';
+    const bg = d.passed ? (d.attempts === 1 ? '#F0FDF4' : d.attempts <= 3 ? '#FFF7ED' : '#FEF2F2') : '#F9FAFB';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:${bg};border-radius:10px">
+      <span style="font-size:1.2rem">${icon}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;color:var(--navy);font-size:0.9rem">${escapeHtml(d.name)}</div>
+      </div>
+      <span style="color:${color};font-weight:700;font-size:0.85rem">${label}</span>
+    </div>`;
+  }).join('');
+
+  modal.innerHTML = `
+    <div class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()" style="max-width:440px">
+        <div class="modal-header">
+          <h3>📖 Warm-Up Details</h3>
+          <button class="modal-close" onclick="closeModal()">${IC.x}</button>
+        </div>
+        <div class="modal-body" style="padding:20px">
+          <p style="font-size:0.8rem;color:var(--g500);margin:0 0 14px">Warm-ups confirm the student has the physical book. Fewer attempts = actually reading.</p>
+          <div style="display:flex;flex-direction:column;gap:8px">${rows}</div>
+        </div>
+      </div>
+    </div>`;
 }
 
 function toggleScoreExplanation() {
