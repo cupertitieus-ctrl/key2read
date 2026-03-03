@@ -140,6 +140,7 @@ const QuizEngine = (function() {
     'routine': { word: 'routine', definition: 'Things you do the same way every day — like brushing your teeth before bed', pos: 'noun' },
     'competing': { word: 'competing', definition: 'Trying to be better than someone else — like racing to see who is the fastest', pos: 'verb' },
     'admire': { word: 'admire', definition: 'Thinking someone or something is really great — like looking up to your big sister', pos: 'verb' },
+    'practicing': { word: 'practicing', definition: 'Doing something over and over so you get better at it — like shooting a basketball every day', pos: 'verb' },
     // Words common in quiz answer options
     'identity': { word: 'identity', definition: 'Who you really are — your name and everything about you', pos: 'noun' },
     'obsessed': { word: 'obsessed', definition: 'Thinking about something SO much you cannot stop', pos: 'adjective' },
