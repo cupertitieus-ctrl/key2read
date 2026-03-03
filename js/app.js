@@ -1898,7 +1898,7 @@ function renderQuizzes() {
         <div style="text-align:center;padding:16px 12px;background:var(--gold-l, #FFFBEB);border-radius:var(--radius-md)">
           <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Quiz_Outline_Icon_Blk.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
           <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">2. Take the Quiz</div>
-          <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">5 questions test comprehension, vocabulary, and reasoning</div>
+          <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">Quizzes are broken up by chapter. The questions test comprehension, vocabulary, and reasoning</div>
         </div>
         <div style="text-align:center;padding:16px 12px;background:var(--purple-l, #F5F3FF);border-radius:var(--radius-md)">
           <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Key_Outline_Icon_Blk.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
@@ -3733,7 +3733,7 @@ function renderLibrary() {
         <div style="text-align:center;padding:16px 12px;background:var(--gold-l, #FFFBEB);border-radius:var(--radius-md)">
           <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Quiz_Outline_Icon_Blk.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
           <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:4px">2. Take the Quiz</div>
-          <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">5 questions test comprehension, vocabulary, and reasoning</div>
+          <div style="font-size:0.75rem;color:var(--g500);line-height:1.4">Quizzes are broken up by chapter. The questions test comprehension, vocabulary, and reasoning</div>
         </div>
         <div style="text-align:center;padding:16px 12px;background:var(--purple-l, #F5F3FF);border-radius:var(--radius-md)">
           <div style="margin-bottom:8px;display:flex;justify-content:center"><img src="/public/Key_Outline_Icon_Blk.png" alt="" style="width:56px;height:56px;object-fit:contain"></div>
