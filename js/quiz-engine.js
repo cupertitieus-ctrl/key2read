@@ -947,6 +947,11 @@ const QuizEngine = (function() {
           revealedIndices
         });
       } catch(e) {
+        // If server blocked as duplicate, just ignore — first submit already handled it
+        if (e.message && e.message.includes('Duplicate submission')) {
+          console.log('[Quiz] Duplicate submit blocked by server');
+          return;
+        }
         // Fallback local scoring
         let correctCount = 0;
         currentQuiz.questions.forEach((q, i) => {

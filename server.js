@@ -853,6 +853,31 @@ app.get('/api/students/:id', async (req, res) => {
   res.json(s);
 });
 
+// ─── RENAME STUDENT ───
+app.put('/api/students/:id/name', async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { name } = req.body;
+  if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required.' });
+  const trimmed = name.trim();
+  try {
+    // Update student name in students table
+    await db.supabase.from('students').update({ name: trimmed }).eq('id', id);
+    // Also update the user record name
+    const student = await db.getStudent(id);
+    if (student && student.user_id) {
+      await db.supabase.from('users').update({ name: trimmed }).eq('id', student.user_id);
+    }
+    // Update initials
+    const parts = trimmed.split(/\s+/);
+    const initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : trimmed.substring(0, 2).toUpperCase();
+    await db.supabase.from('students').update({ initials }).eq('id', id);
+    res.json({ success: true, name: trimmed, initials });
+  } catch (e) {
+    console.error('Rename student error:', e);
+    res.status(500).json({ error: 'Failed to rename student.' });
+  }
+});
+
 app.put('/api/students/:id/survey', async (req, res) => {
   const id = parseInt(req.params.id);
   await db.updateStudentSurvey(id, req.body);
@@ -1278,8 +1303,24 @@ app.post('/api/quiz/personalize-all', async (req, res) => {
   res.json({ questions: personalized });
 });
 
+const _quizSubmitLocks = new Map(); // "studentId:chapterId" → timestamp
 app.post('/api/quiz/submit', async (req, res) => {
   const { studentId, chapterId, assignmentId, answers, timeTaken, hintCount, attemptData, vocabLookups, revealedIndices } = req.body;
+
+  // Server-side dedup: reject duplicate submissions within 30 seconds
+  const lockKey = `${studentId}:${chapterId}`;
+  const now = Date.now();
+  const lastSubmit = _quizSubmitLocks.get(lockKey);
+  if (lastSubmit && now - lastSubmit < 30000) {
+    console.log(`[Quiz Submit] DUPLICATE blocked: student=${studentId} chapter=${chapterId} (${now - lastSubmit}ms since last)`);
+    return res.status(409).json({ error: 'Duplicate submission', duplicate: true });
+  }
+  _quizSubmitLocks.set(lockKey, now);
+  // Clean up old locks every so often
+  if (_quizSubmitLocks.size > 500) {
+    for (const [k, t] of _quizSubmitLocks) { if (now - t > 60000) _quizSubmitLocks.delete(k); }
+  }
+
   const student = await db.getStudent(studentId);
   const questions = await db.getChapterQuiz(chapterId);
   if (!student || questions.length === 0) return res.status(400).json({ error: 'Invalid submission' });
