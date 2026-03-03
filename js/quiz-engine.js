@@ -21,6 +21,7 @@ const QuizEngine = (function() {
   let wrongPicks = [];           // per-question: Set of wrong answer indices
   let studentPicks = [];         // per-question: the student's actual final answer index (before reveal overwrites)
   let showRetryModal = false;    // true when wrong-answer overlay is visible
+  let submitting = false;        // prevent double-submit
   let showRevealModal = false;   // true when correct answer is revealed after 2 wrong attempts
 
   const STRATEGY_ICONS = {
@@ -64,6 +65,7 @@ const QuizEngine = (function() {
     'compared': { word: 'compared', definition: 'Looking at two things to see how they are the same or different', pos: 'verb' },
     'similar': { word: 'similar', definition: 'Almost the same but not exactly — like twins who look alike', pos: 'adjective' },
     'different': { word: 'different', definition: 'Not the same — when two things are NOT alike', pos: 'adjective' },
+    'difference': { word: 'difference', definition: 'The thing that makes two things NOT the same — like how a cat has whiskers but a dog does not', pos: 'noun' },
     'instead': { word: 'instead', definition: 'Picking one thing in place of another thing', pos: 'adverb' },
     'probably': { word: 'probably', definition: 'Most likely going to happen — almost for sure', pos: 'adverb' },
     'perhaps': { word: 'perhaps', definition: 'Maybe — it could happen or it might not', pos: 'adverb' },
@@ -121,6 +123,22 @@ const QuizEngine = (function() {
     'approach': { word: 'approach', definition: 'Getting closer to something, or a way of doing something', pos: 'verb' },
     'survive': { word: 'survive', definition: 'Staying alive through something hard or dangerous', pos: 'verb' },
     'respond': { word: 'respond', definition: 'Saying or doing something back when someone talks to you or asks you something', pos: 'verb' },
+    'wag': { word: 'wag', definition: 'Moving something back and forth really fast — like a dog moving its tail when it is happy', pos: 'verb' },
+    'demonstrate': { word: 'demonstrate', definition: 'Showing someone how to do something — like when your teacher shows you how to write a letter', pos: 'verb' },
+    'competition': { word: 'competition', definition: 'When two people or things try to be the best — like a race to see who wins', pos: 'noun' },
+    'impress': { word: 'impress', definition: 'Doing something so cool that it makes someone say WOW', pos: 'verb' },
+    'conflict': { word: 'conflict', definition: 'When two people or things do not get along — like when you and a friend want to play different games', pos: 'noun' },
+    'scared': { word: 'scared', definition: 'Feeling afraid — like when you hear a loud noise in the dark', pos: 'adjective' },
+    'happy': { word: 'happy', definition: 'Feeling good inside — like when you get a big hug or your favorite snack', pos: 'adjective' },
+    'uninterested': { word: 'uninterested', definition: 'Not caring about something at all — like when someone talks about something boring', pos: 'adjective' },
+    'disappear': { word: 'disappear', definition: 'Going away so nobody can see you anymore — like when a magician makes something vanish', pos: 'verb' },
+    'particular': { word: 'particular', definition: 'One special thing and not any other — like picking your favorite crayon out of the whole box', pos: 'adjective' },
+    'machine': { word: 'machine', definition: 'Something built to do a job — like a washing machine cleans clothes or a toaster makes toast', pos: 'noun' },
+    'purpose': { word: 'purpose', definition: 'The reason why something is made or done — like a pencil is made for writing', pos: 'noun' },
+    'convince': { word: 'convince', definition: 'Trying really hard to get someone to believe you or agree with you', pos: 'verb' },
+    'routine': { word: 'routine', definition: 'Things you do the same way every day — like brushing your teeth before bed', pos: 'noun' },
+    'competing': { word: 'competing', definition: 'Trying to be better than someone else — like racing to see who is the fastest', pos: 'verb' },
+    'admire': { word: 'admire', definition: 'Thinking someone or something is really great — like looking up to your big sister', pos: 'verb' },
     // Words common in quiz answer options
     'identity': { word: 'identity', definition: 'Who you really are — your name and everything about you', pos: 'noun' },
     'obsessed': { word: 'obsessed', definition: 'Thinking about something SO much you cannot stop', pos: 'adjective' },
@@ -840,8 +858,10 @@ const QuizEngine = (function() {
     render();
   }
 
+  let processingAnswer = false; // prevent double-click on submit answer
   async function submitAnswer() {
-    if (answers[currentQuestion] === undefined || answered) return;
+    if (answers[currentQuestion] === undefined || answered || processingAnswer) return;
+    processingAnswer = true;
     const q = currentQuiz.questions[currentQuestion];
     const opts = q.options || [];
     const isCorrect = answers[currentQuestion] === q.correct_answer;
@@ -892,12 +912,15 @@ const QuizEngine = (function() {
         delete answers[currentQuestion];
       }
     }
+    processingAnswer = false;
     render();
   }
 
   async function nextQuestion() {
     if (currentQuestion >= currentQuiz.questions.length - 1) {
       // Submit quiz
+      if (submitting) return; // prevent double-submit
+      submitting = true;
       const timeTaken = Math.round((Date.now() - quizStartTime) / 1000);
       try {
         if (!currentStudent) {

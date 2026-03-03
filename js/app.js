@@ -4361,22 +4361,11 @@ function buildCertificateCelebration(book, results) {
       <h2 class="celebration-title">You Finished ${escapeHtml(title)}!</h2>
       <p class="celebration-message">Congratulations! Here's your achievement certificate.</p>
 
-      <div class="celebration-cert-preview">
-        <div class="celebration-cert-inner">
-          <div class="celebration-cert-badge">🏆</div>
-          <h3 class="celebration-cert-title">Certificate of Achievement</h3>
-          <p class="celebration-cert-desc">This certifies that</p>
-          <p class="celebration-cert-name">${escapeHtml(studentName)}</p>
-          <p class="celebration-cert-desc">has successfully completed all quizzes for</p>
-          <p class="celebration-cert-book">${escapeHtml(title)}</p>
-          ${author ? `<p class="celebration-cert-author">by ${escapeHtml(author)}</p>` : ''}
-          <div class="celebration-cert-meta">
-            <span>${dateStr}</span>
-            <span>Score: ${score}%</span>
-          </div>
-          <div class="celebration-cert-brand">
-            <img src="/public/logo.png" alt="key2read" style="height:24px;width:auto">
-          </div>
+      <div class="celebration-cert-preview" style="position:relative;max-width:480px;margin:0 auto">
+        <img src="/public/Certificate update(1).png" alt="Certificate" style="width:100%;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.15)">
+        <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12%">
+          <p style="margin:0;font-size:clamp(0.55rem,2vw,0.85rem);color:#1a1a2e;font-weight:800;text-align:center;margin-top:28%">${escapeHtml(studentName)}</p>
+          <p style="margin:0;font-size:clamp(0.5rem,1.5vw,0.75rem);color:#1a1a2e;font-weight:700;font-style:italic;text-align:center;margin-top:12%">${escapeHtml(title)}</p>
         </div>
       </div>
 
@@ -4450,7 +4439,7 @@ async function downloadCertificatePDF(params) {
     }
 
     // Load the certificate background image (same-origin, no CORS needed)
-    const bgDataUrl = await loadImage('/public/Certificate.png', false);
+    const bgDataUrl = await loadImage('/public/Certificate update(1).png', false);
     const margin = 10;
     doc.addImage(bgDataUrl, 'PNG', margin, margin, w - margin * 2, h - margin * 2);
 
@@ -4499,10 +4488,10 @@ function printCertificate(params) {
 
   const html = `<!DOCTYPE html><html><head><title>Certificate - ${book.title}</title>
     <style>
-      @page { size: landscape; margin: 10mm; }
+      @page { size: landscape; margin: 0; }
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: 'Arial', 'Helvetica', sans-serif; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
-      .cert { width: 100%; max-width: 287mm; height: 200mm; position: relative; overflow: hidden; margin: auto; }
+      html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Arial', 'Helvetica', sans-serif; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
+      .cert { width: 100%; height: 100%; position: relative; overflow: hidden; }
       .cert-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
       .cert-content { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; }
       .student-name { position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%); font-size: 36px; font-weight: 800; color: #1a1a2e; text-align: center; width: 70%; }
@@ -4512,7 +4501,7 @@ function printCertificate(params) {
     </style>
   </head><body>
     <div class="cert">
-      <img class="cert-bg" src="/public/Certificate.png" alt="Certificate Background">
+      <img class="cert-bg" src="/public/Certificate update(1).png" alt="Certificate Background">
       <div class="cert-content">
         <div class="student-name">${studentName}</div>
         <div class="book-name">${book.title || 'Book'}</div>
