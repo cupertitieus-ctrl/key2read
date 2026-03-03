@@ -503,9 +503,10 @@ const QuizEngine = (function() {
       });
       QuizEngine._tapAwayBound = true;
     }
-    // Show vocab helper popup once (unless dismissed permanently)
-    const vocabDismissed = localStorage.getItem('k2r_vocab_popup_dismissed');
+    // Show vocab helper popup once (unless dismissed permanently or already shown this session)
+    const vocabDismissed = localStorage.getItem('k2r_vocab_popup_dismissed') || sessionStorage.getItem('k2r_vocab_popup_shown');
     if (!vocabDismissed) {
+      sessionStorage.setItem('k2r_vocab_popup_shown', '1');
       render();
       showVocabHelperPopup();
       return;
