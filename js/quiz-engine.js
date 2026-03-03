@@ -948,10 +948,9 @@ const QuizEngine = (function() {
           revealedIndices
         });
       } catch(e) {
-        // If server blocked as duplicate, just ignore — first submit already handled it
+        // If server blocked as duplicate, still show results locally
         if (e.message && e.message.includes('Duplicate submission')) {
-          console.log('[Quiz] Duplicate submit blocked by server');
-          return;
+          console.log('[Quiz] Duplicate submit blocked by server — showing local results');
         }
         // Fallback local scoring
         let correctCount = 0;
