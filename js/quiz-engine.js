@@ -922,69 +922,60 @@ const QuizEngine = (function() {
       // Submit quiz
       if (submitting) return; // prevent double-submit
       submitting = true;
-      // Show loading screen immediately
-      const container = document.getElementById('quiz-container');
-      if (container) container.innerHTML = `
-        <div class="quiz-player">
-          <div style="text-align:center;padding:60px 20px">
-            <div class="spinner" style="margin:0 auto 20px"></div>
-            <h3 style="color:var(--navy);font-weight:700;margin:0 0 8px">Calculating Your Results...</h3>
-            <p style="color:var(--g400);font-size:0.9rem;margin:0">Hang tight! ✨</p>
-          </div>
-        </div>`;
       const timeTaken = Math.round((Date.now() - quizStartTime) / 1000);
-      try {
-        if (!currentStudent) {
-          // Guest mode: skip API call, use local scoring
-          throw new Error('guest-local');
+
+      // Compute results locally for instant display
+      let correctCount = 0;
+      currentQuiz.questions.forEach((q, i) => {
+        const wasRevealed = feedback[i]?.revealed;
+        if (answers[i] === q.correct_answer && !wasRevealed) {
+          correctCount++;
         }
-        const hintCount = hintShown.filter(Boolean).length;
-        // Map shuffled indices → answer text so server can compare against original options
+      });
+      const score = (correctCount / currentQuiz.questions.length) * 100;
+      const localHintCount = hintShown.filter(Boolean).length;
+      let keysEarned = score >= 80 ? (localHintCount > 0 ? 4 : 5) : 0;
+      quizResults = {
+        score, correctCount, totalQuestions: currentQuiz.questions.length,
+        readingLevelChange: Math.round((score / 100 - 0.65) * 20),
+        newReadingScore: (currentStudent?.reading_score || 500) + Math.round((score / 100 - 0.65) * 20),
+        newReadingLevel: (((currentStudent?.reading_score || 500) + Math.round((score / 100 - 0.65) * 20)) / 160).toFixed(1),
+        keysEarned,
+        results: currentQuiz.questions.map((q, i) => ({ isCorrect: answers[i] === q.correct_answer && !feedback[i]?.revealed, feedback: feedback[i]?.feedback || '', hintUsed: !!hintShown[i], revealed: !!feedback[i]?.revealed })),
+        strategiesUsed: [...new Set(currentQuiz.questions.map(q => q.strategy_type))]
+      };
+
+      // Fire server submit in background — don't wait for it
+      if (currentStudent) {
         const answerTexts = currentQuiz.questions.map((q, i) => {
           const idx = answers[i];
           return idx !== undefined && q?.options ? (q.options[idx] || '') : '';
         });
-        // Track which questions had answers revealed (student got wrong twice)
         const revealedIndices = [];
         feedback.forEach((fb, i) => { if (fb && fb.revealed) revealedIndices.push(i); });
-        quizResults = await API.submitQuiz({
+        API.submitQuiz({
           studentId: currentStudent.id,
           chapterId: currentQuiz.chapter.id,
           answers: answerTexts,
           timeTaken,
-          hintCount,
+          hintCount: localHintCount,
           attemptData: attempts.slice(0, currentQuiz.questions.length),
           vocabLookups: Object.keys(definitionCache),
           revealedIndices
-        });
-      } catch(e) {
-        // If server blocked as duplicate, still show results locally
-        if (e.message && e.message.includes('Duplicate submission')) {
-          console.log('[Quiz] Duplicate submit blocked by server — showing local results');
-        }
-        // Fallback local scoring
-        let correctCount = 0;
-        currentQuiz.questions.forEach((q, i) => {
-          const wasRevealed = feedback[i]?.revealed;
-          if (answers[i] === q.correct_answer && !wasRevealed) {
-            correctCount++;
+        }).then(serverResults => {
+          // Update with server keys (handles already-earned check)
+          if (serverResults && serverResults.keysEarned !== undefined) {
+            quizResults.keysEarned = serverResults.keysEarned;
+            quizResults.alreadyEarned = serverResults.alreadyEarned;
           }
+          if (serverResults && serverResults.newReadingScore !== undefined) {
+            quizResults.newReadingScore = serverResults.newReadingScore;
+            quizResults.newReadingLevel = serverResults.newReadingLevel;
+            quizResults.readingLevelChange = serverResults.readingLevelChange;
+          }
+        }).catch(e => {
+          console.log('[Quiz] Background submit error:', e.message);
         });
-        const score = (correctCount / currentQuiz.questions.length) * 100;
-        const localHintCount = hintShown.filter(Boolean).length;
-        // 5 keys if pass (>=80%), 4 if used try-again at all, 0 if fail
-        let keysEarned = score >= 80 ? (localHintCount > 0 ? 4 : 5) : 0;
-        quizResults = {
-          score, correctCount, totalQuestions: currentQuiz.questions.length,
-          readingLevelChange: Math.round((score / 100 - 0.65) * 20),
-          newReadingScore: (currentStudent?.reading_score || 500) + Math.round((score / 100 - 0.65) * 20),
-          newReadingLevel: (((currentStudent?.reading_score || 500) + Math.round((score / 100 - 0.65) * 20)) / 160).toFixed(1),
-          keysEarned,
-          results: currentQuiz.questions.map((q, i) => ({ isCorrect: answers[i] === q.correct_answer && !feedback[i]?.revealed, feedback: feedback[i]?.feedback || '', hintUsed: !!hintShown[i], revealed: !!feedback[i]?.revealed })),
-          strategiesUsed: [...new Set(currentQuiz.questions.map(q => q.strategy_type))]
-        };
-
-        // Guest mode: do NOT save progress (subscribe to save)
       }
       render();
       if (onComplete) onComplete(quizResults);
