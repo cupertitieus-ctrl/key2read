@@ -13,6 +13,18 @@ const klaviyo = require('./server/klaviyo');
 const app = express();
 const PORT = process.env.PORT || 3456;
 
+// Levenshtein distance — used to catch student name typos
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+  return dp[m][n];
+}
+
 // Trust proxy in production (Render uses a reverse proxy)
 if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1);
@@ -131,7 +143,7 @@ app.post('/api/auth/login', async (req, res) => {
       const cls = await db.getClassByCode(classCode);
       if (!cls) return res.status(400).json({ error: 'Invalid class code. Ask your teacher for the correct code.' });
 
-      // Find student by name in this class
+      // Find student by name in this class (exact match, case-insensitive)
       let { data: studentRecords } = await db.supabase
         .from('students')
         .select('*, users!user_id (id, email, name, role)')
@@ -140,7 +152,43 @@ app.post('/api/auth/login', async (req, res) => {
 
       let user;
       if (!studentRecords || studentRecords.length === 0) {
-        // Auto-create student account with valid class code
+        // No exact match — check for fuzzy match to prevent duplicate accounts
+        const { data: allStudents } = await db.supabase
+          .from('students')
+          .select('id, name, users!user_id (id, email, name, role)')
+          .eq('class_id', cls.id);
+
+        if (allStudents && allStudents.length > 0) {
+          const inputName = name.trim().toLowerCase();
+          const inputParts = inputName.split(/\s+/);
+          const inputFirst = inputParts[0] || '';
+          const inputLast = inputParts.slice(1).join(' ') || '';
+
+          // Check for close matches: same last name + similar first name, or very similar full name
+          const closeMatch = allStudents.find(s => {
+            const existingName = (s.name || '').toLowerCase();
+            const existingParts = existingName.split(/\s+/);
+            const existingFirst = existingParts[0] || '';
+            const existingLast = existingParts.slice(1).join(' ') || '';
+
+            // Same last name and first name is very close (1-2 chars off)
+            if (inputLast && existingLast === inputLast) {
+              const dist = levenshtein(inputFirst, existingFirst);
+              if (dist <= 2 && dist > 0) return true;
+            }
+            // Full name is very close (1-2 chars off)
+            const fullDist = levenshtein(inputName, existingName);
+            if (fullDist <= 2 && fullDist > 0) return true;
+
+            return false;
+          });
+
+          if (closeMatch) {
+            return res.status(400).json({ error: `Did you mean "${closeMatch.name}"? Please check your spelling and try again.` });
+          }
+        }
+
+        // No close match — create new student account
         const trimmedName = name.trim();
         const stubEmail = `student_${Date.now()}_${Math.random().toString(36).slice(2, 8)}@student.key2read.com`;
         const { data: newUser, error: userErr } = await db.supabase
@@ -184,7 +232,40 @@ app.post('/api/auth/login', async (req, res) => {
 
       let user;
       if (!studentRecords || studentRecords.length === 0) {
-        // Auto-create child account with valid family code
+        // No exact match — check for fuzzy match to prevent duplicate accounts
+        const { data: allStudents } = await db.supabase
+          .from('students')
+          .select('id, name, users!user_id (id, email, name, role)')
+          .eq('class_id', cls.id);
+
+        if (allStudents && allStudents.length > 0) {
+          const inputName = name.trim().toLowerCase();
+          const inputParts = inputName.split(/\s+/);
+          const inputFirst = inputParts[0] || '';
+          const inputLast = inputParts.slice(1).join(' ') || '';
+
+          const closeMatch = allStudents.find(s => {
+            const existingName = (s.name || '').toLowerCase();
+            const existingParts = existingName.split(/\s+/);
+            const existingFirst = existingParts[0] || '';
+            const existingLast = existingParts.slice(1).join(' ') || '';
+
+            if (inputLast && existingLast === inputLast) {
+              const dist = levenshtein(inputFirst, existingFirst);
+              if (dist <= 2 && dist > 0) return true;
+            }
+            const fullDist = levenshtein(inputName, existingName);
+            if (fullDist <= 2 && fullDist > 0) return true;
+
+            return false;
+          });
+
+          if (closeMatch) {
+            return res.status(400).json({ error: `Did you mean "${closeMatch.name}"? Please check your spelling and try again.` });
+          }
+        }
+
+        // No close match — create new child account
         const trimmedName = name.trim();
         const stubEmail = `child_${Date.now()}_${Math.random().toString(36).slice(2, 8)}@family.key2read.com`;
         const { data: newUser, error: userErr } = await db.supabase
