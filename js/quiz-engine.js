@@ -922,6 +922,16 @@ const QuizEngine = (function() {
       // Submit quiz
       if (submitting) return; // prevent double-submit
       submitting = true;
+      // Show loading screen immediately
+      const container = document.getElementById('quiz-container');
+      if (container) container.innerHTML = `
+        <div class="quiz-player">
+          <div style="text-align:center;padding:60px 20px">
+            <div class="spinner" style="margin:0 auto 20px"></div>
+            <h3 style="color:var(--navy);font-weight:700;margin:0 0 8px">Calculating Your Results...</h3>
+            <p style="color:var(--g400);font-size:0.9rem;margin:0">Hang tight! ✨</p>
+          </div>
+        </div>`;
       const timeTaken = Math.round((Date.now() - quizStartTime) / 1000);
       try {
         if (!currentStudent) {
