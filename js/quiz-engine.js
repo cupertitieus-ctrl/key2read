@@ -81,7 +81,6 @@ const QuizEngine = (function() {
     'immediately': { word: 'immediately', definition: 'Right now — not waiting even one second', pos: 'adverb' },
     'obviously': { word: 'obviously', definition: 'Easy to see or understand — super clear', pos: 'adverb' },
     // Sequence & cause words
-    'because': { word: 'because', definition: 'The reason WHY something happened', pos: 'conjunction' },
     'although': { word: 'although', definition: 'Even though — saying something is true BUT something else is also true', pos: 'conjunction' },
     'however': { word: 'however', definition: 'But — something different or opposite is also true', pos: 'adverb' },
     'therefore': { word: 'therefore', definition: 'So — this is what happened next because of that', pos: 'adverb' },
@@ -121,6 +120,7 @@ const QuizEngine = (function() {
     'mention': { word: 'mention', definition: 'Saying something quickly without going into a lot of detail', pos: 'verb' },
     'approach': { word: 'approach', definition: 'Getting closer to something, or a way of doing something', pos: 'verb' },
     'survive': { word: 'survive', definition: 'Staying alive through something hard or dangerous', pos: 'verb' },
+    'respond': { word: 'respond', definition: 'Saying or doing something back when someone talks to you or asks you something', pos: 'verb' },
     // Words common in quiz answer options
     'identity': { word: 'identity', definition: 'Who you really are — your name and everything about you', pos: 'noun' },
     'obsessed': { word: 'obsessed', definition: 'Thinking about something SO much you cannot stop', pos: 'adjective' },

@@ -2096,7 +2096,7 @@ function renderStudentProfile() {
     <div class="profile-header">
       ${avatar(s, 'lg')}
       <div class="profile-info">
-        <h2>${s.name} ${warnTag(s)}</h2>
+        <h2>${s.name} ${warnTag(s)} <button onclick="showRenameStudentModal(${s.id}, '${escapeHtml(s.name).replace(/'/g, "\\'")}')" style="background:none;border:none;cursor:pointer;color:var(--g400);font-size:0.8rem;vertical-align:middle;padding:4px" title="Edit name">✏️</button></h2>
         <div class="profile-meta">
           <span>Grade: ${s.grade}</span>
           <span>Level ${s.level}</span>
@@ -2190,6 +2190,61 @@ function showGiftKeysModal(studentId, studentName) {
   };
 
   renderGiftModal();
+}
+
+function showRenameStudentModal(studentId, currentName) {
+  const modal = document.getElementById('modal-root-2') || document.createElement('div');
+  if (!modal.id) { modal.id = 'modal-root-2'; document.body.appendChild(modal); }
+  const parts = currentName.trim().split(/\s+/);
+  const curFirst = parts[0] || '';
+  const curLast = parts.slice(1).join(' ') || '';
+
+  modal.innerHTML = `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)document.getElementById('modal-root-2').innerHTML=''">
+      <div onclick="event.stopPropagation()" style="background:#fff;border-radius:20px;padding:32px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative">
+        <button onclick="document.getElementById('modal-root-2').innerHTML=''" style="position:absolute;top:12px;right:12px;background:none;border:none;font-size:1.5rem;color:var(--g400);cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%" onmouseover="this.style.background='var(--g100)'" onmouseout="this.style.background='none'">✕</button>
+        <h3 style="margin:0 0 4px;font-size:1.2rem;font-weight:800;color:var(--navy)">Edit Student Name</h3>
+        <p style="margin:0 0 20px;color:var(--g500);font-size:0.85rem">Update the name for this student.</p>
+        <div style="display:flex;gap:10px;margin-bottom:20px">
+          <div style="flex:1">
+            <label style="display:block;font-size:0.75rem;font-weight:600;color:var(--g500);margin-bottom:4px">First Name</label>
+            <input id="rename-first" type="text" value="${escapeHtml(curFirst)}" style="width:100%;padding:10px 12px;border:1.5px solid var(--g200);border-radius:8px;font-size:0.95rem;box-sizing:border-box">
+          </div>
+          <div style="flex:1">
+            <label style="display:block;font-size:0.75rem;font-weight:600;color:var(--g500);margin-bottom:4px">Last Name</label>
+            <input id="rename-last" type="text" value="${escapeHtml(curLast)}" style="width:100%;padding:10px 12px;border:1.5px solid var(--g200);border-radius:8px;font-size:0.95rem;box-sizing:border-box">
+          </div>
+        </div>
+        <div id="rename-error" style="display:none;margin-bottom:12px;padding:8px 12px;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;font-size:0.8rem;color:#991B1B"></div>
+        <button id="rename-save-btn" onclick="window._renameSave(${studentId})" class="btn btn-primary" style="width:100%;font-size:1rem;padding:14px;font-weight:700">Save Name</button>
+      </div>
+    </div>`;
+
+  window._renameSave = async function(sid) {
+    const first = (document.getElementById('rename-first').value || '').trim();
+    const last = (document.getElementById('rename-last').value || '').trim();
+    const errEl = document.getElementById('rename-error');
+    if (!first) { errEl.textContent = 'First name is required.'; errEl.style.display = 'block'; return; }
+    if (!last) { errEl.textContent = 'Last name is required.'; errEl.style.display = 'block'; return; }
+    const newName = first + ' ' + last;
+    const btn = document.getElementById('rename-save-btn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    try {
+      const result = await API.renameStudent(sid, newName);
+      if (result.success) {
+        const s = students.find(x => x.id === sid);
+        if (s) { s.name = result.name; s.initials = result.initials; }
+        modal.innerHTML = '';
+        renderMain();
+      } else {
+        errEl.textContent = result.error || 'Failed to rename student.'; errEl.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'Save Name';
+      }
+    } catch(e) {
+      errEl.textContent = e.message || 'Failed to rename student.'; errEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Save Name';
+    }
+  };
 }
 
 async function loadStudentPerformance(s) {
