@@ -4366,6 +4366,7 @@ function buildCertificateCelebration(book, results) {
         <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12%">
           <p style="margin:0;font-size:clamp(0.55rem,2vw,0.85rem);color:#1a1a2e;font-weight:800;text-align:center;margin-top:28%">${escapeHtml(studentName)}</p>
           <p style="margin:0;font-size:clamp(0.5rem,1.5vw,0.75rem);color:#1a1a2e;font-weight:700;font-style:italic;text-align:center;margin-top:12%">${escapeHtml(title)}</p>
+          ${book.cover_url ? `<img src="${book.cover_url}" alt="${escapeHtml(title)}" style="margin-top:4%;width:18%;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.2);border:2px solid #fff">` : ''}
         </div>
       </div>
 

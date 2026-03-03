@@ -125,6 +125,7 @@ const QuizEngine = (function() {
     'respond': { word: 'respond', definition: 'Saying or doing something back when someone talks to you or asks you something', pos: 'verb' },
     'wag': { word: 'wag', definition: 'Moving something back and forth really fast — like a dog moving its tail when it is happy', pos: 'verb' },
     'demonstrate': { word: 'demonstrate', definition: 'Showing someone how to do something — like when your teacher shows you how to write a letter', pos: 'verb' },
+    'demonstrates': { word: 'demonstrates', definition: 'Showing someone how to do something — like when your teacher shows you how to write a letter', pos: 'verb' },
     'competition': { word: 'competition', definition: 'When two people or things try to be the best — like a race to see who wins', pos: 'noun' },
     'impress': { word: 'impress', definition: 'Doing something so cool that it makes someone say WOW', pos: 'verb' },
     'conflict': { word: 'conflict', definition: 'When two people or things do not get along — like when you and a friend want to play different games', pos: 'noun' },
