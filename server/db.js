@@ -276,7 +276,7 @@ async function getReadingHistory(studentId) {
 // ─── USER HELPERS ───
 
 async function getUserByEmail(email) {
-  const { data } = await supabase.from('users').select('*').eq('email', email).single();
+  const { data } = await supabase.from('users').select('*').ilike('email', email).single();
   return data;
 }
 

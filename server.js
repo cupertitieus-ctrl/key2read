@@ -653,7 +653,19 @@ app.post('/api/webhooks/shopify/order-paid', async (req, res) => {
     }
     console.log('  ✅ HMAC verified');
 
-    // 2. Parse order data
+    // 2. Check if order contains a key2read software product
+    const lineItems = req.body.line_items || [];
+    const hasKey2Read = lineItems.some(item => {
+      const title = (item.title || '').toLowerCase();
+      const sku = (item.sku || '').toLowerCase();
+      return title.includes('key2read') || title.includes('key 2 read') || sku.includes('key2read') || sku.includes('k2r');
+    });
+    if (!hasKey2Read) {
+      console.log(`⏭️ Shopify order ${req.body.id} skipped — no key2read product found`);
+      return res.status(200).json({ success: true, message: 'Not a key2read order' });
+    }
+
+    // 3. Parse order data
     const orderData = shopify.parseOrderData(req.body);
     if (!orderData.email) {
       console.error('Shopify webhook: no customer email in order');
@@ -673,8 +685,8 @@ app.post('/api/webhooks/shopify/order-paid', async (req, res) => {
       return res.status(200).json({ success: true, message: 'Already processed' });
     }
 
-    // 4. Check if user already exists
-    const existingUser = await db.getUserByEmail(orderData.email);
+    // 4. Check if user already exists (case-insensitive)
+    const existingUser = await db.getUserByEmail(orderData.email.toLowerCase());
     if (existingUser) {
       // Generate new password for existing user
       const plainPassword = shopify.generateReadablePassword();
@@ -739,7 +751,7 @@ app.post('/api/webhooks/shopify/order-paid', async (req, res) => {
     // 6. Create user
     const role = orderData.plan === 'school' ? 'teacher' : 'parent';
     const user = await db.createUser({
-      email: orderData.email,
+      email: orderData.email.toLowerCase(),
       name: orderData.fullName,
       role: role,
       auth_provider: 'shopify',
