@@ -1242,33 +1242,13 @@ function renderTeacherDashboard() {
   const avgScore = students.length > 0 ? Math.round(students.reduce((s, st) => s + (st.reading_score || st.score || 0), 0) / students.length) : 0;
   const totalQuizzes = students.reduce((s, st) => s + (st.quizzes_completed || 0), 0);
 
-  if (students.length === 0) {
-    const familyCode = currentUser?.classCode || '';
-    if (isParent) {
-      return `
-        <div class="page-header"><h1><img src="/public/logo.png" alt="key2read" style="height:44px;width:auto;vertical-align:middle;margin-right:10px">Dashboard</h1></div>
-        <div class="empty-state">
-          <div class="empty-state-icon">${IC.users}</div>
-          <h2>Welcome to key2read!</h2>
-          <p>As soon as a child signs up using your Family Code, data will start to collect here.</p>
-          ${familyCode ? `<div style="margin:20px 0;display:inline-flex;align-items:center;gap:10px;background:var(--blue-p, #EFF6FF);padding:12px 24px;border-radius:12px;border:2px dashed var(--blue)">
-            <span style="font-size:0.85rem;color:var(--g500)">Family Code:</span>
-            <span style="font-size:1.3rem;font-weight:800;color:var(--blue);letter-spacing:0.08em;user-select:all">${familyCode}</span>
-            <button class="btn btn-sm btn-ghost" style="padding:2px 8px;font-size:0.7rem" onclick="navigator.clipboard.writeText('${familyCode}'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
-          </div>` : ''}
-          <p style="font-size:0.85rem;color:var(--g400);margin-top:8px">Have your child go to <strong>Sign Up</strong>, choose <strong>Child</strong>, and enter the Family Code above.</p>
-          <button class="btn btn-primary" onclick="navigate('library')" style="margin-top:16px">${IC.book} Browse Book Library</button>
-        </div>`;
-    }
-    return `
-      <div class="page-header"><h1><img src="/public/logo.png" alt="key2read" style="height:44px;width:auto;vertical-align:middle;margin-right:10px">Dashboard</h1></div>
-      <div class="empty-state">
-        <div class="empty-state-icon">${IC.users}</div>
-        <h2>Welcome to key2read!</h2>
-        <p>Your dashboard will come alive once ${membersLabel} join your ${groupLabel} and start taking quizzes.</p>
-        <button class="btn btn-primary" onclick="navigate('quizzes')">${IC.clip} Go to Quizzes</button>
-      </div>`;
-  }
+  // Welcome banner when no students/children have joined yet
+  const welcomeBanner = students.length === 0 ? `
+    <div style="background:linear-gradient(135deg, var(--blue-p, #EFF6FF), #E0ECFF);border:2px dashed var(--blue);border-radius:16px;padding:24px 32px;margin-bottom:20px;text-align:center">
+      <h2 style="margin:0 0 8px 0;font-size:1.25rem;font-weight:800;color:var(--g900)">Welcome to key2read!</h2>
+      <p style="margin:0 0 12px 0;font-size:0.9rem;color:var(--g500)">Share your ${isParent ? 'Family' : 'Class'} Code with your ${membersLabel} to get started. Data will appear here as they take quizzes.</p>
+      <p style="margin:0;font-size:0.85rem;color:var(--g400)">${isParent ? 'Have your child go to <strong>Sign Up</strong>, choose <strong>Child</strong>, and enter the Family Code above.' : `Have ${membersLabel} go to <strong>Sign Up</strong>, choose <strong>Student</strong>, and enter the Class Code above.`}</p>
+    </div>` : '';
 
   // Trend chart placeholder — will be populated with real data from API
   const trendChart = '<div id="trend-chart-container" style="display:flex;align-items:center;justify-content:center;min-height:200px;color:var(--g400);font-size:0.875rem">Loading chart...</div>';
@@ -1298,6 +1278,8 @@ function renderTeacherDashboard() {
         </div>` : ''}
       </div>
     </div>
+
+    ${welcomeBanner}
 
     <div class="stat-cards stat-cards-5">
       <div class="stat-card clickable-card" onclick="navigate('reports')">
