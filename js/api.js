@@ -49,6 +49,7 @@ const API = {
   getStudents: (classId) => API.get(`/api/students?classId=${classId}`),
   getStudent: (id) => API.get(`/api/students/${id}`),
   updateSurvey: (id, data) => API.put(`/api/students/${id}/survey`, data),
+  renameStudent: (id, name) => API.put(`/api/students/${id}/name`, { name }),
   getReadingHistory: (id) => API.get(`/api/students/${id}/reading-history`),
   getQuizResults: (id) => API.get(`/api/students/${id}/quiz-results`),
   getWeeklyStats: (id) => API.get(`/api/students/${id}/weekly-stats`),

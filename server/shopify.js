@@ -92,13 +92,14 @@ async function addOrderNote(orderId, noteText) {
   }
 
   try {
-    const response = await fetch(`https://${store}/admin/api/2024-01/orders/${orderId}.json`, {
+    const numericId = Number(orderId);
+    const response = await fetch(`https://${store}/admin/api/2025-01/orders/${numericId}.json`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'X-Shopify-Access-Token': token
       },
-      body: JSON.stringify({ order: { id: orderId, note: noteText } })
+      body: JSON.stringify({ order: { id: numericId, note: noteText } })
     });
 
     if (!response.ok) {

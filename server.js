@@ -713,7 +713,9 @@ app.post('/api/webhooks/shopify/order-paid', async (req, res) => {
         `Class/Family Code: ${classCode}`,
         `Plan: ${orderData.plan}`,
         `Login: https://key2read.onrender.com/pages/signin.html`
-      ].join('\n')).catch(err => console.error('Shopify order note error:', err.message));
+      ].join('\n')).then(result => {
+        console.log(`Order note result for ${orderData.orderId}:`, result ? 'success' : 'failed');
+      }).catch(err => console.error('Shopify order note error:', err.message));
 
       // Send Klaviyo welcome email with new password
       klaviyo.sendWelcomeEmail({
@@ -724,6 +726,8 @@ app.post('/api/webhooks/shopify/order-paid', async (req, res) => {
         plan: orderData.plan,
         classCode: classCode,
         loginUrl: 'https://key2read.onrender.com/pages/signin.html'
+      }).then(result => {
+        console.log(`Klaviyo email result for ${orderData.email}:`, result ? 'success' : 'failed');
       }).catch(err => console.error('Klaviyo welcome email error:', err.message));
       return;
     }
@@ -785,7 +789,9 @@ app.post('/api/webhooks/shopify/order-paid', async (req, res) => {
       `Class/Family Code: ${classCode}`,
       `Plan: ${orderData.plan}`,
       `Login: https://key2read.onrender.com/pages/signin.html`
-    ].join('\n')).catch(err => console.error('Shopify order note error:', err.message));
+    ].join('\n')).then(result => {
+      console.log(`Order note result for ${orderData.orderId}:`, result ? 'success' : 'failed');
+    }).catch(err => console.error('Shopify order note error:', err.message));
 
     // 11. Fire-and-forget Klaviyo welcome email
     klaviyo.sendWelcomeEmail({
@@ -796,6 +802,8 @@ app.post('/api/webhooks/shopify/order-paid', async (req, res) => {
       plan: orderData.plan,
       classCode: classCode,
       loginUrl: 'https://key2read.onrender.com/pages/signin.html'
+    }).then(result => {
+      console.log(`Klaviyo email result for ${orderData.email}:`, result ? 'success' : 'failed');
     }).catch(err => console.error('Klaviyo welcome email error:', err.message));
 
   } catch (e) {
