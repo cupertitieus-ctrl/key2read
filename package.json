@@ -1,6 +1,6 @@
 {
   "name": "key2read",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "AI-powered K-12 reading comprehension platform",
   "main": "server.js",
   "scripts": {

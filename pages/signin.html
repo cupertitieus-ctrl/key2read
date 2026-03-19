@@ -124,6 +124,7 @@
         </a>
         <a href="#" id="admin-login-link" onclick="showAdminLogin(); return false;" style="font-size:0.75rem;color:var(--g400)">Admin login</a>
       </div>
+      <div id="app-version" style="text-align:center;margin-top:12px;font-size:0.65rem;color:var(--g400)"></div>
     </div>
   </div>
 </div>
@@ -133,6 +134,12 @@
 <script>
 let selectedRole = 'teacher';
 let googleClientId = null;
+
+// Show app version
+fetch('/api/version').then(r => r.json()).then(d => {
+  const el = document.getElementById('app-version');
+  if (el && d.version) el.textContent = 'v' + d.version;
+}).catch(() => {});
 
 function selectRole(el, role) {
   document.querySelectorAll('.role-card').forEach(c => c.classList.remove('active'));

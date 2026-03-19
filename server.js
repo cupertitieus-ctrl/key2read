@@ -619,6 +619,10 @@ app.post('/api/auth/signup', async (req, res) => {
   }
 });
 
+// ─── APP VERSION ───
+const pkg = require('./package.json');
+app.get('/api/version', (req, res) => res.json({ version: pkg.version }));
+
 // ─── SHOPIFY WEBHOOK ───
 // Health check endpoint — verify webhook URL is reachable
 app.get('/api/webhooks/shopify/order-paid', (req, res) => {
