@@ -701,6 +701,16 @@ app.post('/api/webhooks/shopify/order-paid', async (req, res) => {
       console.log(`✅ Updated existing user ${orderData.email} to plan: ${orderData.plan}`);
       res.status(200).json({ success: true, message: 'User updated' });
 
+      // Add credentials to Shopify order note so assistants can look them up
+      shopify.addOrderNote(orderData.orderId, [
+        '--- Key2Read Account ---',
+        `Email: ${orderData.email}`,
+        `Password: ${plainPassword}`,
+        `Class/Family Code: ${classCode}`,
+        `Plan: ${orderData.plan}`,
+        `Login: https://key2read.onrender.com/pages/signin.html`
+      ].join('\n')).catch(err => console.error('Shopify order note error:', err.message));
+
       // Send Klaviyo welcome email with new password
       klaviyo.sendWelcomeEmail({
         email: orderData.email,
@@ -763,7 +773,17 @@ app.post('/api/webhooks/shopify/order-paid', async (req, res) => {
     // 9. Return 200 immediately (Shopify requires <5s)
     res.status(200).json({ success: true });
 
-    // 10. Fire-and-forget Klaviyo welcome email
+    // 10. Add credentials to Shopify order note so assistants can look them up
+    shopify.addOrderNote(orderData.orderId, [
+      '--- Key2Read Account ---',
+      `Email: ${orderData.email}`,
+      `Password: ${plainPassword}`,
+      `Class/Family Code: ${classCode}`,
+      `Plan: ${orderData.plan}`,
+      `Login: https://key2read.onrender.com/pages/signin.html`
+    ].join('\n')).catch(err => console.error('Shopify order note error:', err.message));
+
+    // 11. Fire-and-forget Klaviyo welcome email
     klaviyo.sendWelcomeEmail({
       email: orderData.email,
       firstName: orderData.firstName,

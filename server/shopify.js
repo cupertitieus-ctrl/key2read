@@ -79,8 +79,45 @@ function generateReadablePassword() {
   return `${word}-${num}`;
 }
 
+/**
+ * Add a note to a Shopify order with customer credentials
+ * So assistants can look up login info directly in Shopify admin
+ */
+async function addOrderNote(orderId, noteText) {
+  const store = process.env.SHOPIFY_STORE_DOMAIN;
+  const token = process.env.SHOPIFY_ADMIN_TOKEN;
+  if (!store || !token) {
+    console.error('Missing SHOPIFY_STORE_DOMAIN or SHOPIFY_ADMIN_TOKEN — skipping order note');
+    return null;
+  }
+
+  try {
+    const response = await fetch(`https://${store}/admin/api/2024-01/orders/${orderId}.json`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Access-Token': token
+      },
+      body: JSON.stringify({ order: { id: orderId, note: noteText } })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Shopify order note error:', response.status, errorText);
+      return null;
+    }
+
+    console.log(`✅ Order note added to Shopify order ${orderId}`);
+    return true;
+  } catch (err) {
+    console.error('Shopify order note error:', err.message);
+    return null;
+  }
+}
+
 module.exports = {
   verifyWebhookHMAC,
   parseOrderData,
-  generateReadablePassword
+  generateReadablePassword,
+  addOrderNote
 };
