@@ -536,7 +536,7 @@ app.post('/api/admin/reset-password', async (req, res) => {
     if (!user) return res.status(404).json({ error: 'User not found' });
     const plainPassword = shopify.generateReadablePassword();
     const hash = await bcrypt.hash(plainPassword, 10);
-    await db.supabase.from('users').update({ password_hash: hash }).eq('id', user.id);
+    await db.supabase.from('users').update({ password_hash: hash, plain_password: plainPassword }).eq('id', user.id);
     res.json({ success: true, email: user.email, newPassword: plainPassword });
   } catch (e) {
     res.status(500).json({ error: 'Reset failed' });
@@ -761,6 +761,7 @@ app.post('/api/webhooks/shopify/order-paid', async (req, res) => {
       await db.supabase.from('users').update({
         plan: orderData.plan,
         password_hash: passwordHash,
+        plain_password: plainPassword,
         shopify_order_id: orderData.orderId,
         shopify_customer_id: orderData.customerId
       }).eq('id', existingUser.id);
@@ -821,6 +822,7 @@ app.post('/api/webhooks/shopify/order-paid', async (req, res) => {
       role: role,
       auth_provider: 'shopify',
       password_hash: passwordHash,
+      plain_password: plainPassword,
       plan: orderData.plan,
       shopify_order_id: orderData.orderId,
       shopify_customer_id: orderData.customerId

@@ -7749,20 +7749,23 @@ function renderOwnerTeachers() {
   }
 
   return `
-    <div class="page-header"><h1>Teachers <span class="badge badge-blue">${ownerTeachers.length}</span></h1></div>
+    <div class="page-header"><h1>Accounts <span class="badge badge-blue">${ownerTeachers.length}</span></h1></div>
     <div class="list-card">
       <table class="data-table">
-        <thead><tr><th>TEACHER</th><th>EMAIL</th><th>GRADE</th><th>STUDENTS</th><th>CLASS CODE</th><th>JOINED</th></tr></thead>
+        <thead><tr><th>NAME</th><th>ROLE</th><th>EMAIL</th><th>PASSWORD</th><th>CLASS CODE</th><th>STUDENTS</th><th>JOINED</th></tr></thead>
         <tbody>
           ${ownerTeachers.map(t => {
             const initials = t.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
             const joined = t.created_at ? new Date(t.created_at).toLocaleDateString() : '-';
+            const roleColor = t.role === 'parent' ? '#7C3AED' : '#2563EB';
+            const roleLabel = t.role === 'parent' ? 'Parent' : 'Teacher';
             return `<tr>
-              <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar-sm" style="background:#2563EB">${initials}</div><strong>${t.name}</strong></div></td>
+              <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar-sm" style="background:${roleColor}">${initials}</div><strong>${t.name}</strong></div></td>
+              <td><span style="background:${roleColor}15;color:${roleColor};padding:2px 8px;border-radius:4px;font-size:0.75rem;font-weight:600">${roleLabel}</span></td>
               <td style="color:var(--g500)">${t.email || '-'}</td>
-              <td>${t.grade} Grade</td>
-              <td>${t.studentCount}</td>
+              <td><code style="background:var(--g50);padding:2px 8px;border-radius:4px;font-size:0.8125rem">${t.plain_password || '-'}</code></td>
               <td><code style="background:var(--g50);padding:2px 8px;border-radius:4px;font-size:0.8125rem">${t.classCode}</code></td>
+              <td>${t.studentCount}</td>
               <td style="color:var(--g400);font-size:0.8125rem">${joined}</td>
             </tr>`;
           }).join('')}

@@ -648,8 +648,8 @@ async function getGenreDistribution() {
 async function getAllTeachers() {
   const { data } = await supabase
     .from('users')
-    .select('id, name, email, created_at')
-    .eq('role', 'teacher')
+    .select('id, name, email, role, plain_password, created_at')
+    .in('role', ['teacher', 'parent'])
     .order('created_at', { ascending: false });
 
   if (!data) return [];
