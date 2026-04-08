@@ -2270,6 +2270,7 @@ function showEditGradeModal(sid, currentGrade) {
   };
 }
 
+
 async function loadStudentPerformance(s) {
   const container = document.getElementById('student-perf-container');
   if (!container) return;
