@@ -654,24 +654,35 @@ async function getAllTeachers() {
 
   if (!data) return [];
 
-  // For each teacher, get their class info and student count
-  const teachers = [];
-  for (const t of data) {
-    const { data: cls } = await supabase.from('classes').select('id, name, grade, class_code').eq('teacher_id', t.id).single();
-    let studentCount = 0;
-    if (cls) {
-      const { count } = await supabase.from('students').select('id', { count: 'exact', head: true }).eq('class_id', cls.id);
-      studentCount = count || 0;
+  // Batch: get all classes and student counts in two queries instead of N*2
+  const userIds = data.map(t => t.id);
+  const { data: allClasses } = await supabase.from('classes').select('id, name, grade, class_code, teacher_id').in('teacher_id', userIds);
+  const classMap = {};
+  const classIds = [];
+  for (const cls of (allClasses || [])) {
+    classMap[cls.teacher_id] = cls;
+    classIds.push(cls.id);
+  }
+
+  // Get student counts per class in one query
+  const countMap = {};
+  if (classIds.length > 0) {
+    const { data: studentRows } = await supabase.from('students').select('class_id').in('class_id', classIds);
+    for (const row of (studentRows || [])) {
+      countMap[row.class_id] = (countMap[row.class_id] || 0) + 1;
     }
-    teachers.push({
+  }
+
+  return data.map(t => {
+    const cls = classMap[t.id];
+    return {
       ...t,
       className: cls?.name || 'No class',
       grade: cls?.grade || '-',
       classCode: cls?.class_code || '-',
-      studentCount,
-    });
-  }
-  return teachers;
+      studentCount: cls ? (countMap[cls.id] || 0) : 0,
+    };
+  });
 }
 
 async function getAllStudentsForOwner() {
