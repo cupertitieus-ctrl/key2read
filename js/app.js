@@ -7748,13 +7748,22 @@ function renderOwnerTeachers() {
       </div>`;
   }
 
+  const filtered = ownerTeachers.filter(t => {
+    const q = (window._ownerSearchQuery || '').toLowerCase();
+    if (!q) return true;
+    return (t.name || '').toLowerCase().includes(q) || (t.email || '').toLowerCase().includes(q) || (t.classCode || '').toLowerCase().includes(q);
+  });
+
   return `
     <div class="page-header"><h1>Accounts <span class="badge badge-blue">${ownerTeachers.length}</span></h1></div>
+    <div style="margin-bottom:16px">
+      <input type="text" id="owner-search" placeholder="Search by name, email, or code..." value="${window._ownerSearchQuery || ''}" oninput="window._ownerSearchQuery=this.value;document.getElementById('app').innerHTML=renderOwnerTeachers();" style="width:100%;max-width:400px;padding:10px 14px;border:1px solid var(--g200);border-radius:8px;font-size:0.9375rem;outline:none">
+    </div>
     <div class="list-card">
       <table class="data-table">
         <thead><tr><th>NAME</th><th>ROLE</th><th>EMAIL</th><th>PASSWORD</th><th>CLASS CODE</th><th>STUDENTS</th><th>JOINED</th></tr></thead>
         <tbody>
-          ${ownerTeachers.map(t => {
+          ${filtered.map(t => {
             const initials = t.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
             const joined = t.created_at ? new Date(t.created_at).toLocaleDateString() : '-';
             const roleColor = t.role === 'parent' ? '#7C3AED' : '#2563EB';
