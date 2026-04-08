@@ -524,6 +524,25 @@ app.put('/api/auth/password', async (req, res) => {
   }
 });
 
+// Owner-only: reset a user's password
+app.post('/api/admin/reset-password', async (req, res) => {
+  if (!req.session.user || req.session.user.role !== 'owner') {
+    return res.status(403).json({ error: 'Owner access required' });
+  }
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email required' });
+  try {
+    const user = await db.getUserByEmail(email);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const plainPassword = shopify.generateReadablePassword();
+    const hash = await bcrypt.hash(plainPassword, 10);
+    await db.supabase.from('users').update({ password_hash: hash }).eq('id', user.id);
+    res.json({ success: true, email: user.email, newPassword: plainPassword });
+  } catch (e) {
+    res.status(500).json({ error: 'Reset failed' });
+  }
+});
+
 app.post('/api/auth/signup', async (req, res) => {
   const { name, email, password, role, school, classCode } = req.body;
   if (!name) return res.status(400).json({ error: 'Name is required' });
