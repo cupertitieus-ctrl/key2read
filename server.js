@@ -524,6 +524,39 @@ app.put('/api/auth/password', async (req, res) => {
   }
 });
 
+// Forgot password — generates new password and emails it
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Please enter your email.' });
+  try {
+    const user = await db.getUserByEmail(email.toLowerCase());
+    if (!user) return res.json({ success: true, message: 'If an account exists, a reset email has been sent.' });
+    const plainPassword = shopify.generateReadablePassword();
+    const hash = await bcrypt.hash(plainPassword, 10);
+    await db.supabase.from('users').update({ password_hash: hash, plain_password: plainPassword }).eq('id', user.id);
+    // Get class code for the email
+    let classCode = '';
+    if (user.class_id) {
+      const { data: cls } = await db.supabase.from('classes').select('class_code').eq('id', user.class_id).single();
+      if (cls) classCode = cls.class_code;
+    }
+    klaviyo.sendWelcomeEmail({
+      email: user.email,
+      firstName: user.name?.split(' ')[0] || '',
+      lastName: user.name?.split(' ').slice(1).join(' ') || '',
+      password: plainPassword,
+      plan: user.plan || 'family',
+      classCode: classCode,
+      loginUrl: 'https://key2read.onrender.com/pages/signin.html'
+    }).catch(err => console.error('Klaviyo reset email error:', err.message));
+    console.log(`🔑 Password reset for ${user.email}`);
+    res.json({ success: true, message: 'If an account exists, a reset email has been sent.' });
+  } catch (e) {
+    console.error('Forgot password error:', e);
+    res.status(500).json({ error: 'Something went wrong. Please try again.' });
+  }
+});
+
 // Owner-only: reset a user's password
 app.post('/api/admin/reset-password', async (req, res) => {
   if (!req.session.user || req.session.user.role !== 'owner') {

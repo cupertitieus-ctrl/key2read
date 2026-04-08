@@ -89,7 +89,7 @@
           <label class="auth-remember">
             <input type="checkbox" id="remember-me" checked> Remember me
           </label>
-          <a href="#" class="auth-forgot">Forgot password?</a>
+          <a href="#" class="auth-forgot" onclick="handleForgotPassword(event)">Forgot password?</a>
         </div>
         <button type="submit" class="btn btn-primary btn-lg w-full">Sign In</button>
       </form>
@@ -229,6 +229,34 @@ function showError(msg) {
     }
   } catch(e) { /* Server may not be running, demo mode still works */ }
 })();
+
+// Forgot password handler
+async function handleForgotPassword(e) {
+  e.preventDefault();
+  const emailInput = document.getElementById('email');
+  const email = emailInput ? emailInput.value.trim() : '';
+  if (!email) {
+    alert('Please enter your email address first, then click "Forgot password?"');
+    if (emailInput) emailInput.focus();
+    return;
+  }
+  const link = e.target;
+  link.textContent = 'Sending...';
+  link.style.pointerEvents = 'none';
+  try {
+    const res = await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    alert('If an account exists with that email, a new password has been sent. Check your inbox!');
+  } catch (err) {
+    alert('Something went wrong. Please try again.');
+  }
+  link.textContent = 'Forgot password?';
+  link.style.pointerEvents = '';
+}
 
 // Initialize fields for default role (Teacher) on page load
 selectRole(document.querySelector('.role-card.active'), 'teacher');

@@ -143,7 +143,74 @@ async function addToList(email, firstName, lastName) {
   }
 }
 
+/**
+ * Send password reset email via Klaviyo Events API v3
+ * Creates a "Password Reset" event that triggers a Klaviyo Flow
+ */
+async function sendPasswordResetEmail({ email, firstName, password, loginUrl }) {
+  const apiKey = process.env.KLAVIYO_API_KEY;
+  if (!apiKey) {
+    console.error('Missing KLAVIYO_API_KEY — skipping reset email');
+    return null;
+  }
+
+  const eventPayload = {
+    data: {
+      type: 'event',
+      attributes: {
+        metric: {
+          data: {
+            type: 'metric',
+            attributes: { name: 'Password Reset' }
+          }
+        },
+        profile: {
+          data: {
+            type: 'profile',
+            attributes: {
+              email: email,
+              first_name: firstName || ''
+            }
+          }
+        },
+        properties: {
+          password: password,
+          login_url: loginUrl || 'https://key2read.onrender.com/pages/signin.html',
+          first_name: firstName || '',
+          email: email
+        },
+        time: new Date().toISOString()
+      }
+    }
+  };
+
+  try {
+    const response = await fetch(`${KLAVIYO_API_URL}/events/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Klaviyo-API-Key ${apiKey}`,
+        'revision': '2024-10-15'
+      },
+      body: JSON.stringify(eventPayload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Klaviyo password reset error:', response.status, errorText);
+      return null;
+    }
+
+    console.log(`✅ Klaviyo "Password Reset" event sent for ${email}`);
+    return true;
+  } catch (err) {
+    console.error('Klaviyo reset send error:', err.message);
+    return null;
+  }
+}
+
 module.exports = {
   sendWelcomeEmail,
+  sendPasswordResetEmail,
   addToList
 };
