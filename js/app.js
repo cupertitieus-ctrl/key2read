@@ -2080,7 +2080,7 @@ function renderStudentProfile() {
       <div class="profile-info">
         <h2>${s.name} ${warnTag(s)} <button onclick="showRenameStudentModal(${s.id}, '${escapeHtml(s.name).replace(/'/g, "\\'")}')" style="background:none;border:none;cursor:pointer;color:var(--g400);font-size:0.8rem;vertical-align:middle;padding:4px" title="Edit name">✏️</button></h2>
         <div class="profile-meta">
-          <span>Grade: ${s.grade}</span>
+          <span>Grade: ${s.grade} <button onclick="showEditGradeModal(${s.id}, '${escapeHtml(s.grade || '').replace(/'/g, "\\'")}')" style="background:none;border:none;cursor:pointer;color:var(--g400);font-size:0.8rem;vertical-align:middle;padding:4px" title="Edit grade">✏️</button></span>
           <span>Level ${s.level}</span>
           <span>Joined: ${s.joined}</span>
         </div>
@@ -2225,6 +2225,47 @@ function showRenameStudentModal(studentId, currentName) {
     } catch(e) {
       errEl.textContent = e.message || 'Failed to rename student.'; errEl.style.display = 'block';
       btn.disabled = false; btn.textContent = 'Save Name';
+    }
+  };
+}
+
+function showEditGradeModal(sid, currentGrade) {
+  const modal = document.getElementById('modal-root-2') || document.createElement('div');
+  if (!modal.id) { modal.id = 'modal-root-2'; document.body.appendChild(modal); }
+  const grades = ['Pre-K', 'K', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
+  const options = grades.map(g => `<option value="${g}" ${g === currentGrade ? 'selected' : ''}>${g} Grade</option>`).join('');
+
+  modal.innerHTML = `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)document.getElementById('modal-root-2').innerHTML=''">
+      <div onclick="event.stopPropagation()" style="background:#fff;border-radius:20px;padding:32px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative">
+        <button onclick="document.getElementById('modal-root-2').innerHTML=''" style="position:absolute;top:12px;right:12px;background:none;border:none;font-size:1.5rem;color:var(--g400);cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%" onmouseover="this.style.background='var(--g100)'" onmouseout="this.style.background='none'">✕</button>
+        <h3 style="margin:0 0 4px;font-size:1.2rem;font-weight:800;color:var(--navy)">Edit Grade Level</h3>
+        <p style="margin:0 0 20px;color:var(--g500);font-size:0.85rem">Select the grade level for this student.</p>
+        <select id="grade-select" style="width:100%;padding:10px 12px;border:1.5px solid var(--g200);border-radius:8px;font-size:0.95rem;margin-bottom:20px;box-sizing:border-box">${options}</select>
+        <div id="grade-error" style="display:none;margin-bottom:12px;padding:8px 12px;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;font-size:0.8rem;color:#991B1B"></div>
+        <button id="grade-save-btn" onclick="window._gradeSave(${sid})" class="btn btn-primary" style="width:100%;font-size:1rem;padding:14px;font-weight:700">Save Grade</button>
+      </div>
+    </div>`;
+
+  window._gradeSave = async function(sid) {
+    const grade = document.getElementById('grade-select').value;
+    const btn = document.getElementById('grade-save-btn');
+    const errEl = document.getElementById('grade-error');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    try {
+      const result = await API.updateStudentGrade(sid, grade);
+      if (result.success) {
+        const s = students.find(x => x.id === sid);
+        if (s) s.grade = result.grade;
+        modal.innerHTML = '';
+        renderMain();
+      } else {
+        errEl.textContent = result.error || 'Failed to update grade.'; errEl.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'Save Grade';
+      }
+    } catch(e) {
+      errEl.textContent = e.message || 'Failed to update grade.'; errEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Save Grade';
     }
   };
 }

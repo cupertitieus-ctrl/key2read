@@ -1022,6 +1022,19 @@ app.put('/api/students/:id/name', async (req, res) => {
   }
 });
 
+app.put('/api/students/:id/grade', async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { grade } = req.body;
+  if (!grade) return res.status(400).json({ error: 'Grade is required.' });
+  try {
+    await db.supabase.from('students').update({ grade }).eq('id', id);
+    res.json({ success: true, grade });
+  } catch (e) {
+    console.error('Update grade error:', e);
+    res.status(500).json({ error: 'Failed to update grade.' });
+  }
+});
+
 app.put('/api/students/:id/survey', async (req, res) => {
   const id = parseInt(req.params.id);
   await db.updateStudentSurvey(id, req.body);
