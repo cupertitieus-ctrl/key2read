@@ -591,7 +591,7 @@ app.post('/api/admin/reset-all-shopify', async (req, res) => {
     for (const user of users) {
       const plainPassword = shopify.generateReadablePassword();
       const hash = await bcrypt.hash(plainPassword, 10);
-      await db.supabase.from('users').update({ password_hash: hash }).eq('id', user.id);
+      await db.supabase.from('users').update({ password_hash: hash, plain_password: plainPassword }).eq('id', user.id);
 
       // Get their class/family code
       let classCode = '';
