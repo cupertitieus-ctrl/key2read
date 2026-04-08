@@ -543,6 +543,50 @@ app.post('/api/admin/reset-password', async (req, res) => {
   }
 });
 
+// Owner-only: reset ALL Shopify-created users and re-send welcome emails
+app.post('/api/admin/reset-all-shopify', async (req, res) => {
+  if (!req.session.user || req.session.user.role !== 'owner') {
+    return res.status(403).json({ error: 'Owner access required' });
+  }
+  try {
+    const { data: users } = await db.supabase.from('users').select('*').eq('auth_provider', 'shopify');
+    if (!users || users.length === 0) return res.json({ success: true, message: 'No Shopify users found', count: 0 });
+
+    const results = [];
+    for (const user of users) {
+      const plainPassword = shopify.generateReadablePassword();
+      const hash = await bcrypt.hash(plainPassword, 10);
+      await db.supabase.from('users').update({ password_hash: hash }).eq('id', user.id);
+
+      // Get their class/family code
+      let classCode = '';
+      if (user.class_id) {
+        const { data: cls } = await db.supabase.from('classes').select('class_code').eq('id', user.class_id).single();
+        if (cls) classCode = cls.class_code;
+      }
+
+      // Re-send welcome email via Klaviyo
+      klaviyo.sendWelcomeEmail({
+        email: user.email,
+        firstName: user.name?.split(' ')[0] || '',
+        lastName: user.name?.split(' ').slice(1).join(' ') || '',
+        password: plainPassword,
+        plan: user.plan || 'family',
+        classCode: classCode,
+        loginUrl: 'https://key2read.onrender.com/pages/signin.html'
+      }).catch(err => console.error(`Klaviyo error for ${user.email}:`, err.message));
+
+      results.push({ email: user.email, newPassword: plainPassword, classCode });
+    }
+
+    console.log(`✅ Reset ${results.length} Shopify users`);
+    res.json({ success: true, count: results.length, users: results });
+  } catch (e) {
+    console.error('Reset all error:', e);
+    res.status(500).json({ error: 'Reset failed' });
+  }
+});
+
 app.post('/api/auth/signup', async (req, res) => {
   const { name, email, password, role, school, classCode } = req.body;
   if (!name) return res.status(400).json({ error: 'Name is required' });
