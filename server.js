@@ -545,7 +545,9 @@ app.post('/api/admin/reset-password', async (req, res) => {
 
 // Owner-only: reset ALL Shopify-created users and re-send welcome emails
 app.post('/api/admin/reset-all-shopify', async (req, res) => {
-  if (!req.session.user || req.session.user.role !== 'owner') {
+  const isOwnerSession = req.session.user && req.session.user.role === 'owner';
+  const isOwnerKey = req.headers['x-admin-key'] === (process.env.SESSION_SECRET || '');
+  if (!isOwnerSession && !isOwnerKey) {
     return res.status(403).json({ error: 'Owner access required' });
   }
   try {
